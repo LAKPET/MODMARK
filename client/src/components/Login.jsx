@@ -1,0 +1,94 @@
+import React from "react";
+import Logo from "../assets//Picture/Logo.png";
+
+import {
+  MDBBtn,
+  MDBContainer,
+  MDBRow,
+  MDBCol,
+  MDBInput,
+} from "mdb-react-ui-kit";
+
+function Login() {
+  return (
+    <MDBContainer className="my-5">
+      <MDBRow>
+        <MDBCol col="6" className="mb-5">
+          <div className="d-flex flex-column ms-5">
+            <div className="text-center">
+              <img src={Logo} style={{ width: "185px" }} alt="Logo" />
+              <h3 className="fw-bolder mt-1 mb-5 pb-1">
+                <span style={{ color: "#F49427" }}>Mod</span>mark
+              </h3>
+            </div>
+
+            <p>Please login to your account</p>
+
+            <MDBInput
+              wrapperClass="mb-4"
+              label="Email address"
+              id="form1"
+              type="email"
+            />
+            <MDBInput
+              wrapperClass="mb-4"
+              label="Password"
+              id="form2"
+              type="password"
+            />
+
+            <div className="text-center pt-1 mb-5 pb-1">
+              <MDBBtn className="mb-4 w-100 gradient-custom-2">Sign in</MDBBtn>
+              <a className="text-muted" href="#!">
+                Forgot password?
+              </a>
+            </div>
+
+            <div className="d-flex flex-row align-items-center justify-content-center pb-4 mb-4">
+              <p className="mb-0">Don't have an account?</p>
+              <MDBBtn
+                outline
+                className="mx-2"
+                style={{ borderColor: "#F49427", color: "#F49427" }}
+              >
+                Register
+              </MDBBtn>
+            </div>
+          </div>
+        </MDBCol>
+
+        <MDBCol col="6" className="mb-5">
+          <div
+            className="d-flex flex-column justify-content-center h-100 mb-4 position-relative"
+            style={{
+              backgroundImage:
+                "url('https://i.pinimg.com/736x/39/49/7c/39497cb1f8f65726085e229ef09840e4.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div
+              className="text-black rounded-3 px-3 py-4 p-md-5 mx-md-4"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.8)",
+              }}
+            >
+              <h3 className="mb-4 text-center fw-bolder">
+                What is the <span style={{ color: "#F49427" }}>Mod</span>mark?
+              </h3>
+              <p className="medium mb-0 text-center">
+                Modmark is a platform designed to facilitate the collaborative
+                evaluation of student work. It makes it easier and more
+                convenient for multiple instructors to review and assess
+                assignments together, whether through co-grading or offering
+                feedback.
+              </p>
+            </div>
+          </div>
+        </MDBCol>
+      </MDBRow>
+    </MDBContainer>
+  );
+}
+
+export default Login;
