@@ -13,7 +13,7 @@ export default function Register() {
   const handlesubmit = (e) => {
     e.preventDefault();
     axios
-      .post("", { fristname, lastname, email, username, password, checkbox })
+      .post("http://localhost:5000/auth/register", { fristname, lastname, email, username, password, checkbox })
       .then((result = console.log(result)))
       .catch((err) => console.log(err));
   };
