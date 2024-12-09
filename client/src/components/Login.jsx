@@ -7,20 +7,37 @@ import {
   MDBCol,
   MDBInput,
 } from "mdb-react-ui-kit";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState(""); // To show error messages
+  const [loading, setLoading] = useState(false); // To handle loading state
+  const navigate = useNavigate(); // To navigate after successful login
 
   const handlesubmit = (e) => {
     e.preventDefault();
+    setLoading(true); // Start loading
+    setErrorMessage(""); // Clear any previous error
+
     axios
-      .post("http://example.com/login", { email, password })
-      .then((result) => console.log(result))
-      .catch((err) => console.log(err));
+      .post("http://localhost:5001/auth/login", { email, password }) // Use correct API endpoint
+      .then((result) => {
+        setLoading(false); // Stop loading
+        const { token } = result.data;
+        localStorage.setItem("authToken", token); // Store the token in localStorage
+
+        // Redirect to the dashboard or home page
+        navigate("/dashboard");
+      })
+      .catch((err) => {
+        setLoading(false); // Stop loading
+        setErrorMessage("Invalid credentials, please try again."); // Set error message
+        console.error(err);
+      });
   };
 
   return (
@@ -43,6 +60,7 @@ function Login() {
                 id="form1"
                 type="email"
                 onChange={(e) => setEmail(e.target.value)}
+                value={email}
               />
               <MDBInput
                 wrapperClass="mb-4"
@@ -50,11 +68,20 @@ function Login() {
                 id="form2"
                 type="password"
                 onChange={(e) => setPassword(e.target.value)}
+                value={password}
               />
 
+              {/* Display error message if login fails */}
+              {errorMessage && (
+                <div className="text-danger mb-4">{errorMessage}</div>
+              )}
+
               <div className="text-center pt-1 mb-5 pb-1">
-                <MDBBtn className="mb-4 w-100 gradient-custom-2">
-                  Sign in
+                <MDBBtn
+                  className="mb-4 w-100 gradient-custom-2"
+                  disabled={loading} // Disable button while loading
+                >
+                  {loading ? "Loading..." : "Sign in"}
                 </MDBBtn>
                 <a className="text-muted" href="#!">
                   Forgot password?

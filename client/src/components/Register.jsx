@@ -1,34 +1,48 @@
 import React, { useState } from "react";
 import { MDBContainer, MDBBtn, MDBInput } from "mdb-react-ui-kit";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Navigate } from "react-router-dom";
-export default function Register() {
-  const [fristname, setFristname] = useState();
-  const [lastname, setLastname] = useState();
-  const [email, setEmail] = useState();
-  const [username, setUsername] = useState();
-  const [password, setPassword] = useState();
 
-  const handlesubmit = (e) => {
+export default function Register() {
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
     e.preventDefault();
+    if (!firstname || !lastname) {
+      alert("Firstname and Lastname are required!");
+      return;
+    }
+
     axios
-      .post("", { fristname, lastname, email, username, password })
-      .then((result = console.log(result)))
+      .post("http://localhost:5001/auth/register", {
+        first_name: firstname, // change to `first_name`
+        last_name: lastname, // change to `last_name`
+        email,
+        username,
+        password,
+      })
+      .then((result) => {
+        console.log(result);
+        navigate("/login");
+      })
       .catch((err) => console.log(err));
-    Navigate("/login");
   };
+
   return (
     <MDBContainer className="p-3 my-5 d-flex flex-column w-50">
       <div className="text-center mb-3">Register</div>
-
-      <from onSubmit={handlesubmit}>
+      <form onSubmit={handleSubmit}>
         <MDBInput
           wrapperClass="mb-4"
-          label="Fristname"
+          label="Firstname"
           id="form1"
           type="text"
-          onChange={(e) => setFristname(e.target.value)}
+          onChange={(e) => setFirstname(e.target.value)}
         />
         <MDBInput
           wrapperClass="mb-4"
@@ -59,10 +73,10 @@ export default function Register() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <Link to="/login">
-          <MDBBtn className="mb-4 w-100">Register</MDBBtn>
-        </Link>
-      </from>
+        <MDBBtn type="submit" className="mb-4 w-100">
+          Register
+        </MDBBtn>
+      </form>
     </MDBContainer>
   );
 }
