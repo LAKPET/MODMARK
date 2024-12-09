@@ -8,6 +8,7 @@ import {
   MDBCol,
   MDBInput,
 } from "mdb-react-ui-kit";
+import { Link } from "react-router-dom";
 
 function Login() {
   return (
@@ -46,13 +47,18 @@ function Login() {
 
             <div className="d-flex flex-row align-items-center justify-content-center pb-4 mb-4">
               <p className="mb-0">Don't have an account?</p>
-              <MDBBtn
-                outline
-                className="mx-2"
-                style={{ borderColor: "#F49427", color: "#F49427" }}
-              >
-                Register
-              </MDBBtn>
+              <Link to="/register">
+                <MDBBtn
+                  outline
+                  className="mx-2"
+                  style={{
+                    color: "#F49427",
+                    borderColor: "#F49427",
+                  }}
+                >
+                  Register
+                </MDBBtn>
+              </Link>
             </div>
           </div>
         </MDBCol>
