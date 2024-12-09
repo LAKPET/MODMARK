@@ -1,6 +1,5 @@
-import React from "react";
-import Logo from "../assets//Picture/Logo.png";
-
+import React, { useState } from "react";
+import Logo from "../assets/Picture/Logo.png";
 import {
   MDBBtn,
   MDBContainer,
@@ -9,8 +8,21 @@ import {
   MDBInput,
 } from "mdb-react-ui-kit";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import "mdb-react-ui-kit/dist/css/mdb.min.css";
 
 function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handlesubmit = (e) => {
+    e.preventDefault();
+    axios
+      .post("http://example.com/login", { email, password })
+      .then((result) => console.log(result))
+      .catch((err) => console.log(err));
+  };
+
   return (
     <MDBContainer className="my-5">
       <MDBRow>
@@ -24,26 +36,31 @@ function Login() {
             </div>
 
             <p>Please login to your account</p>
+            <form onSubmit={handlesubmit}>
+              <MDBInput
+                wrapperClass="mb-4"
+                label="Email address"
+                id="form1"
+                type="email"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <MDBInput
+                wrapperClass="mb-4"
+                label="Password"
+                id="form2"
+                type="password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
 
-            <MDBInput
-              wrapperClass="mb-4"
-              label="Email address"
-              id="form1"
-              type="email"
-            />
-            <MDBInput
-              wrapperClass="mb-4"
-              label="Password"
-              id="form2"
-              type="password"
-            />
-
-            <div className="text-center pt-1 mb-5 pb-1">
-              <MDBBtn className="mb-4 w-100 gradient-custom-2">Sign in</MDBBtn>
-              <a className="text-muted" href="#!">
-                Forgot password?
-              </a>
-            </div>
+              <div className="text-center pt-1 mb-5 pb-1">
+                <MDBBtn className="mb-4 w-100 gradient-custom-2">
+                  Sign in
+                </MDBBtn>
+                <a className="text-muted" href="#!">
+                  Forgot password?
+                </a>
+              </div>
+            </form>
 
             <div className="d-flex flex-row align-items-center justify-content-center pb-4 mb-4">
               <p className="mb-0">Don't have an account?</p>
