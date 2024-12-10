@@ -13,7 +13,7 @@ redisClient.connect().catch(console.error);
 
 // Register User
 router.post("/register", async (req, res) => {
-  const { first_name, last_name, email, password, role } = req.body;
+  const { first_name, last_name, email, password,username, role } = req.body;
 
   // Validate required fields
   if (!first_name || !last_name || !email || !password) {
@@ -31,6 +31,7 @@ router.post("/register", async (req, res) => {
     const newUser = new User({
       first_name,
       last_name,
+      username,
       email,
       password_hash: hashedPassword,
       role: userRole,
