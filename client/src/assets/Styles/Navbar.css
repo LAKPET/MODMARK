@@ -1,0 +1,11 @@
+.custom-navbar {
+    position: fixed;
+    height: 100px;
+    top: 0;
+    left: 230px; /* Push Navbar to the right of Sidebar */
+    right: 0;
+    z-index: 1; /* Navbar is below Sidebar */
+    background-color: #f5e9d3; /* สีพื้นหลัง */
+    padding: 10px 20px; /* เพิ่ม Padding */
+  }
+  

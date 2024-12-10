@@ -7,7 +7,7 @@ import {
   MDBCol,
   MDBInput,
 } from "mdb-react-ui-kit";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
 
@@ -17,6 +17,7 @@ function Login() {
   const [errorMessage, setErrorMessage] = useState(""); // To show error messages
   const [loading, setLoading] = useState(false); // To handle loading state
   const navigate = useNavigate(); // To navigate after successful login
+  const location = useLocation(); // To get current route
 
   const handlesubmit = (e) => {
     e.preventDefault();
@@ -31,7 +32,7 @@ function Login() {
         localStorage.setItem("authToken", token); // Store the token in localStorage
 
         // Redirect to the dashboard or home page
-        navigate("/dashboard");
+        navigate("/course");
       })
       .catch((err) => {
         setLoading(false); // Stop loading

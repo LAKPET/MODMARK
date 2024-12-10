@@ -1,0 +1,59 @@
+.main-content {
+    margin-left: 250px; /* Adjust for Sidebar width */
+    margin-top: 114px; /* Adjust for Navbar height */
+    padding: 20px;
+  }
+
+  .space {
+    margin: 10px;
+  }
+
+  .custom-btn {
+    background-color: #8B5F34;
+    border-color: #8B5F34;
+    font-weight: 600;
+    
+  }
+  
+  .custom-btn:hover {
+    background-color: #6f4f2f; /* Optional: Darker shade for hover effect */
+    border-color: #6f4f2f;
+  }
+  
+  /* Centering the content-box */
+.content-box {
+    width: 100%; /* Adjust the width as desired */
+    height: auto;
+    margin: 0 auto; /* Center the box */
+    padding: 150px;
+    background-color: #f8f9fa; /* Light background */
+    border: 1px solid #ddd; /* Light border */
+    border-radius: 8px; /* Rounded corners */
+    font-size:24px;
+    font-weight: 500;
+    text-align: center;
+  }
+
+
+/* Align the header and button in a row */
+.align-items-center {
+    display: flex;
+    align-items: center;
+  }
+  
+  .d-flex {
+    display: flex;
+  }
+  
+  .justify-content-start {
+    justify-content: flex-start;
+  }
+  
+  .justify-content-end {
+    justify-content: flex-end;
+  }
+  
+  .mb-4 {
+    margin-bottom: 1.5rem;
+  }
+  
