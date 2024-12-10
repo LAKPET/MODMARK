@@ -2,6 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/user");
+const courseRoutes = require("./routes/user");
 require("dotenv").config();
 
 const app = express();
@@ -20,6 +22,8 @@ mongoose
   .catch((err) => console.error("Database connection error:", err));
 
 app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
+app.use("/course", courseRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
