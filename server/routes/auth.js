@@ -13,7 +13,7 @@ redisClient.connect().catch(console.error);
 
 // Register User
 router.post("/register", async (req, res) => {
-  const { first_name, last_name, email, password,username, role } = req.body;
+  const { first_name, last_name, email, password, username, role } = req.body;
 
   // Validate required fields
   if (!first_name || !last_name || !email || !password) {
@@ -56,16 +56,31 @@ router.post("/login", async (req, res) => {
     if (!isPasswordValid)
       return res.status(401).json({ message: "Invalid credentials." });
 
+    // สร้าง Token
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
       expiresIn: "1h",
     });
 
     // ลงทะเบียนโทเค็นใน Redis blacklist เมื่อ login
-    await redisClient.setEx(token, 3600, "valid"); // บันทึกโทเค็นใน Redis ด้วยสถานะ "valid"
+    await redisClient.setEx(token, 3600, "valid");
 
-    res.status(200).json({ message: "Login successful!", token });
+    // ส่งข้อมูลของผู้ใช้พร้อมกับ Token
+    res.status(200).json({
+      message: "Login successful!",
+      token,
+      user: {
+        id: user._id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Something went wrong", error: error.message });
   }
 });
 
@@ -88,7 +103,9 @@ router.post("/logout", async (req, res) => {
     res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
     console.error("Logout error:", error.message);
-    res.status(500).json({ message: "Something went wrong", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Something went wrong", error: error.message });
   }
 });
 

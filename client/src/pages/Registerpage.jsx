@@ -27,7 +27,6 @@ export default function Register() {
         password,
       })
       .then((result) => {
-        console.log(result);
         navigate("/login");
       })
       .catch((err) => console.log(err));

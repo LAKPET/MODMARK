@@ -1,16 +1,38 @@
 import React from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
 import "../assets/Styles/Navbar.css";
-
+import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
 function Navber() {
+  const username = localStorage.getItem("Username");
+  const navigate = useNavigate(); // Use navigate for redirection
+
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem("Username");
+    localStorage.removeItem("authToken");
+
+    // Redirect to login page
+    navigate("/login");
+  };
+
   return (
     <Navbar className="custom-navbar">
       <Container>
         <Navbar.Toggle />
         <Navbar.Collapse className="justify-content-end">
           <Navbar.Text>
-            Signed in as: <a href="#login">Mark Otto</a>
+            Signed in as: <a href="#profile">{username || "Guest"}</a>
+            <HorizontalRuleIcon className="icon-line" />
+          </Navbar.Text>
+          <Navbar.Text>
+            <button
+              onClick={handleLogout}
+              className="btn btn-secondary mt-1 fw-bold rounded-pill"
+            >
+              Logout
+            </button>
           </Navbar.Text>
         </Navbar.Collapse>
       </Container>

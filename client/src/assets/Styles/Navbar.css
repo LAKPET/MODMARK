@@ -9,3 +9,10 @@
     padding: 10px 20px; /* เพิ่ม Padding */
   }
   
+  
+  .icon-line {
+    transform: rotate(90deg); /* Rotate 90 degrees */
+    transform-origin: center; /* Ensure rotation is centered */
+    display: inline-block; /* Ensures proper display */
+  }
+  

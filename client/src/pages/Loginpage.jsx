@@ -28,8 +28,9 @@ function Login() {
       .post("http://localhost:5001/auth/login", { email, password }) // Use correct API endpoint
       .then((result) => {
         setLoading(false); // Stop loading
-        const { token } = result.data;
+        const { token, user } = result.data;
         localStorage.setItem("authToken", token); // Store the token in localStorage
+        localStorage.setItem("Username", user.username);
 
         // Redirect to the dashboard or home page
         navigate("/course");
