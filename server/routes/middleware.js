@@ -58,16 +58,9 @@ const verifyToken = async (req, res, next) => {
       res.status(401).json({ message: "Invalid or expired token" });
     }
   };
-  
-  
-  
-  
 
 // Middleware สำหรับตรวจสอบว่าเป็นแอดมินหรือไม่
 const checkAdmin = (req, res, next) => {
-    // เพิ่ม log เพื่อตรวจสอบว่า req.user มีข้อมูลหรือไม่
-    console.log("Checking admin for user:", req.user);
-  
     // ตรวจสอบว่า req.user ถูกตั้งค่าหรือไม่
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({
@@ -77,7 +70,25 @@ const checkAdmin = (req, res, next) => {
     next();
   };
   
-  
+// Middleware สำหรับตรวจสอบว่าเป็นแอดมินหรืออาจารย์
+const checkAdminOrProfessor = (req, res, next) => {
+  if (req.user.role !== "admin" && req.user.role !== "professor") {
+    return res.status(403).json({
+      message: "Only admins and professors can access this resource"
+    });
+  }
+  next();
+};
+
+// Middleware สำหรับตรวจสอบว่าเป็นแอดมินหรืออาจารย์
+const checkAdminOrStudent = (req, res, next) => {
+  if (req.user.role !== "admin" && req.user.role !== "student") {
+    return res.status(403).json({
+      message: "Only admins and student can access this resource"
+    });
+  }
+  next();
+};
   
 
-module.exports = { verifyToken, checkAdmin };
+module.exports = { verifyToken, checkAdmin,checkAdminOrProfessor,checkAdminOrStudent };
