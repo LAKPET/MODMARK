@@ -55,12 +55,15 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
       });
     }
 
+    // เพิ่ม course_number และ course_name ใน Section
     const newSection = new Section({
       course_id: existingCourse._id,  // เชื่อมโยงกับ Course ที่ถูกต้อง
       section_name,
       semester_term: section_term,
       semester_year: section_year,
       professor_id: req.user.id,  // ใช้ข้อมูลผู้ใช้งานที่ล็อกอินมา
+      course_number: existingCourse.course_number, // เก็บรหัสวิชาจาก Course
+      course_name: existingCourse.course_name,     // เก็บชื่อวิชาจาก Course
     });
     await newSection.save();
     
@@ -77,98 +80,6 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     res.status(500).json({ message: "Error creating course and section", error });
   }
 });
-
-// ฟังก์ชันสำหรับการลงทะเบียนผู้ใช้ใน Section (นักเรียน)
-router.post("/enroll", verifyToken, checkAdminOrStudent, async (req, res) => {
-    const { section_id } = req.body; // รับข้อมูล section_id จาก body
-    const student_id = req.user.id;  // ใช้ข้อมูลจาก token (ผู้ใช้ที่ล็อกอินอยู่)
-  
-    try {
-      // ค้นหาว่า section นี้มีอยู่ในระบบหรือไม่
-      const section = await Section.findById(section_id).populate("course_id");
-  
-      if (!section) {
-        return res.status(404).json({ message: "Section not found" });
-      }
-  
-      // ตรวจสอบว่าผู้ใช้คนนี้ได้ลงทะเบียนใน section นี้แล้วหรือยัง
-      const existingEnrollment = await Enrollment.findOne({
-        student_id,
-        section_id: section._id
-      });
-  
-      if (existingEnrollment) {
-        return res.status(400).json({ message: "You are already enrolled in this section" });
-      }
-  
-      // ถ้ายังไม่ลงทะเบียน ก็ทำการลงทะเบียนผู้ใช้ใน section นี้
-      const newEnrollment = new Enrollment({
-        student_id,
-        section_id: section._id,
-        email: req.user.email,  // เก็บ email ของ user
-        username: req.user.username,  // เก็บ username ของ user
-        course_number: section.course_id.course_number, // เก็บรหัสวิชาจาก Course
-        section_name: section.section_name, // เก็บชื่อ section
-      });
-  
-      await newEnrollment.save();
-  
-      res.status(200).json({
-        message: "Successfully enrolled in the course section",
-        enrollment: newEnrollment
-      });
-    } catch (error) {
-      console.error("Error enrolling in course:", error);
-      res.status(500).json({ message: "Error enrolling in course", error });
-    }
-  });
-  
-
-// ลงทะเบียนอาจารย์ใน Section
-router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (req, res) => {
-    const { section_id } = req.body; // รับข้อมูล section_id จาก body
-    const professor_id = req.user.id; // ใช้ข้อมูลจาก token (ผู้ใช้งานที่ล็อกอินอยู่)
-    
-    try {
-      // ค้นหาว่า section นี้มีอยู่ในระบบหรือไม่
-      const section = await Section.findById(section_id).populate('course_id'); // เพิ่ม populate ให้ดึงข้อมูล course_id
-      
-      if (!section) {
-        return res.status(404).json({ message: "Section not found" });
-      }
-  
-      // ตรวจสอบว่าผู้ใช้นี้เป็นอาจารย์ในระบบแล้วหรือไม่
-      const existingInstructor = await CourseInstructor.findOne({
-        section_id: section._id,
-        professor_id
-      });
-  
-      if (existingInstructor) {
-        return res.status(400).json({ message: "Instructor is already registered for this section" });
-      }
-  
-      // ถ้าไม่มีข้อมูลอาจารย์ใน section นี้ ก็ทำการลงทะเบียนอาจารย์ใน section นี้
-      const newInstructor = new CourseInstructor({
-        section_id: section._id,
-        professor_id: professor_id,
-        email: req.user.email,  // เก็บ email ของ user
-        username: req.user.username,  // เก็บ username ของ user
-        course_number: section.course_id.course_number, // เก็บรหัสวิชาจาก Course
-        section_name: section.section_name, // เก็บชื่อ section
-      });
-  
-      await newInstructor.save();
-  
-      res.status(200).json({
-        message: "Instructor successfully registered for the section",
-        courseInstructor: newInstructor
-      });
-    } catch (error) {
-      console.error("Error registering instructor:", error);
-      res.status(500).json({ message: "Error registering instructor", error });
-    }
-  });
-  
 
 // ฟังก์ชันสำหรับดึงข้อมูลคอร์สของผู้ใช้
 router.get("/my-courses", verifyToken, async (req, res) => {
@@ -225,23 +136,25 @@ router.get("/my-courses", verifyToken, async (req, res) => {
   }
 });
 
-// แก้ไขข้อมูล Course
-router.put("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+// ฟังก์ชันสำหรับแก้ไขข้อมูล Course
+router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;
   const { course_number, course_name, course_description } = req.body;
 
   try {
+    // ค้นหา Course ที่จะทำการแก้ไข
     const course = await Course.findById(id);
 
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    // แก้ไขข้อมูล
+    // แก้ไขข้อมูลที่ถูกส่งมาจาก body
     if (course_number) course.course_number = course_number;
     if (course_name) course.course_name = course_name;
     if (course_description) course.course_description = course_description;
 
+    // บันทึกการเปลี่ยนแปลง
     await course.save();
 
     res.status(200).json({
@@ -253,11 +166,12 @@ router.put("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   }
 });
 
-// ลบ Course และ Section
-router.delete("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+// ฟังก์ชันสำหรับลบ Course และ Section ที่เกี่ยวข้อง
+router.delete("/delete/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // ค้นหา Course ที่จะทำการลบ
     const course = await Course.findById(id);
 
     if (!course) {
@@ -275,5 +189,6 @@ router.delete("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
     res.status(500).json({ message: "Error deleting course", error });
   }
 });
+
 
 module.exports = router;

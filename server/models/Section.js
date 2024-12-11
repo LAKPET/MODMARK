@@ -5,7 +5,9 @@ const sectionSchema = new mongoose.Schema({
     section_name: { type: Number, required: true },
     semester_term: { type: Number, required: true },
     semester_year: { type: Number, required: true },
-    professor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+    professor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    course_number: { type: String, required: true },  // เพิ่ม course_number
+    course_name: { type: String, required: true },    // เพิ่ม course_name
 });
 
 module.exports = mongoose.model('Section', sectionSchema);
