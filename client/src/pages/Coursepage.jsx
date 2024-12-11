@@ -1,10 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import Navber from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import CourseModal from "../components/Coursemodal";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import "../assets/Styles/Coursepage.css";
 
 function Coursepage() {
+  const [showModal, setShowModal] = useState(false);
+
+  const handleShowModal = () => setShowModal(true);
+  const handleCloseModal = () => setShowModal(false);
+
   return (
     <div>
       {/* Sidebar */}
@@ -21,7 +27,9 @@ function Coursepage() {
               <h3>My Course</h3>
             </Col>
             <Col className="d-flex justify-content-end">
-              <Button className="mb-4 custom-btn">Create Course</Button>
+              <Button className="mb-4 custom-btn" onClick={handleShowModal}>
+                Create Course
+              </Button>
             </Col>
           </Row>
           <Row>
@@ -37,6 +45,9 @@ function Coursepage() {
           </Row>
         </Container>
       </div>
+
+      {/* Create Course Modal */}
+      <CourseModal show={showModal} handleClose={handleCloseModal} />
     </div>
   );
 }

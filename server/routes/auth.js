@@ -57,9 +57,18 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials." });
 
     // สร้าง Token
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+        username: user.username,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     // ลงทะเบียนโทเค็นใน Redis blacklist เมื่อ login
     await redisClient.setEx(token, 3600, "valid");
