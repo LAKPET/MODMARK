@@ -4,6 +4,8 @@ const bodyParser = require("body-parser");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const courseRoutes = require("./routes/course");
+const courseInstructorRoutes = require("./routes/courseinstructor");
+const enrollmentRoutes = require("./routes/enrollment");
 require("dotenv").config();
 
 const app = express();
@@ -24,6 +26,8 @@ mongoose
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/course", courseRoutes);
+app.use("/course", courseInstructorRoutes);
+app.use("/course", enrollmentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
