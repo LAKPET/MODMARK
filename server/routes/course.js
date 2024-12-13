@@ -57,29 +57,48 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
 
     // เพิ่ม course_number และ course_name ใน Section
     const newSection = new Section({
-      course_id: existingCourse._id,  // เชื่อมโยงกับ Course ที่ถูกต้อง
+      course_id: existingCourse._id, // เชื่อมโยงกับ Course ที่ถูกต้อง
       section_name,
       semester_term: section_term,
       semester_year: section_year,
-      professor_id: req.user.id,  // ใช้ข้อมูลผู้ใช้งานที่ล็อกอินมา
+      professor_id: req.user.role === "professor" ? req.user.id : null, // หากเป็น admin ให้ professor_id เป็น null
       course_number: existingCourse.course_number, // เก็บรหัสวิชาจาก Course
-      course_name: existingCourse.course_name,     // เก็บชื่อวิชาจาก Course
+      course_name: existingCourse.course_name, // เก็บชื่อวิชาจาก Course
     });
     await newSection.save();
-    
+
     // เพิ่ม Section ไปยัง Course
     existingCourse.sections.push(newSection._id);
     await existingCourse.save();
+
+    // ลงทะเบียนอาจารย์อัตโนมัติหากผู้ใช้ไม่ใช่ admin
+    let newCourseInstructor = null;
+    if (req.user.role === "professor") {
+      newCourseInstructor = new CourseInstructor({
+        section_id: newSection._id,
+        professor_id: req.user.id, // ID ของอาจารย์ที่สร้าง
+        email: req.user.email, // ใช้ email จาก middleware
+        username: req.user.username, // ใช้ username จาก middleware
+        course_number: existingCourse.course_number,
+        section_name: newSection.section_name,
+      });
+      await newCourseInstructor.save();
+    }
 
     res.status(201).json({
       message: "Course and Section created successfully!",
       course: existingCourse,
       section: newSection,
+      ...(newCourseInstructor && { instructor: newCourseInstructor }), // เพิ่ม instructor เฉพาะกรณีที่ไม่ใช่ admin
     });
   } catch (error) {
+    console.error("Error creating course and section:", error);
     res.status(500).json({ message: "Error creating course and section", error });
   }
 });
+
+module.exports = router;
+
 
 // ฟังก์ชันสำหรับดึงข้อมูลคอร์สของผู้ใช้
 router.get("/my-courses", verifyToken, async (req, res) => {
