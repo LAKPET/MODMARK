@@ -1,12 +1,27 @@
-import React, { useState } from "react";
-import Navber from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
-import CourseModal from "../components/Coursemodal";
+import React, { useState, useEffect } from "react";
+import Navber from "../components/Course/Navbar";
+import Sidebar from "../components/Course/Sidebar";
+import Createcourse from "../components/Course/Createcourse";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import "../assets/Styles/Coursepage.css";
+import Getcourse from "../components/Course/Getcourse";
 
 function Coursepage() {
   const [showModal, setShowModal] = useState(false);
+  const [userRole, setUserRole] = useState("");
+
+  // Fetch the role from localStorage or context
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        const user = JSON.parse(atob(token.split(".")[1])); // Decode JWT payload
+        setUserRole(user.role);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
+    }
+  }, []);
 
   const handleShowModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
@@ -21,15 +36,18 @@ function Coursepage() {
 
       {/* Main Content */}
       <div className="main-content">
-        <Container>
+        <Container className="mt-2">
           <Row className="align-items-center">
             <Col className="d-flex justify-content-start">
-              <h3>My Course</h3>
+              <h3 className="fw-bold">My Course</h3>
             </Col>
             <Col className="d-flex justify-content-end">
-              <Button className="mb-4 custom-btn" onClick={handleShowModal}>
-                Create Course
-              </Button>
+              {/* Conditionally render Create Course button */}
+              {userRole !== "student" && (
+                <Button className="mb-4 custom-btn" onClick={handleShowModal}>
+                  Create Course
+                </Button>
+              )}
             </Col>
           </Row>
           <Row>
@@ -37,17 +55,14 @@ function Coursepage() {
           </Row>
           <Row>
             <Col>
-              <div className="content-box">
-                <p>Welcome to System</p>
-                <p>for collaborative grading and delivery feedback</p>
-              </div>
+              <Getcourse />
             </Col>
           </Row>
         </Container>
       </div>
 
       {/* Create Course Modal */}
-      <CourseModal show={showModal} handleClose={handleCloseModal} />
+      <Createcourse show={showModal} handleClose={handleCloseModal} />
     </div>
   );
 }

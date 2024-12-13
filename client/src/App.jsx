@@ -5,6 +5,7 @@ import Register from "./pages/Registerpage";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import Coursepage from "./pages/Coursepage";
+import Dashboardpage from "./pages/Dashboardpage";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/register" element={<Register />}></Route>
         <Route path="/login" element={<Login />}></Route>
         <Route path="/course" element={<Coursepage />}></Route>
+        <Route path="/dashboard" element={<Dashboardpage />}></Route>
       </Routes>
     </BrowserRouter>
   );

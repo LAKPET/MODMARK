@@ -1,11 +1,16 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
-import Logo from "../assets/Picture/Logo.png";
+import Logo from "../../assets/Picture/Logo.png";
 import { useLocation } from "react-router-dom"; // Import useLocation hook
-import "../assets/Styles/Sidebar.css";
+import SchoolIcon from "@mui/icons-material/School";
+import HelpIcon from "@mui/icons-material/Help";
+import "../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
   const location = useLocation(); // Get the current route
+
+  // Helper function to determine if a link is active
+  const isActive = (path) => location.pathname === path;
 
   return (
     <div
@@ -30,18 +35,24 @@ function Sidebar() {
       </div>
 
       {/* Sidebar Links */}
-      <Nav className="flex-column">
+      <Nav className="flex-column mt-4">
         <Nav.Link
-          href="/home"
-          className={`text-white mb-3 sidebar-link ${location.pathname === "/home" ? "active" : ""}`}
+          href="/course"
+          className={`text-white mb-3 sidebar-link d-flex align-items-center ${
+            isActive("/course") ? "active" : ""
+          }`}
         >
-          <i className="bi bi-journal-bookmark-fill"></i> Course
+          <SchoolIcon className="me-2" />
+          <span>Course</span>
         </Nav.Link>
         <Nav.Link
           href="/support"
-          className={`text-white mb-3 sidebar-link ${location.pathname === "/support" ? "active" : ""}`}
+          className={`text-white mb-3 sidebar-link d-flex align-items-center ${
+            isActive("/support") ? "active" : ""
+          }`}
         >
-          <i className="bi bi-tools"></i> Support
+          <HelpIcon className="me-2" />
+          <span>Support</span>
         </Nav.Link>
       </Nav>
 
