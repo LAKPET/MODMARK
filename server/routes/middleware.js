@@ -24,11 +24,6 @@ const verifyToken = async (req, res, next) => {
     console.log("Received token:", token);  // เพิ่ม log ดูว่า token ที่ส่งมาคืออะไร
     
     try {
-      // เชื่อมต่อกับ Redis หากยังไม่ได้เชื่อม
-      if (!redisClient.isOpen) {
-        await redisClient.connect();
-      }
-  
       // ตรวจสอบว่า token อยู่ใน blacklist หรือไม่
       const isBlacklisted = await redisClient.get(token);
       console.log("Token blacklist status:", isBlacklisted); // เพิ่ม log เพื่อตรวจสอบสถานะของ token

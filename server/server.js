@@ -26,8 +26,8 @@ mongoose
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/course", courseRoutes);
-app.use("/course", courseInstructorRoutes);
-app.use("/course", enrollmentRoutes);
+app.use("/course-instructor", courseInstructorRoutes); // เปลี่ยนเส้นทางเพื่อหลีกเลี่ยงความขัดแย้ง
+app.use("/enrollment", enrollmentRoutes); // เปลี่ยนเส้นทางเพื่อหลีกเลี่ยงความขัดแย้ง
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
