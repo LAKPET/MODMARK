@@ -10,6 +10,7 @@ export default function Getdetailcourse() {
   const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // Store error messages
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (!id) {
@@ -27,14 +28,11 @@ export default function Getdetailcourse() {
           return;
         }
 
-        const response = await axios.get(
-          `http://localhost:5001/course/details/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.get(`${apiUrl}/course/details/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         setCourseDetails(response.data);
       } catch (error) {

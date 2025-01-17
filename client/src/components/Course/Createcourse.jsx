@@ -16,7 +16,7 @@ export default function CourseModal({ show, handleClose }) {
   const [section, setSection] = useState("");
   const [term, setTerm] = useState("");
   const [year, setYear] = useState("");
-
+  const apiUrl = import.meta.env.VITE_API_URL;
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -45,16 +45,12 @@ export default function CourseModal({ show, handleClose }) {
     try {
       const token = localStorage.getItem("authToken");
 
-      const response = await axios.post(
-        "http://localhost:5001/course/create",
-        courseData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axios.post(`${apiUrl}/course/create`, courseData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
       console.log("Course created successfully:", response.data);
       handleClose(); // Close the modal after success
     } catch (error) {
