@@ -217,9 +217,14 @@ router.get("/details/:id", verifyToken, async (req, res) => {
     // ดึงข้อมูล Course ที่เกี่ยวข้อง
     const course = section.course_id;
 
+    // ส่งข้อมูลในรูปแบบที่กำหนด
     res.status(200).json({
-      course,
-      section,
+      course_number: course.course_number,
+      course_name: course.course_name,
+      course_description: course.course_description,
+      section_name: section.section_name,
+      section_term: section.semester_term,
+      section_year: section.semester_year
     });
   } catch (error) {
     console.error("Error fetching course and section details:", error);
