@@ -36,14 +36,11 @@ export default function GetDetailCourse() {
           return;
         }
 
-        const response = await axios.get(
-          `http://localhost:5001/course/details/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.get(`${apiUrl}/course/details/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         setCourseDetails(response.data);
       } catch (error) {

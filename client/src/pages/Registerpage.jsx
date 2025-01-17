@@ -16,7 +16,7 @@ function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-
+  const apiUrl = import.meta.env.VITE_API_URL;
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!firstname || !lastname) {
@@ -25,7 +25,7 @@ function Register() {
     }
 
     axios
-      .post("http://localhost:5001/auth/register", {
+      .post(`${apiUrl}/auth/register`, {
         first_name: firstname,
         last_name: lastname,
         email,

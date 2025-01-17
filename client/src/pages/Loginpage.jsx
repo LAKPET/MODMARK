@@ -17,7 +17,7 @@ function Login() {
   const [errorMessage, setErrorMessage] = useState(""); // To show error messages
   const [loading, setLoading] = useState(false); // To handle loading state
   const navigate = useNavigate(); // To navigate after successful login
-  const location = useLocation(); // To get current route
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   const handlesubmit = (e) => {
     e.preventDefault();
@@ -25,7 +25,7 @@ function Login() {
     setErrorMessage(""); // Clear any previous error
 
     axios
-      .post("http://localhost:5001/auth/login", { email, password }) // Use correct API endpoint
+      .post(`${apiUrl}/auth/login`, { email, password }) // Use correct API endpoint
       .then((result) => {
         setLoading(false); // Stop loading
         const { token, user } = result.data;

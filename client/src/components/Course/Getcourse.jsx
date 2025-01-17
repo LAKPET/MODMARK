@@ -8,19 +8,16 @@ export default function Getcourse() {
   const [courses, setCourses] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
+  const apiUrl = import.meta.env.VITE_API_URL;
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const token = localStorage.getItem("authToken");
-        const response = await axios.get(
-          "http://localhost:5001/course/my-courses",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.get(`${apiUrl}/course/my-courses`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         setCourses(response.data.courses || []);
       } catch (error) {
