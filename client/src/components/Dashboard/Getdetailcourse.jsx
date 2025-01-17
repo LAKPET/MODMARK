@@ -38,7 +38,10 @@ export default function Getdetailcourse() {
               {courseDetails.section_term} / {courseDetails.section_year}
             </span>
           </h2>
-          <p className="text-muted p-1">Computer Engineer</p>
+          <div className="d-flex align-items-center">
+            <p className="text-muted p-1 mb-0">Computer Engineer</p>
+            <span className="text-muted p-1">Section.name</span>
+          </div>
         </Col>
       </Row>
 

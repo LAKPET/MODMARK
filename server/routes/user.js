@@ -109,7 +109,7 @@ router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => { // �
 // ฟังก์ชันสำหรับแก้ไขข้อมูลผู้ใช้ (เฉพาะแอดมิน)
 router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => { // เพิ่ม verifyToken ก่อน checkAdmin
   const { id } = req.params;
-  const { first_name, last_name,username, email, password, role, isDeleted } = req.body;
+  const { first_name, last_name, username, email, password, role, isDeleted } = req.body;
 
   try {
     const user = await User.findById(id);
@@ -126,7 +126,7 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => { // เ�
       user.password_hash = await bcrypt.hash(password, 10); // เข้ารหัสรหัสผ่านใหม่
     }
     if (role) user.role = role;
-    if (isDeleted) user.isDeleted = isDeleted;
+    if (typeof isDeleted !== 'undefined') user.isDeleted = isDeleted; // ตรวจสอบว่ามีการส่ง isDeleted มาหรือไม่
 
     // บันทึกการเปลี่ยนแปลง
     await user.save();

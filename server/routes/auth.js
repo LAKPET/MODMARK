@@ -11,6 +11,31 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const redisClient = redis.createClient();
 redisClient.connect().catch(console.error);
 
+// Middleware for token verification
+const verifyToken = (req, res, next) => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+
+  if (!token) {
+    return res.status(403).json({ message: "No token provided" });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
+// Middleware for role check
+const checkRole = (roles) => (req, res, next) => {
+  if (!roles.includes(req.user.role)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+};
+
 // Register User
 router.post("/register", async (req, res) => {
   const { first_name, last_name, email, password, username, role } = req.body;
