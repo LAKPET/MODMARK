@@ -86,4 +86,4 @@ const checkAdminOrStudent = (req, res, next) => {
 };
   
 
-module.exports = { verifyToken, checkAdmin,checkAdminOrProfessor,checkAdminOrStudent };
+module.exports = { verifyToken, checkAdmin, checkAdminOrProfessor, checkAdminOrStudent };

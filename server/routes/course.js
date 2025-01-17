@@ -155,6 +155,31 @@ router.get("/my-courses", verifyToken, async (req, res) => {
   }
 });
 
+// ฟังก์ชันสำหรับดึงข้อมูล Course และ Section โดยใช้ ID ของ Section
+router.get("/details/:id", verifyToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // ค้นหา Section โดยใช้ ID
+    const section = await Section.findById(id).populate("course_id");
+
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    // ดึงข้อมูล Course ที่เกี่ยวข้อง
+    const course = section.course_id;
+
+    res.status(200).json({
+      course,
+      section,
+    });
+  } catch (error) {
+    console.error("Error fetching course and section details:", error);
+    res.status(500).json({ message: "Error fetching course and section details", error });
+  }
+});
+
 // ฟังก์ชันสำหรับแก้ไขข้อมูล Course และ Section
 router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;
