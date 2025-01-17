@@ -32,7 +32,7 @@ function Navber() {
           >
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="#">My Course</a>
+                <a href="/course">My Course</a>
               </li>
             </ol>
           </nav>

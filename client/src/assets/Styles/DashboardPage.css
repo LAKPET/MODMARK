@@ -1,0 +1,10 @@
+.vertical-line {
+    width: 2px; /* ความกว้างของเส้น */
+    height: 30px; /* ความสูงของเส้น */
+    display: inline-block;
+  }
+  .short-border {
+    border-bottom: 2px solid #a4a4a4; /* เส้นขอบสีดำ */
+    width: 75%; /* ความกว้าง 50% */
+  }
+  

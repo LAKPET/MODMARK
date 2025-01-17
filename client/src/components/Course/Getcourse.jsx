@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../../assets/Styles/Coursepage.css";
 import Ant from "../../assets/Picture/Ant.png";
+import { Link } from "react-router-dom";
 
 export default function Getcourse() {
   const [courses, setCourses] = useState(null); // Initialize as null to differentiate between loading and empty
@@ -50,7 +51,7 @@ export default function Getcourse() {
 
   return (
     <div className="container">
-      <div className="row g-4">
+      <div className="row g-3">
         {courses.map((course, index) => (
           <div className="col-md-4" key={index}>
             <div className="card border-secondary mb-3 h-90 background-card">
@@ -60,9 +61,12 @@ export default function Getcourse() {
               <div>
                 <div className="d-flex flex-row align-items-start">
                   <div className="card-body text-black">
-                    <h5 className="card-title fw-bold">
-                      {course.course_number}
-                    </h5>
+                    <Link to="/dashboard" style={{ color: "black" }}>
+                      <h5 className="card-title fw-bold">
+                        {course.course_number}
+                      </h5>
+                    </Link>
+
                     <p className="card-text">{course.course_name}</p>
                     <p className="card-description">
                       {course.course_description}
