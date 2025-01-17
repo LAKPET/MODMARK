@@ -128,6 +128,7 @@ router.get("/my-courses", verifyToken, async (req, res) => {
         course_number: enrollment.section_id.course_id.course_number,
         course_name: enrollment.section_id.course_id.course_name,
         course_description: enrollment.section_id.course_id.course_description,
+        section_id: enrollment.section_id._id, // เพิ่ม section_id
         section_name: enrollment.section_id.section_name,
         section_term: enrollment.section_id.semester_term,
         section_year: enrollment.section_id.semester_year,
@@ -151,6 +152,7 @@ router.get("/my-courses", verifyToken, async (req, res) => {
         course_name: courseInstructor.section_id.course_id.course_name,
         course_description:
           courseInstructor.section_id.course_id.course_description,
+        section_id: courseInstructor.section_id._id, // เพิ่ม section_id
         section_name: courseInstructor.section_id.section_name,
         section_term: courseInstructor.section_id.semester_term,
         section_year: courseInstructor.section_id.semester_year,
