@@ -1,29 +1,70 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Row, Col, Container, Button } from "react-bootstrap";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../../assets/Styles/DashboardPage.css";
-import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
+
 export default function Getdetailcourse() {
-  const [courseDetails, setCourseDetails] = useState({});
+  const { id } = useParams(); // Section ID from URL
+  const navigate = useNavigate(); // For redirection
+  const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Store error messages
 
   useEffect(() => {
-    // Mock fetching data
-    setTimeout(() => {
-      const mockData = {
-        course_name: "CPE XXX",
-        course_description:
-          "Lorem ipsum dolor sit amet consectetur adipisicing elit.",
-        section_term: 1,
-        section_year: 2024,
-        team: ["Prof. John Doe", "Prof. Jane Smith", "Prof. Alan Brown"],
-      };
-      setCourseDetails(mockData);
+    if (!id) {
+      setError("No section ID found in the URL.");
       setLoading(false);
-    }, 1000);
-  }, []);
+      return;
+    }
+
+    const fetchCourseDetails = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          // Redirect to login if no token is found
+          navigate("/login");
+          return;
+        }
+
+        const response = await axios.get(
+          `http://localhost:5001/course/details/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setCourseDetails(response.data);
+      } catch (error) {
+        console.error(
+          "Error fetching course details:",
+          error.response?.data || error.message
+        );
+        setError("Error loading course details. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourseDetails();
+  }, [id, navigate]);
 
   if (loading) {
     return <div className="text-center mt-5">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center mt-5 text-danger">{error}</div>;
+  }
+
+  if (!courseDetails) {
+    return (
+      <div className="text-center mt-5 text-danger">
+        No course details found.
+      </div>
+    );
   }
 
   return (
@@ -32,20 +73,20 @@ export default function Getdetailcourse() {
       <Row className="pb-3 mb-4">
         <Col md={8}>
           <h2 className="mb-0 fw-semibold d-flex align-items-center">
-            {courseDetails.course_name}
+            {courseDetails.course_number}
             <span className="vertical-line bg-dark mx-3"></span>
             <span className="fw-normal fs-5">
               {courseDetails.section_term} / {courseDetails.section_year}
             </span>
           </h2>
           <div className="d-flex align-items-center">
-            <p className="text-muted p-1 mb-0">Computer Engineer</p>
-            <span className="text-muted p-1">Section.name</span>
+            <p className="text-muted p-1 mb-0">{courseDetails.course_name}</p>
+            <span className="text-muted p-1">{`Section ${courseDetails.section_name}`}</span>
           </div>
         </Col>
       </Row>
 
-      {/* Course Description and Team */}
+      {/* Course Description */}
       <Row className="mb-4 text-dark">
         <Col md={8}>
           <h5 className="pb-3 mb-4 short-border fw-semibold">Description</h5>
@@ -53,11 +94,7 @@ export default function Getdetailcourse() {
         </Col>
         <Col md={4}>
           <h5 className="pb-3 mb-4 short-border fw-semibold">Team</h5>
-          <ul className="list-unstyled">
-            {courseDetails.team.map((member, index) => (
-              <li key={index}>{member}</li>
-            ))}
-          </ul>
+          <p className="text-muted">No team information available.</p>
         </Col>
       </Row>
 

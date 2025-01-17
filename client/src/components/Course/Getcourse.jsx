@@ -2,16 +2,17 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../../assets/Styles/Coursepage.css";
 import Ant from "../../assets/Picture/Ant.png";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function Getcourse() {
-  const [courses, setCourses] = useState(null); // Initialize as null to differentiate between loading and empty
+  const [courses, setCourses] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const token = localStorage.getItem("authToken"); // Get token from localStorage
+        const token = localStorage.getItem("authToken");
         const response = await axios.get(
           "http://localhost:5001/course/my-courses",
           {
@@ -21,23 +22,27 @@ export default function Getcourse() {
           }
         );
 
-        setCourses(response.data.courses || []); // Set the fetched courses or an empty array if undefined
+        setCourses(response.data.courses || []);
       } catch (error) {
         console.error(
           "Error fetching courses:",
           error.response?.data || error.message
         );
-        setCourses([]); // Set to an empty array if the fetch fails
+        setCourses([]);
       } finally {
-        setLoading(false); // Set loading to false
+        setLoading(false);
       }
     };
 
     fetchCourses();
   }, []);
 
+  const handleCourseClick = (sectionId) => {
+    navigate(`/dashboard/${sectionId}`);
+  };
+
   if (loading) {
-    return <div className="content-box">Loading...</div>; // Display a loading state
+    return <div className="content-box">Loading...</div>;
   }
 
   if (!courses || courses.length === 0) {
@@ -54,19 +59,20 @@ export default function Getcourse() {
       <div className="row g-3">
         {courses.map((course, index) => (
           <div className="col-md-4" key={index}>
-            <div className="card border-secondary mb-3 h-90 background-card">
+            <div
+              className="card border-secondary mb-3 h-90 background-card"
+              onClick={() => handleCourseClick(course.section_id)}
+              style={{ cursor: "pointer" }}
+            >
               <div className="card-header bg-transparent border-secondary">
                 Semester: {course.section_term}/{course.section_year}
               </div>
               <div>
                 <div className="d-flex flex-row align-items-start">
                   <div className="card-body text-black">
-                    <Link to="/dashboard" style={{ color: "black" }}>
-                      <h5 className="card-title fw-bold">
-                        {course.course_number}
-                      </h5>
-                    </Link>
-
+                    <h5 className="card-title fw-bold">
+                      {course.course_number}
+                    </h5>
                     <p className="card-text">{course.course_name}</p>
                     <p className="card-description">
                       {course.course_description}
@@ -77,7 +83,6 @@ export default function Getcourse() {
                   </div>
                 </div>
               </div>
-
               <div className="card-footer bg-transparent border-secondary">
                 Section: {course.section_name}
               </div>
