@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal, Form, Button, Nav, Row, Col } from "react-bootstrap";
-import "../../assets/Styles/Dashboard/CreateAssessment.css";
+import "../../../assets/Styles/Dashboard/CreateAssessment.css";
 export default function CreateAssessmentModal({ show, handleClose }) {
   const [activeTab, setActiveTab] = useState("detail");
   const [assessmentName, setAssessmentName] = useState("");
