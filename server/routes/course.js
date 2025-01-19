@@ -113,49 +113,46 @@ router.get("/my-courses", verifyToken, async (req, res) => {
 
     // ถ้าเป็นนักเรียนให้ดึงข้อมูลจาก Enrollment
     if (req.user.role === "student") {
-      const enrollments = await Enrollment.find({
-        student_id: req.user.id,
-      }).populate({
-        path: "section_id",
-        populate: {
-          path: "course_id",
-          select: "course_number course_name course_description",
-        },
-      });
-
+      const enrollments = await Enrollment.find({ student_id: req.user.id })
+        .populate({
+          path: "section_id", 
+          populate: {
+            path: "course_id", 
+            select: "course_number course_name course_description"
+          }
+        });
+      
       // ดึงข้อมูลของคอร์สและ section ที่เกี่ยวข้อง
-      courses = enrollments.map((enrollment) => ({
+      courses = enrollments.map(enrollment => ({
         course_number: enrollment.section_id.course_id.course_number,
         course_name: enrollment.section_id.course_id.course_name,
         course_description: enrollment.section_id.course_id.course_description,
         section_id: enrollment.section_id._id, // เพิ่ม section_id
         section_name: enrollment.section_id.section_name,
         section_term: enrollment.section_id.semester_term,
-        section_year: enrollment.section_id.semester_year,
+        section_year: enrollment.section_id.semester_year
       }));
-    }
+    } 
     // ถ้าเป็นอาจารย์ให้ดึงข้อมูลจาก CourseInstructor
     else if (req.user.role === "professor") {
-      const courseInstructors = await CourseInstructor.find({
-        professor_id: req.user.id,
-      }).populate({
-        path: "section_id",
-        populate: {
-          path: "course_id",
-          select: "course_number course_name course_description",
-        },
-      });
-
+      const courseInstructors = await CourseInstructor.find({ professor_id: req.user.id })
+        .populate({
+          path: "section_id", 
+          populate: {
+            path: "course_id", 
+            select: "course_number course_name course_description"
+          }
+        });
+      
       // ดึงข้อมูลของคอร์สและ section ที่เกี่ยวข้อง
-      courses = courseInstructors.map((courseInstructor) => ({
+      courses = courseInstructors.map(courseInstructor => ({
         course_number: courseInstructor.section_id.course_id.course_number,
         course_name: courseInstructor.section_id.course_id.course_name,
-        course_description:
-          courseInstructor.section_id.course_id.course_description,
+        course_description: courseInstructor.section_id.course_id.course_description,
         section_id: courseInstructor.section_id._id, // เพิ่ม section_id
         section_name: courseInstructor.section_id.section_name,
         section_term: courseInstructor.section_id.semester_term,
-        section_year: courseInstructor.section_id.semester_year,
+        section_year: courseInstructor.section_id.semester_year
       }));
     }
 
