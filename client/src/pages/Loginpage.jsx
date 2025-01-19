@@ -7,7 +7,7 @@ import {
   MDBCol,
   MDBInput,
 } from "mdb-react-ui-kit";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
 
@@ -29,7 +29,7 @@ function Login() {
       .then((result) => {
         setLoading(false); // Stop loading
         const { token, user } = result.data;
-        localStorage.setItem("authToken", token); // Store the token in localStorage
+        localStorage.setItem("authToken", token);
         localStorage.setItem("Username", user.username);
 
         // Redirect to the dashboard or home page
