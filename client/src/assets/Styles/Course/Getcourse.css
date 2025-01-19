@@ -1,0 +1,27 @@
+.main-content {
+  margin-left: 250px; /* Adjust for Sidebar width */
+  margin-top: 114px; /* Adjust for Navbar height */
+  padding: 20px;
+}
+
+.space {
+  margin: 10px;
+}
+
+/* Centering the content-box */
+.content-box {
+  width: 100%; /* Adjust the width as desired */
+  height: auto;
+  margin: 0 auto; /* Center the box */
+  padding: 150px;
+  background-color: #f8f9fa; /* Light background */
+  border: 1px solid #ddd; /* Light border */
+  border-radius: 8px; /* Rounded corners */
+  font-size: 24px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.background-card {
+  background-color: #dbdddf;
+}

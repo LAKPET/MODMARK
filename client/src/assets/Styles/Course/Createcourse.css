@@ -1,0 +1,43 @@
+.custom-btn {
+  background-color: #8b5f34;
+  border-color: #8b5f34;
+  font-weight: 600;
+}
+
+.custom-btn:hover {
+  background-color: #6f4f2f; /* Optional: Darker shade for hover effect */
+  border-color: #6f4f2f;
+}
+
+/* Align the header and button in a row */
+.align-items-center {
+  display: flex;
+  align-items: center;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.justify-content-start {
+  justify-content: flex-start;
+}
+
+.justify-content-end {
+  justify-content: flex-end;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+.btn-create-course {
+  background-color: #8b5f34;
+  border-color: #8b5f34;
+  font-weight: 600;
+}
+
+.btn-create-course:hover {
+  background-color: #6f4f2f; /* Optional: Darker shade for hover effect */
+  border-color: #6f4f2f;
+}
