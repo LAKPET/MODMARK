@@ -163,42 +163,6 @@ router.get("/my-courses", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/course/details/:courseNumber", async (req, res) => {
-  try {
-    const { courseNumber } = req.params; // ดึง courseNumber จาก URL parameter
-
-    // ค้นหาคอร์สที่มี course_number ตรงกับที่ระบุ
-    const courseDetails = await Course.findOne({
-      course_number: courseNumber,
-    }).populate({
-      path: "sections", // Populate section_id ที่เกี่ยวข้อง
-      select: "section_name semester_term semester_year", // เลือก fields ที่ต้องการแสดง
-    });
-
-    // ตรวจสอบว่าพบข้อมูลคอร์สหรือไม่
-    if (!courseDetails) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-    // ส่งข้อมูลคอร์สกลับไปยัง client
-    res.status(200).json({
-      course_number: courseDetails.course_number,
-      course_name: courseDetails.course_name,
-      course_description: courseDetails.course_description,
-      sections: courseDetails.sections.map((section) => ({
-        section_name: section.section_name,
-        semester_term: section.semester_term,
-        semester_year: section.semester_year,
-      })),
-    });
-  } catch (error) {
-    console.error("Error fetching course details:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error fetching course details", error: error.message });
-  }
-});
-
 // ฟังก์ชันสำหรับดึงข้อมูล Course และ Section โดยใช้ ID ของ Section
 router.get("/details/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
@@ -214,6 +178,9 @@ router.get("/details/:id", verifyToken, async (req, res) => {
     // ดึงข้อมูล Course ที่เกี่ยวข้อง
     const course = section.course_id;
 
+    // ดึงข้อมูลทีมผู้สอนของ Section นี้
+    const instructors = await CourseInstructor.find({ section_id: id }).populate("professor_id", "first_name last_name");
+
     // ส่งข้อมูลในรูปแบบที่กำหนด
     res.status(200).json({
       course_number: course.course_number,
@@ -221,7 +188,11 @@ router.get("/details/:id", verifyToken, async (req, res) => {
       course_description: course.course_description,
       section_name: section.section_name,
       section_term: section.semester_term,
-      section_year: section.semester_year
+      section_year: section.semester_year,
+      professors: instructors.map(instructor => ({
+        first_name: instructor.professor_id.first_name,
+        last_name: instructor.professor_id.last_name
+      }))
     });
   } catch (error) {
     console.error("Error fetching course and section details:", error);
