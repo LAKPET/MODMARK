@@ -7,9 +7,9 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import "../../assets/Styles/Course/Createcourse.css"; // Updated import statement
+import "../../../assets/Styles/Course/Createcourse.css";
 
-export default function CourseModal({ show, handleClose }) {
+export default function Createcourse({ show, handleClose }) {
   const [courseNumber, setCourseNumber] = useState("");
   const [courseName, setCourseName] = useState("");
   const [courseDescription, setCourseDescription] = useState("");
@@ -17,6 +17,7 @@ export default function CourseModal({ show, handleClose }) {
   const [term, setTerm] = useState("");
   const [year, setYear] = useState("");
   const apiUrl = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -34,12 +35,12 @@ export default function CourseModal({ show, handleClose }) {
     }
 
     const courseData = {
-      course_number: courseNumber, // Changed to match the backend format
-      course_name: courseName, // Changed to match the backend format
-      course_description: courseDescription, // Changed to match the backend format
-      section_name: section, // Changed to match the backend format
-      section_term: term, // Changed to match the backend format
-      section_year: year, // Changed to match the backend format
+      course_number: courseNumber,
+      course_name: courseName,
+      course_description: courseDescription,
+      section_name: section,
+      section_term: term,
+      section_year: year,
     };
 
     try {

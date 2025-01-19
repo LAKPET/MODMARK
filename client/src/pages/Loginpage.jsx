@@ -10,13 +10,15 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
+import { useAuth } from "../routes/AuthContext";
 
-function Login() {
+function Loginpage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState(""); // To show error messages
   const [loading, setLoading] = useState(false); // To handle loading state
   const navigate = useNavigate(); // To navigate after successful login
+  const { setUser } = useAuth();
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handlesubmit = (e) => {
@@ -31,9 +33,14 @@ function Login() {
         const { token, user } = result.data;
         localStorage.setItem("authToken", token);
         localStorage.setItem("Username", user.username);
+        setUser(user);
 
-        // Redirect to the dashboard or home page
-        navigate("/course");
+        // Redirect based on user role
+        if (user.role === "admin") {
+          navigate("/dashboard/admin");
+        } else {
+          navigate("/course");
+        }
       })
       .catch((err) => {
         setLoading(false); // Stop loading
@@ -143,4 +150,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Loginpage;
