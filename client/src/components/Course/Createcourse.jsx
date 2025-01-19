@@ -7,7 +7,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import "../../assets/Styles/Coursepage.css";
+import "../../assets/Styles/Course/Createcourse.css"; // Updated import statement
 
 export default function CourseModal({ show, handleClose }) {
   const [courseNumber, setCourseNumber] = useState("");

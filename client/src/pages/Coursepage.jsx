@@ -3,7 +3,7 @@ import Navber from "../components/Course/Navbar";
 import Sidebar from "../components/Course/Sidebar";
 import Createcourse from "../components/Course/Createcourse";
 import { Container, Row, Col, Button } from "react-bootstrap";
-import "../assets/Styles/Coursepage.css";
+import "../assets/Styles/Course/Coursepage.css";
 import Getcourse from "../components/Course/Getcourse";
 
 function Coursepage() {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "../../assets/Styles/Coursepage.css";
+import "../../assets/Styles/Course/Getcourse.css"; // Updated import statement
 import Ant from "../../assets/Picture/Ant.png";
 import { useNavigate } from "react-router-dom";
 
