@@ -1,10 +1,10 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
-import Logo from "../../assets/Picture/Logo.png";
+import Logo from "../../../assets/Picture/Logo.png";
 import { useLocation } from "react-router-dom"; // Import useLocation hook
 import SchoolIcon from "@mui/icons-material/School";
 import HelpIcon from "@mui/icons-material/Help";
-import "../../assets/Styles/Sidebar.css";
+import "../../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
   const location = useLocation(); // Get the current route
