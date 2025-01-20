@@ -1,6 +1,9 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User"); // Ensure path is correct
+const Section = require("../models/Section");
+const Enrollment = require("../models/Enrollment");
+const CourseInstructor = require("../models/CourseInstructor");
 const { verifyToken, checkAdmin } = require("./middleware");
 
 const router = express.Router();
@@ -48,10 +51,47 @@ router.post("/create", verifyToken, checkAdmin, async (req, res) => {
 });
 
 // ฟังก์ชันสำหรับดึงข้อมูลผู้ใช้ทั้งหมด (สำหรับแอดมิน)
-router.get("/all", verifyToken, checkAdmin, async (req, res) => {
-  // เพิ่ม verifyToken ก่อน checkAdmin
+router.post("/all", verifyToken, checkAdmin, async (req, res) => {
+  const { course_number, section_name, semester_term, semester_year } =
+    req.body;
+
   try {
-    const users = await User.find();
+    let users;
+
+    if (course_number && section_name && semester_term && semester_year) {
+      // Find sections that match the provided course number, section name, term, and year
+      const sections = await Section.find({
+        course_number: course_number,
+        section_name: section_name,
+        semester_term: semester_term,
+        semester_year: semester_year,
+      });
+
+      if (sections.length === 0) {
+        return res.status(404).json({
+          message: "No sections found matching the provided criteria",
+        });
+      }
+
+      // Find users who are enrolled in or instructing the found sections
+      const sectionIds = sections.map((section) => section._id);
+      const enrollments = await Enrollment.find({
+        section_id: { $in: sectionIds },
+      }).populate("student_id");
+      const instructors = await CourseInstructor.find({
+        section_id: { $in: sectionIds },
+      }).populate("professor_id");
+
+      // Combine students and professors into a single list of users
+      users = [
+        ...enrollments.map((enrollment) => enrollment.student_id),
+        ...instructors.map((instructor) => instructor.professor_id),
+      ];
+    } else {
+      // If no filtering criteria are provided, return all users
+      users = await User.find();
+    }
+
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: "Something went wrong", error });
@@ -87,18 +127,16 @@ router.get("/profile/:id", verifyToken, async (req, res) => {
 
 // ฟังก์ชันสำหรับลบผู้ใช้ (เฉพาะแอดมิน)
 router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => {
-  // เพิ่ม verifyToken ก่อน checkAdmin
   const { id } = req.params;
 
   try {
     const user = await User.findById(id);
-    if (!user || user.isDeleted) {
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // เปลี่ยนสถานะเป็น 'deleted' แทนการลบ
-    user.isDeleted = false;
-    await user.save();
+    // ลบผู้ใช้ออกจากฐานข้อมูล
+    await user.deleteOne();
 
     res.status(200).json({ message: "User deleted successfully!" });
   } catch (error) {
@@ -107,7 +145,7 @@ router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => {
 });
 
 // ฟังก์ชันสำหรับแก้ไขข้อมูลผู้ใช้ (เจ้าของข้อมูลและแอดมิน)
-router.put("/update/:id", verifyToken, async (req, res) => {
+router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
   const { id } = req.params;
   const { first_name, last_name, username, email, password, role, isDeleted } =
     req.body;

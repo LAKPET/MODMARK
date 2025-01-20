@@ -48,9 +48,15 @@ export default function UserTable() {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/users/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.post(
+        `${apiUrl}/users/all`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setUsers(response.data);
     } catch (err) {
       setError("Failed to fetch users");
