@@ -37,7 +37,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/dashboard/admin"
+            path="/dashboard/admin/users"
             element={
               <ProtectedRoute requiredRole="admin">
                 <Dashboardpage_Admin />

@@ -1,0 +1,17 @@
+.rotate-90 {
+    margin-top: 5px;
+    transform: rotate(90deg);
+  }
+
+  .custom-btn  {
+    background-color: #8B5F34;
+    border-color: #8B5F34;
+    font-weight: 600;
+    
+  }
+  
+  .custom-btn:hover {
+    background-color: #6f4f2f; /* Optional: Darker shade for hover effect */
+    border-color: #6f4f2f;
+  }
+  

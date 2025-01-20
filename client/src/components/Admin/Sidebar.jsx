@@ -37,18 +37,18 @@ function Sidebar() {
       {/* Sidebar Links */}
       <Nav className="flex-column mt-4">
         <Nav.Link
-          href="/user"
+          href="/dashboard/admin/users"
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/user") ? "active" : ""
+            isActive("/dashboard/admin/users") ? "active" : ""
           }`}
         >
           <PersonIcon className="me-2" />
           <span>User</span>
         </Nav.Link>
         <Nav.Link
-          href="/course"
+          href="/dashboard/admin/course"
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/course") ? "active" : ""
+            isActive("/admin/course") ? "active" : ""
           }`}
         >
           <SchoolIcon className="me-2" />

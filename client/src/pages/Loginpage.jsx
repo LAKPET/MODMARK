@@ -37,7 +37,7 @@ function Loginpage() {
 
         // Redirect based on user role
         if (user.role === "admin") {
-          navigate("/dashboard/admin");
+          navigate("/dashboard/admin/users");
         } else {
           navigate("/course");
         }
