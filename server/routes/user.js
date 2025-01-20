@@ -106,8 +106,8 @@ router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => { // �
   }
 });
 
-// ฟังก์ชันสำหรับแก้ไขข้อมูลผู้ใช้ (เฉพาะแอดมิน)
-router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => { // เพิ่ม verifyToken ก่อน checkAdmin
+// ฟังก์ชันสำหรับแก้ไขข้อมูลผู้ใช้ (เจ้าของข้อมูลและแอดมิน)
+router.put("/update/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const { first_name, last_name, username, email, password, role, isDeleted } = req.body;
 
@@ -115,6 +115,13 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => { // เ�
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // ตรวจสอบว่า user ที่ร้องขอกับ user ที่กำลังล็อกอินมี id ตรงกันหรือไม่ หรือว่าเป็น admin
+    if (req.user.id !== id && req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "You are not authorized to update this user"
+      });
     }
 
     // ปรับปรุงข้อมูลผู้ใช้ที่ต้องการแก้ไข
@@ -125,7 +132,9 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => { // เ�
     if (password) {
       user.password_hash = await bcrypt.hash(password, 10); // เข้ารหัสรหัสผ่านใหม่
     }
-    if (role) user.role = role;
+    if (req.user.role === "admin" && role) {
+      user.role = role; // อัปเดต role เฉพาะเมื่อเป็น admin
+    }
     if (typeof isDeleted !== 'undefined') user.isDeleted = isDeleted; // ตรวจสอบว่ามีการส่ง isDeleted มาหรือไม่
 
     // บันทึกการเปลี่ยนแปลง
