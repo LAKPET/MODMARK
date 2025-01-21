@@ -17,13 +17,13 @@ import { Button } from "react-bootstrap";
 import Createuser from "./Createuser";
 import Edituser from "./Edituser";
 import DeleteUser from "./DeleteUser";
-import TablePaginationActions from "./TablePaginationActions";
+import TablePaginationActions from "./TablePaginationActions"; // Import the component
 
 const columns = [
-  { id: "first_name", label: "First Name", minWidth: 100 },
-  { id: "last_name", label: "Last Name", minWidth: 100 },
-  { id: "username", label: "Username", minWidth: 100 },
-  { id: "email", label: "Email", minWidth: 100 },
+  { id: "first_name", label: "First Name", minWidth: 150 },
+  { id: "last_name", label: "Last Name", minWidth: 150 },
+  { id: "username", label: "Username", minWidth: 150 },
+  { id: "email", label: "Email", minWidth: 150 },
   { id: "role", label: "Role", minWidth: 100 },
   { id: "actions", label: "Actions", minWidth: 50, align: "center" },
 ];
@@ -38,31 +38,40 @@ export default function UserTable() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [courseNumber, setCourseNumber] = useState("");
+  const [sectionName, setSectionName] = useState("");
+  const [semesterTerm, setSemesterTerm] = useState("");
+  const [semesterYear, setSemesterYear] = useState("");
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (params = {}) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        `${apiUrl}/users/all`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.post(`${apiUrl}/users/all`, params, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUsers(response.data);
     } catch (err) {
       setError("Failed to fetch users");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    setError(null);
+    const params = {
+      course_number: courseNumber,
+      section_name: sectionName,
+      semester_term: semesterTerm,
+      semester_year: semesterYear,
+    };
+    fetchUsers(params);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -91,7 +100,6 @@ export default function UserTable() {
   const handleCloseDeleteModal = () => setShowDeleteModal(false);
 
   if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
 
   return (
     <>
@@ -102,21 +110,46 @@ export default function UserTable() {
       <div className="mb-4">
         <div className="row">
           <div className="col-md-3">
-            <MDBInput label="Course Number" id="form1" type="text" />
+            <MDBInput
+              label="Course Number"
+              id="form1"
+              type="text"
+              value={courseNumber}
+              onChange={(e) => setCourseNumber(e.target.value)}
+            />
           </div>
           <div className="col-md-3">
-            <MDBInput label="Section" id="form2" type="text" />
+            <MDBInput
+              label="Section"
+              id="form2"
+              type="text"
+              value={sectionName}
+              onChange={(e) => setSectionName(e.target.value)}
+            />
           </div>
         </div>
         <div className="row mt-3">
           <div className="col-md-3">
-            <MDBInput label="Term" id="form3" type="text" />
+            <MDBInput
+              label="Term"
+              id="form3"
+              type="text"
+              value={semesterTerm}
+              onChange={(e) => setSemesterTerm(e.target.value)}
+            />
           </div>
           <div className="col-md-3">
-            <MDBInput label="Year" id="form4" type="text" />
+            <MDBInput
+              label="Year"
+              id="form4"
+              type="text"
+              value={semesterYear}
+              onChange={(e) => setSemesterYear(e.target.value)}
+            />
           </div>
           <div className="col-md-3">
-            <SearchIcon className="rotate-90" />
+            <SearchIcon className="rotate-90" onClick={handleSearch} />
+            {error && <span className="text-danger ms-2">{error}</span>}
           </div>
         </div>
       </div>
@@ -191,7 +224,7 @@ export default function UserTable() {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          ActionsComponent={TablePaginationActions}
+          ActionsComponent={TablePaginationActions} // Use the component
         />
       </Paper>
 
