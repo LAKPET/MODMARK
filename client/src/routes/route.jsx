@@ -4,7 +4,7 @@ import Login from "../pages/Loginpage";
 import Register from "../pages/Registerpage";
 import ProfessorCoursepage from "../pages/Profressor/Coursepage";
 import StudentCoursepage from "../pages/Student/Coursepage";
-import Dashboardpage from "../pages/Dashboardpage";
+import Dashboardpage from "../pages/Profressor/Dashboardpage_Pro";
 import Dashboardpage_Admin from "../pages/Admin/Dashboardpage_Admin";
 import Unauthorized from "./Unauthorized";
 import ProtectedRoute from "./ProtectedRoute";
@@ -37,7 +37,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/dashboard/admin"
+            path="/dashboard/admin/users"
             element={
               <ProtectedRoute requiredRole="admin">
                 <Dashboardpage_Admin />

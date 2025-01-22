@@ -1,7 +1,7 @@
 import React from "react";
-import Sidebar from "../components/Profressor/Dashboard/Sidebar";
-import Navber from "../components/Profressor/Dashboard/Navbar";
-import Getdetailcourse from "../components/Profressor/Dashboard/Getdetailcourse";
+import Sidebar from "../../components/Profressor/Dashboard/Sidebar";
+import Navber from "../../components/Profressor/Dashboard/Navbar";
+import Getdetailcourse from "../../components/Profressor/Dashboard/Getdetailcourse";
 import { Container } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 
