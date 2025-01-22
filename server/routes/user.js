@@ -179,4 +179,14 @@ router.put("/update/:id",  verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
+// ฟังก์ชันสำหรับดึงรายชื่อของ professor ทั้งหมดในระบบ
+router.get("/all-professors", verifyToken, checkAdmin, async (req, res) => {
+  try {
+    const professors = await User.find({ role: "professor" });
+    res.status(200).json(professors);
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+});
+
 module.exports = router;

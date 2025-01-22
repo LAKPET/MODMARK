@@ -7,6 +7,7 @@ const courseRoutes = require("./routes/course");
 const courseInstructorRoutes = require("./routes/courseinstructor");
 const enrollmentRoutes = require("./routes/enrollment");
 const assessmentRoutes = require("./routes/assessment");
+const sectionRoutes = require("./routes/section");
 require("dotenv").config();
 
 const app = express();
@@ -30,6 +31,7 @@ app.use("/course", courseRoutes);
 app.use("/course-instructor", courseInstructorRoutes); // เปลี่ยนเส้นทางเพื่อหลีกเลี่ยงความขัดแย้ง
 app.use("/enrollment", enrollmentRoutes); // เปลี่ยนเส้นทางเพื่อหลีกเลี่ยงความขัดแย้ง
 app.use("/assessment", assessmentRoutes);
+app.use("/section", sectionRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
