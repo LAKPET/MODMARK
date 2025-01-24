@@ -10,68 +10,76 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import "../../assets/Styles/Admin/Getuser.css";
+import "../../../assets/Styles/Course/Getcourse.css";
 import { Button } from "react-bootstrap";
-import Createuser from "./Createuser";
-import Edituser from "./Edituser";
-import DeleteUser from "./DeleteUser";
-import TablePaginationActions from "./TablePaginationActions"; // Import the component
+import Createcourse from "../../Profressor/Course/Createcourse";
+import TablePaginationActions from "../TablePaginationActions";
+import { useAuth } from "../../../routes/AuthContext";
+import Col from "react-bootstrap/Col";
 
 const columns = [
-  { id: "first_name", label: "First Name", minWidth: 150 },
-  { id: "last_name", label: "Last Name", minWidth: 150 },
-  { id: "username", label: "Username", minWidth: 150 },
-  { id: "email", label: "Email", minWidth: 150 },
-  { id: "role", label: "Role", minWidth: 100 },
-  { id: "actions", label: "Actions", minWidth: 50, align: "center" },
+  { id: "course_number", label: "Course Number", minWidth: 150 },
+  { id: "section_name", label: "Section Name", minWidth: 150 },
+  { id: "semester_term", label: "Semester Term", minWidth: 150 },
+  { id: "semester_year", label: "Semester Year", minWidth: 150 },
+  {
+    id: "actions",
+    label: "Actions",
+    minWidth: 50,
+    align: "center",
+    className: "actions-header",
+  },
 ];
 
-export default function UserTable() {
-  const [users, setUsers] = useState([]);
+export default function CourseTable() {
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false); // Add state for create modal
+  const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [courseNumber, setCourseNumber] = useState("");
   const [sectionName, setSectionName] = useState("");
   const [semesterTerm, setSemesterTerm] = useState("");
   const [semesterYear, setSemesterYear] = useState("");
+  const [searchPerformed, setSearchPerformed] = useState(false); // Add this state variable
   const apiUrl = import.meta.env.VITE_API_URL;
+  const { user } = useAuth(); // Use the useAuth hook
 
   useEffect(() => {
-    fetchUsers();
+    fetchCourses();
   }, []);
 
-  const fetchUsers = async (params = {}) => {
+  const fetchCourses = async (params = {}) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      const response = await axios.post(`${apiUrl}/users/all`, params, {
+      const response = await axios.post(`${apiUrl}/section/all`, params, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUsers(response.data);
+      setCourses(response.data);
+      setSearchPerformed(true); // Set searchPerformed to true after fetching courses
     } catch (err) {
-      setError("Failed to fetch users");
+      setError("Failed to fetch courses");
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = () => {
-    setError(null);
     const params = {
       course_number: courseNumber,
       section_name: sectionName,
       semester_term: semesterTerm,
       semester_year: semesterYear,
     };
-    fetchUsers(params);
+    fetchCourses(params);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -83,14 +91,14 @@ export default function UserTable() {
     setPage(0);
   };
 
-  const handleEdit = (userId) => {
-    setSelectedUserId(userId);
+  const handleEdit = (courseId) => {
+    setSelectedCourseId(courseId);
     setShowEditModal(true);
   };
 
-  const handleDelete = (userId) => {
-    console.log("Deleting user with ID:", userId); // Debugging log
-    setSelectedUserId(userId);
+  const handleDelete = (courseId) => {
+    console.log("Deleting course with ID:", courseId); // Debugging log
+    setSelectedCourseId(courseId);
     setShowDeleteModal(true);
   };
 
@@ -100,11 +108,12 @@ export default function UserTable() {
   const handleCloseDeleteModal = () => setShowDeleteModal(false);
 
   if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <>
       <div className="mb-4">
-        <h3 className="fw-bold">User Management</h3>
+        <h3 className="fw-bold">Course Management</h3>
       </div>
 
       <div className="mb-4">
@@ -149,13 +158,12 @@ export default function UserTable() {
           </div>
           <div className="col-md-3">
             <SearchIcon className="rotate-90" onClick={handleSearch} />
-            {error && <span className="text-danger ms-2">{error}</span>}
           </div>
         </div>
       </div>
       <div className="d-flex justify-content-end">
         <Button className="fw-bold custom-btn" onClick={handleShowCreateModal}>
-          Create User
+            Create Course
         </Button>
       </div>
       <Paper sx={{ width: "100%", overflow: "hidden", marginTop: "20px" }}>
@@ -168,6 +176,7 @@ export default function UserTable() {
                     key={column.id}
                     align={column.align}
                     style={{ minWidth: column.minWidth }}
+                    className={column.className}
                   >
                     {column.label}
                   </TableCell>
@@ -175,43 +184,53 @@ export default function UserTable() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {users
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((user) => (
-                  <TableRow
-                    hover
-                    role="checkbox"
-                    tabIndex={-1}
-                    key={user.username}
-                  >
-                    {columns.map((column) => {
-                      const value = user[column.id];
-                      return (
-                        <TableCell key={column.id} align={column.align}>
-                          {column.id === "actions" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "center",
-                              }}
+              {courses.length > 0
+                ? courses
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((course) => (
+                      <TableRow
+                        hover
+                        role="checkbox"
+                        tabIndex={-1}
+                        key={course._id}
+                      >
+                        {columns.map((column) => {
+                          const value = course[column.id];
+                          return (
+                            <TableCell
+                              key={column.id}
+                              align={column.align}
+                              className={
+                                column.id === "actions" ? "actions-cell" : ""
+                              }
                             >
-                              <EditIcon
-                                style={{ cursor: "pointer", marginRight: 8 }}
-                                onClick={() => handleEdit(user._id)}
-                              />
-                              <DeleteIcon
-                                style={{ cursor: "pointer" }}
-                                onClick={() => handleDelete(user._id)}
-                              />
-                            </div>
-                          ) : (
-                            value
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
+                              {column.id === "actions" ? (
+                                <div className="actions-cell">
+                                  <PersonAddIcon className="icon-style" />
+                                  <EditIcon
+                                    className="icon-style"
+                                    onClick={() => handleEdit(course._id)}
+                                  />
+                                  <DeleteIcon
+                                    className="icon-style"
+                                    onClick={() => handleDelete(course._id)}
+                                  />
+                                </div>
+                              ) : (
+                                value
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))
+                : searchPerformed && (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} align="center">
+                        ไม่มี course ใน section นี้
+                      </TableCell>
+                    </TableRow>
+                  )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -219,7 +238,7 @@ export default function UserTable() {
         <TablePagination
           rowsPerPageOptions={[5, 10, { value: -1, label: "All" }]}
           component="div"
-          count={users.length}
+          count={courses.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -228,24 +247,9 @@ export default function UserTable() {
         />
       </Paper>
 
-      <Createuser
+      <Createcourse
         show={showCreateModal}
         handleClose={handleCloseCreateModal}
-        refreshUsers={fetchUsers}
-      />
-
-      <Edituser
-        show={showEditModal}
-        handleClose={handleCloseEditModal}
-        userId={selectedUserId}
-        refreshUsers={fetchUsers}
-      />
-
-      <DeleteUser
-        show={showDeleteModal}
-        handleClose={handleCloseDeleteModal}
-        userId={selectedUserId}
-        refreshUsers={fetchUsers}
       />
     </>
   );

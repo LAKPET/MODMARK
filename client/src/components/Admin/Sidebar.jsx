@@ -1,7 +1,7 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
 import Logo from "../../assets/Picture/Logo.png";
-import { useLocation } from "react-router-dom"; // Import useLocation hook
+import { NavLink, useLocation } from "react-router-dom"; // Import NavLink and useLocation
 import PersonIcon from "@mui/icons-material/Person";
 import SchoolIcon from "@mui/icons-material/School";
 import "../../assets/Styles/Sidebar.css";
@@ -37,7 +37,8 @@ function Sidebar() {
       {/* Sidebar Links */}
       <Nav className="flex-column mt-4">
         <Nav.Link
-          href="/dashboard/admin/users"
+          as={NavLink}
+          to="/dashboard/admin/users"
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
             isActive("/dashboard/admin/users") ? "active" : ""
           }`}
@@ -46,9 +47,10 @@ function Sidebar() {
           <span>User</span>
         </Nav.Link>
         <Nav.Link
-          href="/dashboard/admin/course"
+          as={NavLink}
+          to="/dashboard/admin/course"
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/admin/course") ? "active" : ""
+            isActive("/dashboard/admin/course") ? "active" : ""
           }`}
         >
           <SchoolIcon className="me-2" />

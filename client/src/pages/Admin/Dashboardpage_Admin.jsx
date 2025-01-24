@@ -1,8 +1,11 @@
 import React from "react";
+import { Route, Routes } from "react-router-dom";
 import Navber from "../../components/Admin/Navbar";
 import Sidebar from "../../components/Admin/Sidebar";
-import Getuser from "../../components/Admin/Getuser";
+import Getuser from "../../components/Admin/user/Getuser";
+import Getcourse from "../../components/Admin/course/Getcourse";
 import { Container, Row, Col } from "react-bootstrap";
+
 export default function Dashboardpage_Admin() {
   return (
     <div>
@@ -14,7 +17,10 @@ export default function Dashboardpage_Admin() {
         <Container className="mt-2">
           <Row>
             <Col>
-              <Getuser />
+              <Routes>
+                <Route path="users" element={<Getuser />} />
+                <Route path="course" element={<Getcourse />} />
+              </Routes>
             </Col>
           </Row>
         </Container>

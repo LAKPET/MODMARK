@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "../pages/Loginpage";
 import Register from "../pages/Registerpage";
 import ProfessorCoursepage from "../pages/Profressor/Coursepage";
@@ -8,25 +8,31 @@ import Dashboardpage from "../pages/Profressor/Dashboardpage_Pro";
 import Dashboardpage_Admin from "../pages/Admin/Dashboardpage_Admin";
 import Unauthorized from "./Unauthorized";
 import ProtectedRoute from "./ProtectedRoute";
-import { AuthProvider, useAuth } from "./AuthContext";
+import { AuthProvider } from "./AuthContext";
 
-export default function AppRoutes() {
+function AppRoutes() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route
             path="/course"
-            requiredRole="profressor"
-            element={<ProfessorCoursepage />}
+            element={
+              <ProtectedRoute requiredRole="professor">
+                <ProfessorCoursepage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/course"
-            requiredRole="student"
-            element={<StudentCoursepage />}
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentCoursepage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/dashboard/:id"
@@ -37,7 +43,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/dashboard/admin/users"
+            path="/dashboard/admin/*"
             element={
               <ProtectedRoute requiredRole="admin">
                 <Dashboardpage_Admin />
@@ -46,7 +52,9 @@ export default function AppRoutes() {
           />
           <Route path="/unauthorized" element={<Unauthorized />} />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   );
 }
+
+export default AppRoutes;
