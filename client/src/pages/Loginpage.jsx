@@ -38,8 +38,10 @@ function Loginpage() {
         // Redirect based on user role
         if (user.role === "admin") {
           navigate("/dashboard/admin/users");
-        } else {
-          navigate("/course");
+        } else if (user.role === "professor") {
+          navigate("/professor/course");
+        } else if (user.role === "student") {
+          navigate("/student/course");
         }
       })
       .catch((err) => {

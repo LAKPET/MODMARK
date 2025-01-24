@@ -19,7 +19,7 @@ function AppRoutes() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route
-            path="/course"
+            path="/professor/course"
             element={
               <ProtectedRoute requiredRole="professor">
                 <ProfessorCoursepage />
@@ -27,7 +27,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/course"
+            path="/student/course"
             element={
               <ProtectedRoute requiredRole="student">
                 <StudentCoursepage />
