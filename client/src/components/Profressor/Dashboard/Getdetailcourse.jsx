@@ -111,6 +111,7 @@ export default function GetDetailCourse() {
       <CreateAssessmentModal
         show={showModal}
         handleClose={() => setShowModal(false)}
+        courseDetails={courseDetails}
       />
     </Container>
   );

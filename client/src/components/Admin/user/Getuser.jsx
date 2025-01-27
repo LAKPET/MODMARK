@@ -153,6 +153,7 @@ export default function UserTable() {
           </div>
         </div>
       </div>
+
       <div className="d-flex justify-content-end">
         <Button className="fw-bold custom-btn" onClick={handleShowCreateModal}>
           Create User

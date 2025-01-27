@@ -18,7 +18,9 @@ import { Button } from "react-bootstrap";
 import Createcourse from "../../Profressor/Course/Createcourse";
 import TablePaginationActions from "../TablePaginationActions";
 import { useAuth } from "../../../routes/AuthContext";
-import Col from "react-bootstrap/Col";
+import DeleteCourse from "../course/Deletecourse";
+import AddUserCourse from "../course/Addusercourse"; // Import AddUserCourse component
+import EditCourse from "../course/Editcourse";
 
 const columns = [
   { id: "course_number", label: "Course Number", minWidth: 150 },
@@ -29,7 +31,7 @@ const columns = [
     id: "actions",
     label: "Actions",
     minWidth: 50,
-    align: "center",
+    align: "start",
     className: "actions-header",
   },
 ];
@@ -43,6 +45,7 @@ export default function CourseTable() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false); // Add state for create modal
+  const [showAddUserModal, setShowAddUserModal] = useState(false); // Add state for add user modal
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [courseNumber, setCourseNumber] = useState("");
   const [sectionName, setSectionName] = useState("");
@@ -102,10 +105,16 @@ export default function CourseTable() {
     setShowDeleteModal(true);
   };
 
+  const handleAddUser = (courseId) => {
+    setSelectedCourseId(courseId);
+    setShowAddUserModal(true);
+  };
+
   const handleShowCreateModal = () => setShowCreateModal(true);
   const handleCloseCreateModal = () => setShowCreateModal(false);
   const handleCloseEditModal = () => setShowEditModal(false);
   const handleCloseDeleteModal = () => setShowDeleteModal(false);
+  const handleCloseAddUserModal = () => setShowAddUserModal(false);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -163,7 +172,7 @@ export default function CourseTable() {
       </div>
       <div className="d-flex justify-content-end">
         <Button className="fw-bold custom-btn" onClick={handleShowCreateModal}>
-            Create Course
+          Create Course
         </Button>
       </div>
       <Paper sx={{ width: "100%", overflow: "hidden", marginTop: "20px" }}>
@@ -206,14 +215,21 @@ export default function CourseTable() {
                             >
                               {column.id === "actions" ? (
                                 <div className="actions-cell">
-                                  <PersonAddIcon className="icon-style" />
+                                  <PersonAddIcon
+                                    className="icon-style"
+                                    onClick={() =>
+                                      handleAddUser(course.course_id)
+                                    }
+                                  />
                                   <EditIcon
                                     className="icon-style"
-                                    onClick={() => handleEdit(course._id)}
+                                    onClick={() => handleEdit(course.course_id)}
                                   />
                                   <DeleteIcon
                                     className="icon-style"
-                                    onClick={() => handleDelete(course._id)}
+                                    onClick={() =>
+                                      handleDelete(course.course_id)
+                                    }
                                   />
                                 </div>
                               ) : (
@@ -250,6 +266,24 @@ export default function CourseTable() {
       <Createcourse
         show={showCreateModal}
         handleClose={handleCloseCreateModal}
+      />
+      <DeleteCourse
+        show={showDeleteModal}
+        handleClose={handleCloseDeleteModal}
+        courseId={selectedCourseId}
+        refreshCourses={fetchCourses}
+      />
+      <AddUserCourse
+        show={showAddUserModal}
+        handleClose={handleCloseAddUserModal}
+        courseId={selectedCourseId}
+        refreshCourses={fetchCourses}
+      />
+      <EditCourse
+        show={showEditModal}
+        handleClose={handleCloseEditModal}
+        courseId={selectedCourseId}
+        refreshCourses={fetchCourses}
       />
     </>
   );

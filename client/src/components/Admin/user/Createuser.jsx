@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
-import { MDBInput } from "mdb-react-ui-kit";
+import { MDBInput, MDBFile } from "mdb-react-ui-kit";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import axios from "axios";
+import "../../../assets/Styles/Admin/Createuser.css";
 
 export default function Createuser({ show, handleClose, refreshUsers }) {
   const [firstname, setFirstname] = useState("");
@@ -114,8 +115,17 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
               </Select>
             </FormControl>
           </Form.Group>
+          <div className=" mb-3  line-with-text">
+            <span>or</span>
+          </div>
+
+          <MDBFile
+            className=" mb-4"
+            label="You can import user by csv file"
+            id="customFile"
+          />
           <div className="d-flex justify-content-end">
-            <Button className=" custom-btn" type="submit">
+            <Button className="custom-btn" type="submit">
               Create User
             </Button>
           </div>

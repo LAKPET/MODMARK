@@ -147,9 +147,9 @@ export default function Createcourse({ show, handleClose }) {
             </FormControl>
           </Box>
           <div className="d-flex justify-content-end">
-            <MDBBtn color="secondary" onClick={handleClose} className="me-2">
+            {/* <MDBBtn color="secondary" onClick={handleClose} className="me-2">
               Cancel
-            </MDBBtn>
+            </MDBBtn> */}
             <MDBBtn className="btn-create-course" type="submit">
               Create Course
             </MDBBtn>

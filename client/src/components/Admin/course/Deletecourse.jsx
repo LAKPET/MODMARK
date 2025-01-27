@@ -1,28 +1,22 @@
-import React from "react";
-import { Modal, Button } from "react-bootstrap";
 import axios from "axios";
+import { Modal, Button } from "react-bootstrap";
 
-export default function Deletecourse({
-  show,
-  handleClose,
-  userId,
-  refreshUsers,
-}) {
+function DeleteCourse({ show, handleClose, courseId, refreshCourses }) {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleDelete = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/users/delete/${userId}`, {
+      await axios.delete(`${apiUrl}/course/delete/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       handleClose();
-      refreshUsers();
+      refreshCourses();
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
-        console.error("Failed to delete user:", err.response.data.message);
+        console.error("Failed to delete course:", err.response.data.message);
       } else {
-        console.error("Failed to delete user", err);
+        console.error("Failed to delete course", err);
       }
     }
   };
@@ -30,9 +24,9 @@ export default function Deletecourse({
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Delete User</Modal.Title>
+        <Modal.Title>Delete Course</Modal.Title>
       </Modal.Header>
-      <Modal.Body>Are you sure you want to delete this user?</Modal.Body>
+      <Modal.Body>Are you sure you want to delete this course?</Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={handleClose}>
           Cancel
@@ -44,3 +38,5 @@ export default function Deletecourse({
     </Modal>
   );
 }
+
+export default DeleteCourse;
