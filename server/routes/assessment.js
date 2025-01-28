@@ -1,5 +1,5 @@
 const express = require("express");
-const Assessment = require("../models/Assessment");
+const Assessment = require("../models/Aseessment");
 const { verifyToken, checkAdminOrProfessor } = require("./middleware");
 
 const router = express.Router();
@@ -9,7 +9,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const {
     course_id,
     section_id,
-    professor_id,
+    personal_id,
     assessment_name,
     assessment_description,
     assignment_type,
@@ -22,7 +22,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     const newAssessment = new Assessment({
       course_id,
       section_id,
-      professor_id,
+      personal_id,
       assessment_name,
       assessment_description,
       assignment_type,
@@ -72,7 +72,7 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
   const {
     course_id,
     section_id,
-    professor_id,
+    personal_id,
     assessment_name,
     assessment_description,
     assignment_type,
@@ -89,7 +89,7 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
 
     assessment.course_id = course_id || assessment.course_id;
     assessment.section_id = section_id || assessment.section_id;
-    assessment.professor_id = professor_id || assessment.professor_id;
+    assessment.personal_id = personal_id || assessment.personal_id;
     assessment.assessment_name = assessment_name || assessment.assessment_name;
     assessment.assessment_description = assessment_description || assessment.assessment_description;
     assessment.assignment_type = assignment_type || assessment.assignment_type;

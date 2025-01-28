@@ -2,11 +2,9 @@ const mongoose = require('mongoose');
 
 const courseInstructorSchema = new mongoose.Schema({
     section_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Section', required: true },
-    professor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    email: { type: String, required: true },
-    username: { type: String, required: true },
-    course_number: { type: String, required: true }, // เพิ่มรหัสวิชา
-    section_name: { type: Number, required: true }, // เพิ่มชื่อ section
+    personal_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // เปลี่ยนเป็น ObjectId และอ้างอิงโมเดล User
+    course_number: { type: String, required: true },
+    section_number: { type: Number, required: true },
 });
 
 module.exports = mongoose.model('CourseInstructor', courseInstructorSchema);
