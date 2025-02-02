@@ -38,22 +38,23 @@ const checkRole = (roles) => (req, res, next) => {
 
 // Register User
 router.post("/register", async (req, res) => {
-  const { first_name, last_name, email, password, username, role } = req.body;
+  const { personal_id, first_name, last_name, email, password, username, role } = req.body;
 
   // Validate required fields
-  if (!first_name || !last_name || !email || !password) {
+  if (!personal_id || !first_name || !last_name || !email || !password) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
   try {
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ personal_id });
     if (existingUser)
-      return res.status(400).json({ message: "User already exists." });
+      return res.status(400).json({ message: "This Personal ID already exists." });
 
     const userRole = role || "student";
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
+      personal_id,
       first_name,
       last_name,
       username,
@@ -88,15 +89,13 @@ router.post("/login", async (req, res) => {
         role: user.role,
         email: user.email,
         username: user.username,
+        personal_id: user.personal_id,
       },
-      JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
+      JWT_SECRET
     );
 
     // ลงทะเบียนโทเค็นใน Redis blacklist เมื่อ login
-    await redisClient.setEx(token, 3600, "valid");
+    await redisClient.set(token, "valid");
 
     // ส่งข้อมูลของผู้ใช้พร้อมกับ Token
     res.status(200).json({
@@ -109,6 +108,7 @@ router.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        personal_id: user.personal_id,
       },
     });
   } catch (error) {
@@ -132,7 +132,7 @@ router.post("/logout", async (req, res) => {
     }
 
     // เปลี่ยนสถานะของโทเค็นใน Redis blacklist เป็น "blacklisted"
-    await redisClient.setEx(token, 3600, "blacklisted"); // ใช้ setEx เพื่อบันทึกโทเค็นเป็น "blacklisted"
+    await redisClient.set(token, "blacklisted");
 
     res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {

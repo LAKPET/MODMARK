@@ -18,7 +18,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     course_number,
     course_name,
     course_description,
-    section_name,
+    section_number,
     section_term,
     section_year,
   } = req.body;
@@ -26,7 +26,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
   if (
     !course_number ||
     !course_name ||
-    !section_name ||
+    !section_number ||
     !section_term ||
     !section_year
   ) {
@@ -49,24 +49,24 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
 
     const existingSection = await Section.findOne({
       course_id: existingCourse._id,
-      section_name,
+      section_number,
       semester_term: section_term,
       semester_year: section_year,
     });
 
     if (existingSection) {
       return res.status(400).json({
-        message: `Section ${section_name} for term ${section_term} in year ${section_year} already exists.`,
+        message: `Section ${section_number} for term ${section_term} in year ${section_year} already exists.`,
       });
     }
 
     // เพิ่ม course_number และ course_name ใน Section
     const newSection = new Section({
       course_id: existingCourse._id, // เชื่อมโยงกับ Course ที่ถูกต้อง
-      section_name,
+      section_number,
       semester_term: section_term,
       semester_year: section_year,
-      professor_id: req.user.role === "professor" ? req.user.id : null, // หากเป็น admin ให้ professor_id เป็น null
+      personal_id: req.user.role === "professor" ? req.user.id : null, // หากเป็น admin ให้ personal_id เป็น null
       course_number: existingCourse.course_number, // เก็บรหัสวิชาจาก Course
       course_name: existingCourse.course_name, // เก็บชื่อวิชาจาก Course
     });
@@ -81,11 +81,11 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     if (req.user.role === "professor") {
       newCourseInstructor = new CourseInstructor({
         section_id: newSection._id,
-        professor_id: req.user.id, // ID ของอาจารย์ที่สร้าง
+        personal_id: req.user.id, // ID ของอาจารย์ที่สร้าง
         email: req.user.email, // ใช้ email จาก middleware
         username: req.user.username, // ใช้ username จาก middleware
         course_number: existingCourse.course_number,
-        section_name: newSection.section_name,
+        section_number: newSection.section_number, // เปลี่ยนจาก section_name เป็น section_number
       });
       await newCourseInstructor.save();
     }
@@ -113,7 +113,7 @@ router.get("/my-courses", verifyToken, async (req, res) => {
 
     // ถ้าเป็นนักเรียนให้ดึงข้อมูลจาก Enrollment
     if (req.user.role === "student") {
-      const enrollments = await Enrollment.find({ student_id: req.user.id })
+      const enrollments = await Enrollment.find({ personal_id: req.user.personal_id })
         .populate({
           path: "section_id", 
           populate: {
@@ -128,14 +128,14 @@ router.get("/my-courses", verifyToken, async (req, res) => {
         course_name: enrollment.section_id.course_id.course_name,
         course_description: enrollment.section_id.course_id.course_description,
         section_id: enrollment.section_id._id, // เพิ่ม section_id
-        section_name: enrollment.section_id.section_name,
+        section_number: enrollment.section_id.section_number, // เปลี่ยนจาก section_name เป็น section_number
         section_term: enrollment.section_id.semester_term,
         section_year: enrollment.section_id.semester_year
       }));
     } 
     // ถ้าเป็นอาจารย์ให้ดึงข้อมูลจาก CourseInstructor
     else if (req.user.role === "professor") {
-      const courseInstructors = await CourseInstructor.find({ professor_id: req.user.id })
+      const courseInstructors = await CourseInstructor.find({ personal_id: req.user.personal_id })
         .populate({
           path: "section_id", 
           populate: {
@@ -150,7 +150,7 @@ router.get("/my-courses", verifyToken, async (req, res) => {
         course_name: courseInstructor.section_id.course_id.course_name,
         course_description: courseInstructor.section_id.course_id.course_description,
         section_id: courseInstructor.section_id._id, // เพิ่ม section_id
-        section_name: courseInstructor.section_id.section_name,
+        section_number: courseInstructor.section_id.section_number, // เปลี่ยนจาก section_name เป็น section_number
         section_term: courseInstructor.section_id.semester_term,
         section_year: courseInstructor.section_id.semester_year
       }));
@@ -179,19 +179,22 @@ router.get("/details/:id", verifyToken, async (req, res) => {
     const course = section.course_id;
 
     // ดึงข้อมูลทีมผู้สอนของ Section นี้
-    const instructors = await CourseInstructor.find({ section_id: id }).populate("professor_id", "first_name last_name");
+    const instructors = await CourseInstructor.find({ section_id: id }).populate("personal_id", "first_name last_name");
 
     // ส่งข้อมูลในรูปแบบที่กำหนด
     res.status(200).json({
+      course_id: course._id,
       course_number: course.course_number,
       course_name: course.course_name,
       course_description: course.course_description,
-      section_name: section.section_name,
+      section_id: section._id,
+      section_number: section.section_number,
       section_term: section.semester_term,
       section_year: section.semester_year,
       professors: instructors.map(instructor => ({
-        first_name: instructor.professor_id.first_name,
-        last_name: instructor.professor_id.last_name
+        professor_id: instructor.personal_id._id,
+        first_name: instructor.personal_id.first_name,
+        last_name: instructor.personal_id.last_name
       }))
     });
   } catch (error) {
@@ -202,102 +205,62 @@ router.get("/details/:id", verifyToken, async (req, res) => {
   }
 });
 
-// ฟังก์ชันสำหรับแก้ไขข้อมูล Course และ Section
-router.put(
-  "/update/:id",
-  verifyToken,
-  checkAdminOrProfessor,
-  async (req, res) => {
-    const { id } = req.params;
-    const { course_number, course_name, course_description, sections } =
-      req.body;
+// ฟังก์ชันสำหรับแก้ไขข้อมูล Course
+router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+  const { id } = req.params;
+  const { course_number, course_name, course_description } = req.body;
 
-    try {
-      // ค้นหา Course ที่จะทำการแก้ไข
-      const course = await Course.findById(id);
+  try {
+    // ค้นหา Course ที่จะทำการแก้ไข
+    const course = await Course.findById(id);
 
-      if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-      }
-
-      // อัปเดตข้อมูล Course
-      if (course_number && course.course_number !== course_number) {
-        course.course_number = course_number;
-      }
-      if (course_name && course.course_name !== course_name) {
-        course.course_name = course_name;
-      }
-      if (
-        course_description &&
-        course.course_description !== course_description
-      ) {
-        course.course_description = course_description;
-      }
-
-      // บันทึกการเปลี่ยนแปลงของ Course
-      await course.save();
-
-      // ตรวจสอบและอัปเดต Sections ที่เกี่ยวข้อง
-      if (Array.isArray(sections)) {
-        for (const sectionData of sections) {
-          const { section_id, section_name, semester_term, semester_year } =
-            sectionData;
-
-          if (!section_id) {
-            console.warn("Skipping section update due to missing section_id");
-            continue;
-          }
-
-          const section = await Section.findById(section_id);
-
-          if (section) {
-            let isUpdated = false;
-
-            if (section_name && section.section_name !== section_name) {
-              section.section_name = section_name;
-              isUpdated = true;
-            }
-            if (semester_term && section.semester_term !== semester_term) {
-              section.semester_term = semester_term;
-              isUpdated = true;
-            }
-            if (semester_year && section.semester_year !== semester_year) {
-              section.semester_year = semester_year;
-              isUpdated = true;
-            }
-
-            // อัปเดตข้อมูล course_number และ course_name ใน Section
-            if (course_number && section.course_number !== course_number) {
-              section.course_number = course_number;
-              isUpdated = true;
-            }
-            if (course_name && section.course_name !== course_name) {
-              section.course_name = course_name;
-              isUpdated = true;
-            }
-
-            // บันทึกการเปลี่ยนแปลงเฉพาะเมื่อมีการอัปเดตข้อมูล
-            if (isUpdated) {
-              await section.save();
-            }
-          } else {
-            console.warn(`Section with ID ${section_id} not found`);
-          }
-        }
-      }
-
-      res.status(200).json({
-        message: "Course and Sections updated successfully!",
-        course,
-      });
-    } catch (error) {
-      console.error("Error updating course and sections:", error);
-      res
-        .status(500)
-        .json({ message: "Error updating course and sections", error });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
     }
+
+    // อัปเดตข้อมูล Course
+    if (course_number && course.course_number !== course_number) {
+      course.course_number = course_number;
+    }
+    if (course_name && course.course_name !== course_name) {
+      course.course_name = course_name;
+    }
+    if (course_description && course.course_description !== course_description) {
+      course.course_description = course_description;
+    }
+
+    // บันทึกการเปลี่ยนแปลงของ Course
+    await course.save();
+
+    // อัปเดตข้อมูลใน Sections ที่เกี่ยวข้อง
+    const sections = await Section.find({ course_id: course._id });
+    for (const section of sections) {
+      let isUpdated = false;
+
+      if (course_number && section.course_number !== course_number) {
+        section.course_number = course_number;
+        isUpdated = true;
+      }
+      if (course_name && section.course_name !== course_name) {
+        section.course_name = course_name;
+        isUpdated = true;
+      }
+
+      // บันทึกการเปลี่ยนแปลงเฉพาะเมื่อมีการอัปเดตข้อมูล
+      if (isUpdated) {
+        await section.save();
+      }
+    }
+
+    res.status(200).json({
+      message: "Course and related sections updated successfully!",
+      course,
+    });
+  } catch (error) {
+    console.error("Error updating course and sections:", error);
+    res.status(500).json({ message: "Error updating course and sections", error });
   }
-);
+});
 
 // ฟังก์ชันสำหรับลบ Course และ Section ที่เกี่ยวข้อง
 router.delete(

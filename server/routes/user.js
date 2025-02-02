@@ -10,16 +10,16 @@ const router = express.Router();
 
 // ฟังก์ชันสำหรับสร้างผู้ใช้ใหม่ (เฉพาะแอดมิน)
 router.post("/create", verifyToken, checkAdmin, async (req, res) => {
-  const { first_name, last_name, username, email, password, role } = req.body;
+  const { personal_id, first_name, last_name, username, email, password, role } = req.body;
 
   // ตรวจสอบข้อมูลที่จำเป็น
-  if (!first_name || !last_name || !email || !username || !password) {
+  if (!personal_id || !first_name || !last_name || !email || !username || !password) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
   try {
     // ตรวจสอบว่าผู้ใช้นี้มีอยู่ในระบบหรือไม่
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ personal_id });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists." });
     }
@@ -32,6 +32,7 @@ router.post("/create", verifyToken, checkAdmin, async (req, res) => {
 
     // สร้างผู้ใช้ใหม่
     const newUser = new User({
+      personal_id,
       first_name,
       last_name,
       username,
@@ -77,15 +78,15 @@ router.post("/all", verifyToken, checkAdmin, async (req, res) => {
       const sectionIds = sections.map((section) => section._id);
       const enrollments = await Enrollment.find({
         section_id: { $in: sectionIds },
-      }).populate("student_id");
+      }).populate("personal_id");
       const instructors = await CourseInstructor.find({
         section_id: { $in: sectionIds },
-      }).populate("professor_id");
+      }).populate("personal_id");
 
       // Combine students and professors into a single list of users
       users = [
-        ...enrollments.map((enrollment) => enrollment.student_id),
-        ...instructors.map((instructor) => instructor.professor_id),
+        ...enrollments.map((enrollment) => enrollment.personal_id),
+        ...instructors.map((instructor) => instructor.personal_id),
       ];
     } else {
       // If no filtering criteria are provided, return all users
@@ -147,7 +148,7 @@ router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => {
 // ฟังก์ชันสำหรับแก้ไขข้อมูลผู้ใช้ (เจ้าของข้อมูลและแอดมิน)
 router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
   const { id } = req.params;
-  const { first_name, last_name, username, email, password, role, isDeleted } =
+  const { personal_id, first_name, last_name, username, email, password, role, isDeleted } =
     req.body;
 
   try {
@@ -164,6 +165,7 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
     }
 
     // ปรับปรุงข้อมูลผู้ใช้ที่ต้องการแก้ไข
+    if (personal_id) user.personal_id = personal_id;
     if (first_name) user.first_name = first_name;
     if (last_name) user.last_name = last_name;
     if (username) user.username = username;
