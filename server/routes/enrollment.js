@@ -26,31 +26,26 @@ router.post("/enroll", verifyToken, checkAdmin, async (req, res) => {
     const enrollments = [];
 
     for (const student of students) {
-      const { personal_num, first_name, last_name, email } = student;
-
-      // ตรวจสอบว่า User ที่เป็น Student มีอยู่หรือไม่
-      let user = await User.findOne({ personal_num });
-      if (!user) {
-        // ถ้าไม่มี User ให้สร้างใหม่
-        const username = email;
-        const password_hash = await bcrypt.hash(`password${personal_num}`, 10);
-
-        user = new User({
-          personal_num,
-          first_name,
-          last_name,
-          email,
-          username,
-          password_hash,
-          role: "student",
-        });
-        await user.save();
+      const { personal_num, email } = student;
+      const userByPersonalNum = await User.findOne({ personal_num });
+      const userByEmail = await User.findOne({ email });
+      
+      if (!userByPersonalNum || !userByEmail) {
+        return res.status(404).json({ message: `User with personal_num ${personal_num} or email ${email} not found in the system` });
+      }
+      
+      if (userByPersonalNum._id.toString() !== userByEmail._id.toString()) {
+        return res.status(400).json({ message: "Personal number and email do not match" });
+      }
+      const user = userByPersonalNum;
+      if (user.role !== "student") {
+        return res.status(400).json({ message: `User with personal_num ${personal_num} is not a student` });
       }
 
       // ตรวจสอบว่า Student ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
       const existingEnrollment = await Enrollment.findOne({
         section_id: section._id,
-        personal_num: user._id, // ใช้ _id ของ user แทน personal_id
+        personal_num: user.personal_num,
       });
 
       if (existingEnrollment) {
@@ -60,11 +55,15 @@ router.post("/enroll", verifyToken, checkAdmin, async (req, res) => {
       // สร้าง Enrollment ใหม่
       const newEnrollment = new Enrollment({
         section_id: section._id,
-        personal_num: user._id, // ใช้ _id ของ user แทน personal_id
+        student_id: user._id,
+        personal_num: user.personal_num,
+        email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
         course_number: section.course_id.course_number,
-        section_number: section.section_number, // เปลี่ยนจาก section_name เป็น section_number
+        section_number: section.section_number,
+        semester_term: section.semester_term,
+        semester_year: section.semester_year,
       });
 
       await newEnrollment.save();

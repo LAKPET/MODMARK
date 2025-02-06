@@ -26,32 +26,23 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
     const registeredInstructors = [];
 
     for (const professor of professors) {
-      const { personal_num, first_name, last_name, email } = professor; // เปลี่ยนเป็น personal_num
+      const { personal_num, email } = professor; // เปลี่ยนเป็น personal_num และ email
 
       // ตรวจสอบว่า User ที่เป็น Professor มีอยู่หรือไม่
-      let user = await User.findOne({ personal_num }); // เปลี่ยนเป็น personal_num
-      if (!user) {
-        // ตรวจสอบว่า email ซ้ำหรือไม่
-        const existingUserByEmail = await User.findOne({ email });
-        if (existingUserByEmail) {
-          return res.status(400).json({ message: `Email ${email} is already in use` });
-        }
+      const userByPersonalNum = await User.findOne({ personal_num }); // เปลี่ยนเป็น personal_num
+      const userByEmail = await User.findOne({ email });
 
-        // ถ้าไม่มี User ให้สร้างใหม่
-        const username = email;
-        const password_hash = await bcrypt.hash(`password${personal_num}`, 10); // เปลี่ยนเป็น personal_num
+      if (!userByPersonalNum || !userByEmail) {
+        return res.status(404).json({ message: `User with personal_num ${personal_num} or email ${email} not found in the system` });
+      }
 
-        user = new User({
-          personal_num, // เปลี่ยนเป็น personal_num
-          first_name,
-          last_name,
-          email,
-          username,
-          password_hash,
-          role: "professor",
-        });
-        await user.save();
-      } else if (user.role !== "professor") {
+      if (userByPersonalNum._id.toString() !== userByEmail._id.toString()) {
+        return res.status(400).json({ message: "Personal number and email do not match" });
+      }
+
+      const user = userByPersonalNum;
+
+      if (user.role !== "professor") {
         return res.status(400).json({ message: `User with personal_num ${personal_num} is not a professor` }); // เปลี่ยนเป็น personal_num
       }
 
@@ -68,11 +59,15 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
       // สร้าง CourseInstructor ใหม่
       const newInstructor = new CourseInstructor({
         section_id: section._id,
-        personal_num: user.personal_num, // เปลี่ยนเป็น personal_num
+        professor_id: user._id,
+        personal_num: user.personal_num,
         email: user.email,
-        username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
         course_number: section.course_id.course_number,
         section_number: section.section_number,
+        semester_term: section.semester_term,
+        semester_year: section.semester_year,
       });
 
       await newInstructor.save();
