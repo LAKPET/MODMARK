@@ -26,17 +26,23 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
     const registeredInstructors = [];
 
     for (const professor of professors) {
-      const { personal_id, first_name, last_name, email } = professor;
+      const { personal_num, first_name, last_name, email } = professor; // เปลี่ยนเป็น personal_num
 
       // ตรวจสอบว่า User ที่เป็น Professor มีอยู่หรือไม่
-      let user = await User.findOne({ personal_id });
+      let user = await User.findOne({ personal_num }); // เปลี่ยนเป็น personal_num
       if (!user) {
+        // ตรวจสอบว่า email ซ้ำหรือไม่
+        const existingUserByEmail = await User.findOne({ email });
+        if (existingUserByEmail) {
+          return res.status(400).json({ message: `Email ${email} is already in use` });
+        }
+
         // ถ้าไม่มี User ให้สร้างใหม่
         const username = email;
-        const password_hash = await bcrypt.hash(`password${personal_id}`, 10);
+        const password_hash = await bcrypt.hash(`password${personal_num}`, 10); // เปลี่ยนเป็น personal_num
 
         user = new User({
-          personal_id,
+          personal_num, // เปลี่ยนเป็น personal_num
           first_name,
           last_name,
           email,
@@ -46,13 +52,13 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
         });
         await user.save();
       } else if (user.role !== "professor") {
-        return res.status(400).json({ message: `User with personal_id ${personal_id} is not a professor` });
+        return res.status(400).json({ message: `User with personal_num ${personal_num} is not a professor` }); // เปลี่ยนเป็น personal_num
       }
 
       // ตรวจสอบว่า Professor ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
       const existingInstructor = await CourseInstructor.findOne({
         section_id: section._id,
-        personal_id: user.personal_id,
+        personal_num: user.personal_num, // เปลี่ยนเป็น personal_num
       });
 
       if (existingInstructor) {
@@ -62,7 +68,7 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
       // สร้าง CourseInstructor ใหม่
       const newInstructor = new CourseInstructor({
         section_id: section._id,
-        personal_id: user.personal_id,
+        personal_num: user.personal_num, // เปลี่ยนเป็น personal_num
         email: user.email,
         username: user.username,
         course_number: section.course_id.course_number,

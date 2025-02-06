@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  personal_id: { type: String, required: true, unique: true },
+  personal_num: { type: Number, required: true, unique: true }, // เปลี่ยนเป็น personal_num
   username: { type: String, unique: true, required: true },
   password_hash: { type: String, required: true },
   role: {
