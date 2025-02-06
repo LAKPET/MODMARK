@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Enrollment = require("../models/Enrollment");
 const User = require("../models/User");
 const Section = require("../models/Section");
@@ -25,23 +26,23 @@ router.post("/enroll", verifyToken, checkAdmin, async (req, res) => {
     const enrollments = [];
 
     for (const student of students) {
-      const { personal_id, first_name, last_name, email } = student;
+      const { personal_num, first_name, last_name, email } = student;
 
       // ตรวจสอบว่า User ที่เป็น Student มีอยู่หรือไม่
-      let user = await User.findOne({ personal_id });
+      let user = await User.findOne({ personal_num });
       if (!user) {
         // ถ้าไม่มี User ให้สร้างใหม่
         const username = email;
-        const password_hash = await bcrypt.hash(`password${personal_id}`, 10);
+        const password_hash = await bcrypt.hash(`password${personal_num}`, 10);
 
         user = new User({
-          personal_id,
+          personal_num,
           first_name,
           last_name,
           email,
           username,
           password_hash,
-          role:"student",
+          role: "student",
         });
         await user.save();
       }
@@ -49,7 +50,7 @@ router.post("/enroll", verifyToken, checkAdmin, async (req, res) => {
       // ตรวจสอบว่า Student ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
       const existingEnrollment = await Enrollment.findOne({
         section_id: section._id,
-        personal_id: user.personal_id,
+        personal_num: user._id, // ใช้ _id ของ user แทน personal_id
       });
 
       if (existingEnrollment) {
@@ -59,7 +60,7 @@ router.post("/enroll", verifyToken, checkAdmin, async (req, res) => {
       // สร้าง Enrollment ใหม่
       const newEnrollment = new Enrollment({
         section_id: section._id,
-        personal_id: user.personal_id,
+        personal_num: user._id, // ใช้ _id ของ user แทน personal_id
         first_name: user.first_name,
         last_name: user.last_name,
         course_number: section.course_id.course_number,

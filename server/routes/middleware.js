@@ -3,7 +3,6 @@ const redis = require("redis");
 require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
-
 // ตรวจสอบว่า Redis เชื่อมต่อแล้วหรือไม่เมื่อแอปเริ่มทำงาน
 const redisClient = redis.createClient();
 
@@ -14,7 +13,6 @@ redisClient.connect()
 redisClient.on('error', (err) => {
   console.log("Redis client error:", err);
 });
-
 
 // Middleware ตรวจสอบ token
 const verifyToken = async (req, res, next) => {
@@ -84,6 +82,5 @@ const checkAdminOrStudent = (req, res, next) => {
   }
   next();
 };
-  
 
 module.exports = { verifyToken, checkAdmin, checkAdminOrProfessor, checkAdminOrStudent };

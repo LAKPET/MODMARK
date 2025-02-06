@@ -11,50 +11,25 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const redisClient = redis.createClient();
 redisClient.connect().catch(console.error);
 
-// Middleware for token verification
-const verifyToken = (req, res, next) => {
-  const token = req.headers["authorization"]?.split(" ")[1];
-
-  if (!token) {
-    return res.status(403).json({ message: "No token provided" });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    req.user = decoded;
-    next();
-  });
-};
-
-// Middleware for role check
-const checkRole = (roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
-  next();
-};
-
 // Register User
 router.post("/register", async (req, res) => {
-  const { personal_id, first_name, last_name, email, password, username, role } = req.body;
+  const { personal_num, first_name, last_name, email, password, username, role } = req.body;
 
   // Validate required fields
-  if (!personal_id || !first_name || !last_name || !email || !password) {
+  if (!personal_num || !first_name || !last_name || !email || !password) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
   try {
-    const existingUser = await User.findOne({ personal_id });
+    const existingUser = await User.findOne({ personal_num });
     if (existingUser)
-      return res.status(400).json({ message: "This Personal ID already exists." });
+      return res.status(400).json({ message: "This Personal Number already exists." });
 
     const userRole = role || "student";
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
-      personal_id,
+      personal_num,
       first_name,
       last_name,
       username,
@@ -89,7 +64,7 @@ router.post("/login", async (req, res) => {
         role: user.role,
         email: user.email,
         username: user.username,
-        personal_id: user.personal_id,
+        personal_num: user.personal_num,
       },
       JWT_SECRET
     );
@@ -108,7 +83,7 @@ router.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        personal_id: user.personal_id,
+        personal_num: user.personal_num,
       },
     });
   } catch (error) {
