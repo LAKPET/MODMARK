@@ -287,16 +287,12 @@ export default function CreateAssessmentModal({
             </Button>
           )}
           {activeTab === "assessmentDetail" && (
-            <Button
-              variant="secondary"
-              className="me-2"
-              onClick={handleNextTab}
-            >
+            <Button className="custom-btn me-2" onClick={handleNextTab}>
               Next
             </Button>
           )}
           {activeTab === "createRubric" && (
-            <Button variant="success" onClick={handleSubmit}>
+            <Button className="custom-btn" onClick={handleSubmit}>
               Save
             </Button>
           )}

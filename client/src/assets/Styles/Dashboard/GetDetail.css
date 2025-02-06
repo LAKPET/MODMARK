@@ -4,3 +4,9 @@
   width: 100%; /* ให้เส้นเต็มความกว้าง */
   margin-bottom: 10px; /* เพิ่มระยะห่าง */
 }
+.vertical-line {
+  display: inline-block; /* หรือใช้ block/flex */
+  width: 2px; /* ความกว้างของเส้น */
+  height: 30px; /* กำหนดความสูงให้ชัดเจน */
+  margin: 0 10px; /* ระยะห่าง */
+}

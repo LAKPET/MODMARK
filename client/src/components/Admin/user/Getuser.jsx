@@ -67,7 +67,7 @@ export default function UserTable() {
     setError(null);
     const params = {
       course_number: courseNumber,
-      section_name: sectionName,
+      section_number: sectionName,
       semester_term: semesterTerm,
       semester_year: semesterYear,
     };

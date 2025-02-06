@@ -273,7 +273,7 @@ export default function CourseTable() {
       <AddUserCourse
         show={showAddUserModal}
         handleClose={handleCloseAddUserModal}
-        courseId={selectedCourseId}
+        Id={selectedCourseId}
         refreshCourses={fetchCourses}
       />
       <EditCourse

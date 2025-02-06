@@ -47,7 +47,7 @@ export default function AddUserCourse({
 
     if (excelData.length > 0) {
       const studentsOrInstructors = excelData.map((row) => ({
-        personal_id: row.personal_id,
+        personal_number: row.personal_number,
         first_name: row.first_name,
         last_name: row.last_name,
         email: row.email,
@@ -65,7 +65,7 @@ export default function AddUserCourse({
         apiEndpoint = `${apiUrl}/course-instructor/register-instructor`;
         payload = {
           section_id: Id,
-          instructors: studentsOrInstructors,
+          professors: studentsOrInstructors,
         };
       } else {
         console.error("Invalid role selected.");

@@ -68,7 +68,7 @@ export default function GetDetailCourse() {
           </h2>
           <div className="d-flex align-items-center">
             <p className="text-muted p-1 mb-0">{courseDetails.course_name}</p>
-            <span className="text-muted p-1">{`Section ${courseDetails.section_name}`}</span>
+            <span className="text-muted p-1">{`Section ${courseDetails.section_number}`}</span>
           </div>
         </Col>
       </Row>

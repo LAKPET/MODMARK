@@ -46,3 +46,14 @@
   margin-right: 8px;
   vertical-align: middle;
 }
+
+.custom-btn {
+  background-color: #8b5f34;
+  border-color: #8b5f34;
+  font-weight: 600;
+}
+
+.custom-btn:hover {
+  background-color: #6f4f2f; /* Optional: Darker shade for hover effect */
+  border-color: #6f4f2f;
+}

@@ -32,7 +32,7 @@ function Navber() {
           >
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="/course">My Course</a>
+                <a href="/professor/course">My Course</a>
               </li>
               <li className="breadcrumb-item active" aria-current="page">
                 My Dashboard
