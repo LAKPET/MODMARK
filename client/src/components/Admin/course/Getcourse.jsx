@@ -24,7 +24,7 @@ import EditCourse from "../course/Editcourse";
 
 const columns = [
   { id: "course_number", label: "Course Number", minWidth: 150 },
-  { id: "section_name", label: "Section Name", minWidth: 150 },
+  { id: "section_number", label: "Section Name", minWidth: 150 },
   { id: "semester_term", label: "Semester Term", minWidth: 150 },
   { id: "semester_year", label: "Semester Year", minWidth: 150 },
   {
@@ -67,6 +67,7 @@ export default function CourseTable() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCourses(response.data);
+      console.log("Courses:", response.data); // Debugging log
       setSearchPerformed(true); // Set searchPerformed to true after fetching courses
     } catch (err) {
       setError("Failed to fetch courses");
@@ -78,7 +79,7 @@ export default function CourseTable() {
   const handleSearch = () => {
     const params = {
       course_number: courseNumber,
-      section_name: sectionName,
+      section_number: sectionName,
       semester_term: semesterTerm,
       semester_year: semesterYear,
     };
@@ -217,19 +218,15 @@ export default function CourseTable() {
                                 <div className="actions-cell">
                                   <PersonAddIcon
                                     className="icon-style"
-                                    onClick={() =>
-                                      handleAddUser(course.course_id)
-                                    }
+                                    onClick={() => handleAddUser(course._id)}
                                   />
                                   <EditIcon
                                     className="icon-style"
-                                    onClick={() => handleEdit(course.course_id)}
+                                    onClick={() => handleEdit(course._id)}
                                   />
                                   <DeleteIcon
                                     className="icon-style"
-                                    onClick={() =>
-                                      handleDelete(course.course_id)
-                                    }
+                                    onClick={() => handleDelete(course._id)}
                                   />
                                 </div>
                               ) : (
@@ -270,7 +267,7 @@ export default function CourseTable() {
       <DeleteCourse
         show={showDeleteModal}
         handleClose={handleCloseDeleteModal}
-        courseId={selectedCourseId}
+        Id={selectedCourseId}
         refreshCourses={fetchCourses}
       />
       <AddUserCourse
@@ -282,7 +279,7 @@ export default function CourseTable() {
       <EditCourse
         show={showEditModal}
         handleClose={handleCloseEditModal}
-        courseId={selectedCourseId}
+        Id={selectedCourseId}
         refreshCourses={fetchCourses}
       />
     </>

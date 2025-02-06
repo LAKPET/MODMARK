@@ -81,7 +81,7 @@ export default function Getcourse() {
                 </div>
               </div>
               <div className="card-footer bg-transparent border-secondary">
-                Section: {course.section_name}
+                Section: {course.section_number}
               </div>
             </div>
           </div>

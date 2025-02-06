@@ -10,7 +10,7 @@ import Select from "@mui/material/Select";
 export default function AddUserCourse({
   show,
   handleClose,
-  courseId,
+  Id,
   refreshCourses,
 }) {
   const [userId, setUserId] = useState("");
@@ -41,48 +41,50 @@ export default function AddUserCourse({
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("authToken");
 
     if (excelData.length > 0) {
-      console.log("Excel Data to be submitted:", excelData);
-      const promises = excelData.map((row) =>
-        axios.post(
-          `${apiUrl}/course/adduser`,
-          {
-            course_id: courseId,
-            user_id: row.user_id, // Assumes "user_id" is a column in the Excel file
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        )
-      );
+      const studentsOrInstructors = excelData.map((row) => ({
+        personal_id: row.personal_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        email: row.email,
+      }));
 
-      Promise.all(promises)
-        .then(() => {
-          handleClose();
-          refreshCourses();
-        })
-        .catch((err) => console.error(err));
+      let payload, apiEndpoint;
+
+      if (role === "student") {
+        apiEndpoint = `${apiUrl}/enrollment/enroll`;
+        payload = {
+          section_id: Id,
+          students: studentsOrInstructors,
+        };
+      } else if (role === "professor") {
+        apiEndpoint = `${apiUrl}/course-instructor/register-instructor`;
+        payload = {
+          section_id: Id,
+          instructors: studentsOrInstructors,
+        };
+      } else {
+        console.error("Invalid role selected.");
+        return;
+      }
+      console.log("Payload:", payload);
+      try {
+        const response = await axios.post(apiEndpoint, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        console.log("Success:", response.data);
+        handleClose();
+        refreshCourses();
+      } catch (error) {
+        console.error("Request failed:", error);
+      }
     } else {
-      axios
-        .post(
-          `${apiUrl}/course/adduser`,
-          {
-            course_id: courseId,
-            user_id: userId,
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        )
-        .then(() => {
-          handleClose();
-          refreshCourses();
-        })
-        .catch((err) => console.error(err));
+      console.error("No data found in Excel file.");
     }
   };
 

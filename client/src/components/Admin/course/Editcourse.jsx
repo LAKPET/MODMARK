@@ -3,12 +3,7 @@ import { Modal, Button, Form } from "react-bootstrap";
 import { MDBInput } from "mdb-react-ui-kit";
 import axios from "axios";
 
-export default function EditCourse({
-  show,
-  handleClose,
-  courseId,
-  refreshCourses,
-}) {
+export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [courseNumber, setCourseNumber] = useState("");
   const [sectionName, setSectionName] = useState("");
   const [semesterTerm, setSemesterTerm] = useState("");
@@ -17,20 +12,20 @@ export default function EditCourse({
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    if (courseId) {
+    if (Id) {
       fetchCourseDetails();
     }
-  }, [courseId]);
+  }, [Id]);
 
   const fetchCourseDetails = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axios.put(`${apiUrl}/course/update/${courseId}`, {
+      const response = await axios.put(`${apiUrl}/section/update/${Id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const course = response.data;
       setCourseNumber(course.course_number);
-      setSectionName(course.section_name);
+      setSectionName(course.section_number);
       setSemesterTerm(course.semester_term);
       setSemesterYear(course.semester_year);
       // setCourseName(course.course_name);
@@ -44,10 +39,10 @@ export default function EditCourse({
     const token = localStorage.getItem("authToken");
     axios
       .put(
-        `${apiUrl}/course/update/${courseId}`,
+        `${apiUrl}/section/update/${Id}`,
         {
           course_number: courseNumber,
-          section_name: sectionName,
+          section_number: sectionName,
           semester_term: semesterTerm,
           semester_year: semesterYear,
           // course_name: courseName,

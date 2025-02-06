@@ -1,13 +1,13 @@
 import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
 
-function DeleteCourse({ show, handleClose, courseId, refreshCourses }) {
+function DeleteCourse({ show, handleClose, Id, refreshCourses }) {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleDelete = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/course/delete/${courseId}`, {
+      await axios.delete(`${apiUrl}/section/delete/${Id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       handleClose();

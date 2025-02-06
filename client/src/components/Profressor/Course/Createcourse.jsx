@@ -38,7 +38,7 @@ export default function Createcourse({ show, handleClose }) {
       course_number: courseNumber,
       course_name: courseName,
       course_description: courseDescription,
-      section_name: section,
+      section_number: section,
       section_term: term,
       section_year: year,
     };
