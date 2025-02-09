@@ -1,0 +1,55 @@
+
+  .custom-tab-container {
+    display: flex;
+    justify-content: space-between; 
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .custom-tab {
+    display: flex;
+    align-items: start;
+    justify-content: start;
+    
+    width: 50%; 
+    background: none;
+    border: none;
+    font-size: 20px;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    transition: color 0.3s, border-bottom 0.3s;
+    border-bottom: 3px solid transparent;
+    color: #9d9b9b;
+    
+  }
+  
+  .custom-tab:last-child {
+    border-right: none; /* ลบเส้นขอบออกจากแท็บสุดท้าย */
+  }
+  
+  .custom-tab.active {
+    font-weight: bold;
+    color: #8b5f34;
+    border-bottom: 3px solid #8b5f34;
+  }
+  
+  .custom-tab:hover {
+    color: #6f4f2f;
+  }
+  
+  .tab-icon {
+    width: 30px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  
+  .custom-btn {
+    background-color: #8b5f34;
+    border-color: #8b5f34;
+    font-weight: 600;
+  }
+  
+  .custom-btn:hover {
+    background-color: #6f4f2f; /* Optional: Darker shade for hover effect */
+    border-color: #6f4f2f;
+  }

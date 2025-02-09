@@ -9,6 +9,7 @@ import axios from "axios";
 import "../../../assets/Styles/Admin/Createuser.css";
 
 export default function Createuser({ show, handleClose, refreshUsers }) {
+  const [personalNum, setPersonalNum] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
   const [email, setEmail] = useState("");
@@ -24,15 +25,16 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
       .post(
         `${apiUrl}/users/create`,
         {
+          personal_num: parseInt(personalNum, 10), // Convert to integer
           first_name: firstname,
           last_name: lastname,
-          email,
           username,
+          email,
           password,
           role,
         },
         {
-          headers: { Authorization: `Bearer ${token}` }, // Include the token in the headers
+          headers: { Authorization: `Bearer ${token}` },
         }
       )
       .then(() => {
@@ -49,6 +51,16 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
       </Modal.Header>
       <Modal.Body>
         <Form onSubmit={handleSubmit}>
+          <Form.Group className="mt-2 mb-4" controlId="formPersonalNum">
+            <MDBInput
+              label="Personal Number"
+              id="formPersonalNum"
+              type="text"
+              value={personalNum}
+              onChange={(e) => setPersonalNum(e.target.value)}
+            />
+          </Form.Group>
+
           <Form.Group className="mt-2 mb-4" controlId="formFirstname">
             <MDBInput
               label="Firstname"
@@ -100,20 +112,16 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
           </Form.Group>
 
           <Form.Group className="mb-4" controlId="formRole">
-            <FormControl fullWidth>
-              <InputLabel id="role-select-label">Role</InputLabel>
-              <Select
-                labelId="role-select-label"
-                id="role-select"
-                value={role}
-                label="Role"
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <MenuItem value="student">Student</MenuItem>
-                <MenuItem value="professor">Professor</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-              </Select>
-            </FormControl>
+            <Form.Control
+              as="select"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="">Select Role</option>
+              <option value="student">Student</option>
+              <option value="professor">Professor</option>
+              <option value="admin">Admin</option>
+            </Form.Control>
           </Form.Group>
           <div className=" mb-3  line-with-text">
             <span>or</span>

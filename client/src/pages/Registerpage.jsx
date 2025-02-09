@@ -10,6 +10,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
 function Register() {
+  const [personalNum, setPersonalNum] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
   const [email, setEmail] = useState("");
@@ -17,6 +18,7 @@ function Register() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!firstname || !lastname) {
@@ -26,6 +28,7 @@ function Register() {
 
     axios
       .post(`${apiUrl}/auth/register`, {
+        personal_num: parseInt(personalNum, 10),
         first_name: firstname,
         last_name: lastname,
         email,
@@ -71,7 +74,7 @@ function Register() {
         <MDBCol col="6" className="mb-5">
           <div className="d-flex flex-column ms-5">
             <div className="text-center">
-              <h3 className="fw-bolder mt-1 mb-5 pb-1">
+              <h3 className="fw-bolder mt-1 mb-4 pb-1">
                 <span style={{ color: "#F49427" }}>Mod</span>mark
               </h3>
               <p>Please register to create your account</p>
@@ -80,37 +83,50 @@ function Register() {
             <form onSubmit={handleSubmit}>
               <MDBInput
                 wrapperClass="mb-4"
-                label="Firstname"
+                label="Personal Number"
                 id="form1"
                 type="text"
+                value={personalNum}
+                onChange={(e) => setPersonalNum(e.target.value)}
+              />
+              <MDBInput
+                wrapperClass="mb-4"
+                label="Firstname"
+                id="form2"
+                type="text"
+                value={firstname}
                 onChange={(e) => setFirstname(e.target.value)}
               />
               <MDBInput
                 wrapperClass="mb-4"
                 label="Lastname"
-                id="form2"
+                id="form3"
                 type="text"
+                value={lastname}
                 onChange={(e) => setLastname(e.target.value)}
               />
               <MDBInput
                 wrapperClass="mb-4"
                 label="Email"
-                id="form3"
+                id="form4"
                 type="email"
+                value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
               <MDBInput
                 wrapperClass="mb-4"
                 label="Username"
-                id="form4"
+                id="form5"
                 type="text"
+                value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
               <MDBInput
                 wrapperClass="mb-4"
                 label="Password"
-                id="form5"
+                id="form6"
                 type="password"
+                value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
 

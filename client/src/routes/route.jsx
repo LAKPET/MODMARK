@@ -9,6 +9,7 @@ import Dashboardpage_Admin from "../pages/Admin/Dashboardpage_Admin";
 import Unauthorized from "./Unauthorized";
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider } from "./AuthContext";
+import Settingcoursepage from "../pages/Profressor/Settingcoursepage";
 
 function AppRoutes() {
   return (
@@ -40,6 +41,14 @@ function AppRoutes() {
               <ProtectedRoute>
                 <Dashboardpage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/setting/"
+            element={
+              //<ProtectedRoute requiredRole="professor">
+              <Settingcoursepage />
+              // </ProtectedRoute>
             }
           />
           <Route

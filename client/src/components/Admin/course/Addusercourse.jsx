@@ -47,7 +47,7 @@ export default function AddUserCourse({
 
     if (excelData.length > 0) {
       const studentsOrInstructors = excelData.map((row) => ({
-        personal_number: row.personal_number,
+        personal_num: Number(row.personal_number),
         first_name: row.first_name,
         last_name: row.last_name,
         email: row.email,

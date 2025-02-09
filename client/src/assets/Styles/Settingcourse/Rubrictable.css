@@ -1,0 +1,66 @@
+.rubric-container {
+    width: 100%;
+    display: flex;
+    justify-content: start;
+    padding: 20px;
+  }
+  
+  .rubric-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+  }
+  
+  .rubric-header {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+  }
+
+  .criteria-cell{
+    /* background-color: #f5f5f5; */
+    align-items: start;
+    justify-content: start;
+    width: 20%;
+  }
+  
+  .criteria-cell,
+  .rubric-cell {
+    border: 1px solid #ddd;
+    padding: 8px;
+    align-items: start;
+    justify-content: start;
+  }
+  
+
+  .criteria-input,
+  .rubric-input{
+    width: 100%;
+    border: none;
+    text-align: left;
+  }
+  .score-input {
+    width: 80px;
+    border: none;
+    text-align: left;
+    
+  }
+  .criteria-input:focus,
+  .rubric-input:focus,
+  .score-input:focus {
+    outline: none;
+  }
+  
+  .add-btn,
+  .remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .add-row-cell {
+    text-align: center;
+    padding: 10px;
+  }
+  

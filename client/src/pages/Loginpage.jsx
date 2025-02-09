@@ -6,6 +6,8 @@ import {
   MDBRow,
   MDBCol,
   MDBInput,
+  MDBValidation,
+  MDBValidationItem,
 } from "mdb-react-ui-kit";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -23,19 +25,18 @@ function Loginpage() {
 
   const handlesubmit = (e) => {
     e.preventDefault();
-    setLoading(true); // Start loading
-    setErrorMessage(""); // Clear any previous error
+    setLoading(true);
+    setErrorMessage("");
 
     axios
-      .post(`${apiUrl}/auth/login`, { email, password }) // Use correct API endpoint
+      .post(`${apiUrl}/auth/login`, { email, password })
       .then((result) => {
-        setLoading(false); // Stop loading
+        setLoading(false);
         const { token, user } = result.data;
         localStorage.setItem("authToken", token);
         localStorage.setItem("Username", user.username);
         setUser(user);
 
-        // Redirect based on user role
         if (user.role === "admin") {
           navigate("/dashboard/admin/users");
         } else if (user.role === "professor") {
@@ -45,8 +46,8 @@ function Loginpage() {
         }
       })
       .catch((err) => {
-        setLoading(false); // Stop loading
-        setErrorMessage("Invalid credentials, please try again."); // Set error message
+        setLoading(false);
+        setErrorMessage("Invalid credentials, please try again.");
         console.error(err);
       });
   };
@@ -64,33 +65,49 @@ function Loginpage() {
             </div>
 
             <p>Please login to your account</p>
-            <form onSubmit={handlesubmit}>
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Email address"
-                id="form1"
-                type="email"
-                onChange={(e) => setEmail(e.target.value)}
-                value={email}
-              />
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Password"
-                id="form2"
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-                value={password}
-              />
 
-              {/* Display error message if login fails */}
+            <MDBValidation className="row g-3" onSubmit={handlesubmit}>
+              <MDBValidationItem
+                className="col-12"
+                feedback="Please enter a valid email."
+                invalid
+              >
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Email address"
+                  id="form1"
+                  type="email"
+                  onChange={(e) => setEmail(e.target.value)}
+                  value={email}
+                  required
+                />
+              </MDBValidationItem>
+
+              <MDBValidationItem
+                className="col-12"
+                feedback="Password is required."
+                invalid
+              >
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Password"
+                  id="form2"
+                  type="password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  value={password}
+                  required
+                />
+              </MDBValidationItem>
+
               {errorMessage && (
                 <div className="text-danger mb-4">{errorMessage}</div>
               )}
 
               <div className="text-center pt-1 mb-5 pb-1">
                 <MDBBtn
-                  className="mb-4 w-100 gradient-custom-2"
-                  disabled={loading} // Disable button while loading
+                  className="mb-4 w-100 gradient-custom-2 mb-4"
+                  disabled={loading}
+                  type="submit"
                 >
                   {loading ? "Loading..." : "Sign in"}
                 </MDBBtn>
@@ -98,7 +115,7 @@ function Loginpage() {
                   Forgot password?
                 </a>
               </div>
-            </form>
+            </MDBValidation>
 
             <div className="d-flex flex-row align-items-center justify-content-center pb-4 mb-4">
               <p className="mb-0">Don't have an account?</p>

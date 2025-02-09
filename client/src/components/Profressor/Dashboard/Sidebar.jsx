@@ -66,9 +66,9 @@ function Sidebar() {
           <span>Team</span>
         </Nav.Link>
         <Nav.Link
-          href="/settingcourse"
+          href="/setting"
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/settingcourse") ? "active" : ""
+            isActive("/setting") ? "active" : ""
           }`}
         >
           <SettingsIcon className="me-2" />
