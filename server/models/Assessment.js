@@ -4,7 +4,8 @@ const assessmentSchema = new mongoose.Schema({
     course_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     section_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Section', required: true },
     professor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    personal_num: { type: Number, required: true }, // เปลี่ยนเป็น personal_num
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
     assessment_name: { type: String, required: true },
     assessment_description: { type: String },
     assignment_type: { type: String, enum: ['individual', 'group'], required: true },
