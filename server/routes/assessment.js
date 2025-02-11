@@ -6,6 +6,7 @@ const GroupMember = require("../models/GroupMember");
 const AssessmentRubric = require("../models/AssessmentRubric");
 const Rubric = require("../models/Rubric");
 const User = require("../models/User");
+const Section = require("../models/Section"); // Import Section model
 const { verifyToken, checkAdminOrProfessor } = require("./middleware");
 
 const router = express.Router();
@@ -32,6 +33,18 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // ตรวจสอบว่ามี section นั้นหรือไม่
+    const section = await Section.findById(section_id);
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    // ตรวจสอบว่าชื่อ assessment ซ้ำหรือไม่
+    const existingAssessment = await Assessment.findOne({ assessment_name, course_id, section_id });
+    if (existingAssessment) {
+      return res.status(400).json({ message: "Assessment name already exists in this section." });
+    }
+
     let selectedRubric;
 
     if (rubric_id) {
@@ -47,7 +60,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
         description: rubric.description,
         criteria: rubric.criteria,
         created_by: req.user.id,
-        section_id: new mongoose.Types.ObjectId(section_id), // ใช้ new ในการสร้าง ObjectId
+        section_id: section_id, // Directly assign section_id
         is_global: false
       });
 
@@ -57,8 +70,8 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     }
 
     const newAssessment = new Assessment({
-      course_id: new mongoose.Types.ObjectId(course_id), // ใช้ new ในการสร้าง ObjectId
-      section_id: new mongoose.Types.ObjectId(section_id), // ใช้ new ในการสร้าง ObjectId
+      course_id: course_id, // Directly assign course_id
+      section_id: section_id, // Directly assign section_id
       professor_id: req.user.id,
       first_name: user.first_name,
       last_name: user.last_name,
@@ -80,11 +93,21 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     });
     await newAssessmentRubric.save();
 
-    // Save graders with their weights
-    if (teamgrading_type && graders && graders.length > 0) {
+    // Create group for professors who will grade the assessment
+    const gradingGroup = new Group({
+      assessment_id: newAssessment._id,
+      group_name: `${assessment_name} Grading Group`,
+      group_type: 'grading',
+      status: 'not-submit'
+    });
+    await gradingGroup.save();
+
+    // Save graders with their weights in GroupMember
+    if (graders && graders.length > 0) {
       for (const grader of graders) {
         const newGroupMember = new GroupMember({
-          group_id: newAssessment._id,
+          group_id: gradingGroup._id,
+          assessment_id: newAssessment._id,
           user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
           role: 'professor',
           weight: grader.weight
@@ -103,7 +126,19 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
 // Get all assessments
 router.get("/", verifyToken, checkAdminOrProfessor, async (req, res) => {
   try {
-    const assessments = await Assessment.find().populate("course_id section_id professor_id");
+    const assessments = await Assessment.find()
+      .populate({
+        path: "course_id",
+        select: "course_name"
+      })
+      .populate({
+        path: "section_id",
+        select: "section_number semester_term semester_year"
+      })
+      .populate({
+        path: "professor_id",
+        select: "first_name last_name email"
+      });
     res.status(200).json(assessments);
   } catch (error) {
     console.error("Error fetching assessments:", error);
@@ -116,7 +151,19 @@ router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;
 
   try {
-    const assessment = await Assessment.findById(id).populate("course_id section_id professor_id");
+    const assessment = await Assessment.findById(id)
+      .populate({
+        path: "course_id",
+        select: "course_name"
+      })
+      .populate({
+        path: "section_id",
+        select: "section_number semester_term semester_year"
+      })
+      .populate({
+        path: "professor_id",
+        select: "first_name last_name email"
+      });
     if (!assessment) {
       return res.status(404).json({ message: "Assessment not found" });
     }
@@ -131,15 +178,12 @@ router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
 router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;
   const {
-    course_id,
-    section_id,
     assessment_name,
     assessment_description,
     assignment_type,
     teamgrading_type,
     publish_date,
     due_date,
-    groups, // Array of groups if assignment_type is 'group'
     rubric_id, // ID of the rubric to be used
     graders // Array of graders with their weights
   } = req.body;
@@ -150,10 +194,7 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
       return res.status(404).json({ message: "Assessment not found" });
     }
 
-    assessment.course_id = course_id || assessment.course_id;
-    assessment.section_id = section_id || assessment.section_id;
-    assessment.first_name = req.body.first_name || assessment.first_name;
-    assessment.last_name = req.body.last_name || assessment.last_name;
+    // Update assessment details
     assessment.assessment_name = assessment_name || assessment.assessment_name;
     assessment.assessment_description = assessment_description || assessment.assessment_description;
     assessment.assignment_type = assignment_type || assessment.assignment_type;
@@ -163,46 +204,37 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
 
     await assessment.save();
 
-    // Update groups if assignment_type is 'group'
-    if (assignment_type === 'group' && groups && groups.length > 0) {
-      await Group.deleteMany({ assessment_id: id });
-      for (const group of groups) {
-        const newGroup = new Group({
-          assessment_id: id,
-          group_name: group.group_name,
-          group_type: 'study',
-          status: 'not-submit'
-        });
-        await newGroup.save();
+    // Update rubric link
+    if (rubric_id) {
+      const assessmentRubric = await AssessmentRubric.findOneAndUpdate(
+        { assessment_id: id },
+        { rubric_id: new mongoose.Types.ObjectId(rubric_id), is_active: true }, // ใช้ new ในการสร้าง ObjectId
+        { new: true }
+      );
 
-        // Add group members
-        for (const member of group.members) {
-          const newGroupMember = new GroupMember({
-            group_id: newGroup._id,
-            user_id: new mongoose.Types.ObjectId(member.user_id), // ใช้ new ในการสร้าง ObjectId
-            role: 'student'
-          });
-          await newGroupMember.save();
-        }
+      // Update the rubric's assessments field
+      const selectedRubric = await Rubric.findById(rubric_id);
+      if (!selectedRubric.assessments.includes(assessmentRubric._id)) {
+        selectedRubric.assessments.push(assessmentRubric._id);
+        await selectedRubric.save();
       }
     }
 
-    // Update rubric link
-    if (rubric_id) {
-      await AssessmentRubric.findOneAndUpdate(
-        { assessment_id: id },
-        { rubric_id: new mongoose.Types.ObjectId(rubric_id), is_active: true }, // ใช้ new ในการสร้าง ObjectId
-        { upsert: true }
-      );
-    }
+    // Update group for professors who will grade the assessment
+    const gradingGroup = await Group.findOneAndUpdate(
+      { assessment_id: id, group_type: 'grading' },
+      { group_name: `${assessment_name} Grading Group` },
+      { new: true }
+    );
 
     // Update graders with their weights
-    if (teamgrading_type && graders && graders.length > 0) {
-      await GroupMember.deleteMany({ group_id: id, role: 'professor' });
+    if (graders && graders.length > 0) {
+      await GroupMember.deleteMany({ group_id: gradingGroup._id, role: 'professor' });
       for (const grader of graders) {
         const newGroupMember = new GroupMember({
-          group_id: id,
-          user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
+          group_id: gradingGroup._id,
+          assessment_id: assessment._id,
+          user_id: grader.user_id, // ใช้ new ในการสร้าง ObjectId
           role: 'professor',
           weight: grader.weight
         });
@@ -228,7 +260,7 @@ router.delete("/delete/:id", verifyToken, checkAdminOrProfessor, async (req, res
     }
 
     await Group.deleteMany({ assessment_id: id });
-    await GroupMember.deleteMany({ group_id: id });
+    await GroupMember.deleteMany({ assessment_id: id });
     await AssessmentRubric.deleteMany({ assessment_id: id });
 
     await assessment.deleteOne();

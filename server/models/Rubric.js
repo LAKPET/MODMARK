@@ -20,7 +20,8 @@ const rubricSchema = new mongoose.Schema({
     section_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Section', required: true },
     is_global: { type: Boolean, default: false },
     created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now }
+    updated_at: { type: Date, default: Date.now },
+    assessments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'AssessmentRubric' }]
 });
 
 module.exports = mongoose.model('Rubric', rubricSchema);
