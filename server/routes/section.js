@@ -131,22 +131,23 @@ router.get("/students/:section_id", verifyToken, checkAdminOrProfessor, async (r
   const { section_id } = req.params;
 
   try {
-    const enrollments = await Enrollment.find({ section_id }).populate("personal_id", "first_name last_name email");
+    const enrollments = await Enrollment.find({ section_id }).populate("student_id", "personal_num first_name last_name email");
 
     if (!enrollments.length) {
       return res.status(404).json({ message: "No students found for this section" });
     }
 
     const students = enrollments.map(enrollment => {
-      const personal_id = enrollment.personal_id;
-      if (!personal_id) {
+      const student = enrollment.student_id;
+      if (!student) {
         return {};
       }
       return {
-        student_id: personal_id._id,
-        first_name: personal_id.first_name,
-        last_name: personal_id.last_name,
-        email: personal_id.email,
+        student_id: student._id,
+        personal_num: student.personal_num,
+        first_name: student.first_name,
+        last_name: student.last_name,
+        email: student.email,
       };
     });
 
@@ -162,22 +163,23 @@ router.get("/professors/:section_id", verifyToken, checkAdminOrProfessor, async 
   const { section_id } = req.params;
 
   try {
-    const instructors = await CourseInstructor.find({ section_id }).populate("personal_id", "first_name last_name email");
+    const instructors = await CourseInstructor.find({ section_id }).populate("professor_id", "personal_num first_name last_name email");
 
     if (!instructors.length) {
       return res.status(404).json({ message: "No professors found for this section" });
     }
 
     const professors = instructors.map(instructor => {
-      const personal_id = instructor.personal_id;
-      if (!personal_id) {
+      const professor = instructor.professor_id;
+      if (!professor) {
         return {};
       }
       return {
-        professor_id: personal_id._id,
-        first_name: personal_id.first_name,
-        last_name: personal_id.last_name,
-        email: personal_id.email,
+        professor_id: professor._id,
+        personal_num: professor.personal_num,
+        first_name: professor.first_name,
+        last_name: professor.last_name,
+        email: professor.email,
       };
     });
 
