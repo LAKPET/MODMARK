@@ -23,7 +23,6 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     publish_date,
     due_date,
     rubric_id, // ID of the selected rubric
-    rubric, // New rubric details if creating a new one
     graders // Array of graders with their weights
   } = req.body;
 
@@ -45,28 +44,10 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
       return res.status(400).json({ message: "Assessment name already exists in this section." });
     }
 
-    let selectedRubric;
-
-    if (rubric_id) {
-      // Find the selected rubric
-      selectedRubric = await Rubric.findById(rubric_id);
-      if (!selectedRubric) {
-        return res.status(404).json({ message: "Rubric not found" });
-      }
-    } else if (rubric) {
-      // Create new rubric
-      selectedRubric = new Rubric({
-        rubric_name: rubric.title,
-        description: rubric.description,
-        criteria: rubric.criteria,
-        created_by: req.user.id,
-        section_id: section_id, // Directly assign section_id
-        is_global: false
-      });
-
-      await selectedRubric.save();
-    } else {
-      return res.status(400).json({ message: "Rubric details are required" });
+    // Find the selected rubric
+    const selectedRubric = await Rubric.findById(rubric_id);
+    if (!selectedRubric) {
+      return res.status(404).json({ message: "Rubric not found" });
     }
 
     const newAssessment = new Assessment({

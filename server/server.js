@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const cors = require("cors");
+
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const courseRoutes = require("./routes/course");
@@ -8,12 +10,13 @@ const courseInstructorRoutes = require("./routes/courseinstructor");
 const enrollmentRoutes = require("./routes/enrollment");
 const assessmentRoutes = require("./routes/assessment");
 const sectionRoutes = require("./routes/section");
+const rubricRoutes = require("./routes/rubric"); // Import rubric routes
+
 require("dotenv").config();
 
 const app = express();
-const cors = require("cors");
-app.use(cors()); // เพิ่ม middleware นี้
 
+app.use(cors());
 app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
@@ -32,8 +35,11 @@ app.use("/course-instructor", courseInstructorRoutes); // เปลี่ยน�
 app.use("/enrollment", enrollmentRoutes); // เปลี่ยนเส้นทางเพื่อหลีกเลี่ยงความขัดแย้ง
 app.use("/assessment", assessmentRoutes);
 app.use("/section", sectionRoutes);
+app.use("/rubric", rubricRoutes); // Use rubric routes
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
+
+module.exports = app;
