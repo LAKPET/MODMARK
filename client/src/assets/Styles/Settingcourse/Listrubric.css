@@ -1,0 +1,78 @@
+.rubric-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background-color: #fff;
+    width: 100%;
+}
+
+.rubric-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    cursor: pointer;
+}
+
+.rubric-info {
+    flex: 1;
+}
+
+.rubric-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.rubric-title {
+    font-weight: bold;
+    min-width: 100px;
+}
+
+.rubric-value {
+    color: #555;
+}
+
+.rubric-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    transition: transform 0.3s ease-in-out;
+}
+
+.rubric-icon.open {
+    transform: rotate(180deg);
+}
+
+.rubric-container {
+    width: 100%;
+    display: none;
+    margin-top: 10px;
+}
+
+.rubric-container.open {
+    display: block;
+}
+
+.rubric-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rubric-table__header,
+.rubric-table__cell {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.rubric-table__header {
+    background-color: #f4f4f4;
+}
