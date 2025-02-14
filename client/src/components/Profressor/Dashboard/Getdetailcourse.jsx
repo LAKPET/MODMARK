@@ -7,6 +7,7 @@ import CreateAssessmentModal from "./CreateAssessmentModal";
 
 export default function GetDetailCourse() {
   const { id } = useParams();
+
   const navigate = useNavigate();
   const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);

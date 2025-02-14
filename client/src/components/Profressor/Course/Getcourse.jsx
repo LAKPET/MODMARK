@@ -20,6 +20,7 @@ export default function Getcourse() {
         });
 
         setCourses(response.data.courses || []);
+        console.log(response.data.courses);
       } catch (error) {
         console.error(
           "Error fetching courses:",

@@ -1,7 +1,7 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
 import Logo from "../../../assets/Picture/Logo.png";
-import { useLocation } from "react-router-dom"; // Import useLocation hook
+import { NavLink, useLocation, useParams } from "react-router-dom"; // Import NavLink, useLocation, and useParams
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import GroupIcon from "@mui/icons-material/Group";
@@ -10,6 +10,7 @@ import "../../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
   const location = useLocation(); // Get the current route
+  const { id } = useParams(); // Get the id from the URL
 
   // Helper function to determine if a link is active
   const isActive = (path) => location.pathname === path;
@@ -37,38 +38,42 @@ function Sidebar() {
       </div>
 
       {/* Sidebar Links */}
-      <Nav className="flex-column">
+      <Nav className="flex-column mt-4">
         <Nav.Link
-          href="/dashboard"
+          as={NavLink}
+          to={`/dashboard/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/dashboard") ? "active" : ""
+            isActive(`/dashboard/${id}`) ? "active" : ""
           }`}
         >
           <DashboardIcon className="me-2" />
           <span>Dashboard</span>
         </Nav.Link>
         <Nav.Link
-          href="/assessment"
+          as={NavLink}
+          to={`/assessment/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/assessment") ? "active" : ""
+            isActive(`/assessment/${id}`) ? "active" : ""
           }`}
         >
           <AssessmentIcon className="me-2" />
           <span>Assessment</span>
         </Nav.Link>
         <Nav.Link
-          href="/team"
+          as={NavLink}
+          to={`/team/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/team") ? "active" : ""
+            isActive(`/team/${id}`) ? "active" : ""
           }`}
         >
           <GroupIcon className="me-2" />
           <span>Team</span>
         </Nav.Link>
         <Nav.Link
-          href="/setting"
+          as={NavLink}
+          to={`/setting/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/setting") ? "active" : ""
+            isActive(`/setting/${id}`) ? "active" : ""
           }`}
         >
           <SettingsIcon className="me-2" />

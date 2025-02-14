@@ -44,7 +44,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/setting/"
+            path="/setting/:id"
             element={
               //<ProtectedRoute requiredRole="professor">
               <Settingcoursepage />

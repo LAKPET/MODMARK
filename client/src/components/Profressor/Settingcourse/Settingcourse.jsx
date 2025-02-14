@@ -4,8 +4,9 @@ import RubricMain from "./Rubriccourse";
 import picturetab1 from "../../../assets/Picture/mdi_number-1-box.png";
 import picturetab2 from "../../../assets/Picture/mdi_number-2-box.png";
 import "../../../assets/Styles/Settingcourse/Settingcourse.css";
-
+import { useParams } from "react-router-dom";
 export default function SettingCourse() {
+  const id = useParams();
   const [activeTab, setActiveTab] = useState("assessmentDetail");
 
   return (
@@ -34,7 +35,7 @@ export default function SettingCourse() {
         {activeTab === "assessmentDetail" && (
           <div>📌 Course Details Content</div>
         )}
-        {activeTab === "createRubric" && <RubricMain />}
+        {activeTab === "createRubric" && <RubricMain id={id} />}
       </div>
     </Container>
   );
