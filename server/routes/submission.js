@@ -13,7 +13,7 @@ router.post("/submit", verifyToken, async (req, res) => {
     assessment_id,
     group_name,
     members, // Array of group members
-    file_url,
+    file_url, // URL ของไฟล์ที่อัปโหลด
     file_type
   } = req.body;
 
@@ -42,7 +42,7 @@ router.post("/submit", verifyToken, async (req, res) => {
     const newSubmission = new Submission({
       group_id: newGroup._id,
       student_id: req.user._id,
-      file_url,
+      file_url, // เก็บ URL ของไฟล์ที่อัปโหลด
       file_type,
       status: 'submit'
     });

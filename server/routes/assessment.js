@@ -39,7 +39,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     }
 
     // ตรวจสอบว่าชื่อ assessment ซ้ำหรือไม่
-    const existingAssessment = await Assessment.findOne({ assessment_name, course_id, section_id });
+    const existingAssessment = await Assessment.findOne({ assessment_name, section_id });
     if (existingAssessment) {
       return res.status(400).json({ message: "Assessment name already exists in this section." });
     }
@@ -48,6 +48,17 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
     const selectedRubric = await Rubric.findById(rubric_id);
     if (!selectedRubric) {
       return res.status(404).json({ message: "Rubric not found" });
+    }
+
+    // ตรวจสอบน้ำหนักรวมของ graders
+    if (graders && graders.length > 0) {
+      const totalWeight = graders.reduce((sum, grader) => sum + grader.weight, 0);
+      if (graders.some(grader => grader.weight < 0 || grader.weight > 1)) {
+        return res.status(400).json({ message: "Weight of each grader must be between 0 and 1" });
+      }
+      if (totalWeight > 1) {
+        return res.status(400).json({ message: "Total weight of graders must not exceed 1" });
+      }
     }
 
     const newAssessment = new Assessment({
@@ -89,7 +100,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
         const newGroupMember = new GroupMember({
           group_id: gradingGroup._id,
           assessment_id: newAssessment._id,
-          user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
+          user_id: grader.user_id, // ใช้ new ในการสร้าง ObjectId
           role: 'professor',
           weight: grader.weight
         });
@@ -208,8 +219,16 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
       { new: true }
     );
 
-    // Update graders with their weights
+    // ตรวจสอบน้ำหนักรวมของ graders
     if (graders && graders.length > 0) {
+      const totalWeight = graders.reduce((sum, grader) => sum + grader.weight, 0);
+      if (graders.some(grader => grader.weight < 0 || grader.weight > 1)) {
+        return res.status(400).json({ message: "Weight of each grader must be between 0 and 1" });
+      }
+      if (totalWeight > 1) {
+        return res.status(400).json({ message: "Total weight of graders must not exceed 1" });
+      }
+
       await GroupMember.deleteMany({ group_id: gradingGroup._id, role: 'professor' });
       for (const grader of graders) {
         const newGroupMember = new GroupMember({

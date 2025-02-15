@@ -7,12 +7,13 @@ const router = express.Router();
 
 // Create a new rubric
 router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
-  const { title, description, criteria, section_id } = req.body;
+  const { title, description, score, criteria, section_id } = req.body;
 
   try {
     const newRubric = new Rubric({
       rubric_name: title,
       description,
+      score,
       criteria,
       created_by: req.user.id,
       section_id: section_id,
@@ -73,7 +74,7 @@ router.get("/section/:section_id", verifyToken, checkAdminOrProfessor, async (re
 // Update a rubric
 router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;
-  const { title, description, criteria, section_id, is_global } = req.body;
+  const { title, description, criteria, score, section_id, is_global } = req.body;
 
   try {
     const rubric = await Rubric.findById(id);
@@ -83,6 +84,7 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
 
     rubric.rubric_name = title || rubric.rubric_name;
     rubric.description = description || rubric.description;
+    rubric.score = score || rubric.score;
     rubric.criteria = criteria || rubric.criteria;
     rubric.section_id = section_id || rubric.section_id;
     rubric.is_global = is_global !== undefined ? is_global : rubric.is_global;

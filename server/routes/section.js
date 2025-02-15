@@ -41,7 +41,7 @@ router.post("/all", verifyToken, checkAdmin, async (req, res) => {
 // ฟังก์ชันสำหรับแก้ไขข้อมูล Section
 router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;
-  const { section_number, semester_term, semester_year, course_number, course_name } = req.body;
+  const { section_number, semester_term, semester_year} = req.body;
 
   try {
     // ค้นหา Section ที่จะทำการแก้ไข
@@ -64,14 +64,6 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
     }
     if (semester_year && section.semester_year !== semester_year) {
       section.semester_year = semester_year;
-      isUpdated = true;
-    }
-    if (course_number && section.course_number !== course_number) {
-      section.course_number = course_number;
-      isUpdated = true;
-    }
-    if (course_name && section.course_name !== course_name) {
-      section.course_name = course_name;
       isUpdated = true;
     }
 
