@@ -5,6 +5,8 @@ import picturetab1 from "../../../assets/Picture/mdi_number-1-box.png";
 import picturetab2 from "../../../assets/Picture/mdi_number-2-box.png";
 import "../../../assets/Styles/Settingcourse/Settingcourse.css";
 import { useParams } from "react-router-dom";
+import DetailCourse from "./Detailcourse";
+
 export default function SettingCourse() {
   const id = useParams();
   const [activeTab, setActiveTab] = useState("assessmentDetail");
@@ -32,9 +34,7 @@ export default function SettingCourse() {
 
       {/* Tab Content */}
       <div className="tab-content">
-        {activeTab === "assessmentDetail" && (
-          <div>📌 Course Details Content</div>
-        )}
+        {activeTab === "assessmentDetail" && <DetailCourse id={id} />}
         {activeTab === "createRubric" && <RubricMain id={id} />}
       </div>
     </Container>

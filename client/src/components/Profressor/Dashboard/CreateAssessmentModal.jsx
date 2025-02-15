@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
 import { MDBInput } from "mdb-react-ui-kit";
 import InputLabel from "@mui/material/InputLabel";
@@ -11,6 +11,7 @@ import picturetab1 from "../../../assets/Picture/mdi_number-1-box.png";
 import picturetab2 from "../../../assets/Picture/mdi_number-2-box.png";
 import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
+import { useParams } from "react-router-dom";
 
 export default function CreateAssessmentModal({
   show,
@@ -18,15 +19,18 @@ export default function CreateAssessmentModal({
   refreshAssessments,
   courseDetails,
 }) {
+  const { id } = useParams();
   const [assessmentName, setAssessmentName] = useState("");
   const [assessmentDescription, setAssessmentDescription] = useState("");
   const [assessmentType, setAssessmentType] = useState("individual");
   const [gradingType, setGradingType] = useState(false);
+  const [rows, setRows] = useState([]);
   const [publishDate, setPublishDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [rubric, setRubric] = useState("");
   const [weights, setWeights] = useState({}); // State to track weights for each row
   const [activeTab, setActiveTab] = useState("assessmentDetail");
+  const [rubrics, setRubrics] = useState([]);
+  const [rubric, setRubric] = useState("");
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleWeightChange = (id, value) => {
@@ -61,7 +65,7 @@ export default function CreateAssessmentModal({
       })
       .catch((err) => console.error(err));
   };
-
+  console.log(courseDetails);
   const handleNextTab = () => {
     if (activeTab === "assessmentDetail") {
       setActiveTab("createRubric");
@@ -96,38 +100,51 @@ export default function CreateAssessmentModal({
     },
   ];
 
-  const rows = [
-    {
-      id: 1,
-      firstName: "Jon",
-      lastName: "Snow",
-      email: "jon.snow@example.com",
-    },
-    {
-      id: 2,
-      firstName: "Cersei",
-      lastName: "Lannister",
-      email: "cersei.lannister@example.com",
-    },
-    {
-      id: 3,
-      firstName: "Jaime",
-      lastName: "Lannister",
-      email: "jaime.lannister@example.com",
-    },
-    {
-      id: 4,
-      firstName: "Arya",
-      lastName: "Stark",
-      email: "arya.stark@example.com",
-    },
-    {
-      id: 5,
-      firstName: "Daenerys",
-      lastName: "Targaryen",
-      email: "daenerys.targaryen@example.com",
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("authToken"); // ดึง token ก่อน
+        if (!token) throw new Error("No auth token found");
+
+        const response = await axios.get(
+          `http://localhost:5001/section/professors/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = response.data;
+
+        // แปลงข้อมูลให้อยู่ในรูปแบบที่ต้องการ
+        const formattedData = data.map((user, index) => ({
+          id: user.personal_num || index + 1,
+          firstName: user.first_name || "N/A",
+          lastName: user.last_name || "N/A",
+          email: user.email || "N/A",
+        }));
+
+        setRows(formattedData);
+        console.log(formattedData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    const fetchRubrics = async () => {
+      try {
+        const token = localStorage.getItem("authToken"); // ดึง token อีกครั้ง
+        if (!token) throw new Error("No auth token found");
+
+        const response = await axios.get(
+          `http://localhost:5001/rubric/section/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setRubrics(response.data);
+      } catch (error) {
+        console.error("Error fetching rubrics:", error);
+      }
+    };
+
+    fetchData();
+    fetchRubrics();
+  }, [id]); // เพิ่ม `id` เป็น dependency
 
   return (
     <Modal show={show} onHide={handleClose} className="custom-modal">
@@ -256,24 +273,73 @@ export default function CreateAssessmentModal({
         )}
 
         {activeTab === "createRubric" && (
-          <Form.Group className="mt-2 mb-4" controlId="formRubric">
-            <FormControl fullWidth>
-              <InputLabel id="rubric-select-label">
-                Select Your Rubric
-              </InputLabel>
-              <Select
-                labelId="rubric-select-label"
-                id="rubric-select"
-                value={rubric}
-                label="Rubric"
-                onChange={(e) => setRubric(e.target.value)}
-              >
-                <MenuItem value="Rubric 1">Rubric 1</MenuItem>
-                <MenuItem value="Rubric 2">Rubric 2</MenuItem>
-                <MenuItem value="Rubric 3">Rubric 3</MenuItem>
-              </Select>
-            </FormControl>
-          </Form.Group>
+          <>
+            <Form.Group className="mt-2 mb-4" controlId="formRubric">
+              <FormControl fullWidth className="mt-2 mb-4">
+                <InputLabel id="rubric-select-label">Select Rubric</InputLabel>
+                <Select
+                  labelId="rubric-select-label"
+                  id="rubric-select"
+                  label="Select Rubric"
+                  value={rubric}
+                  onChange={(e) => setRubric(e.target.value)}
+                >
+                  {rubrics.map((r) => (
+                    <MenuItem key={r._id} value={r._id}>
+                      {r.rubric_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Form.Group>
+
+            {/* ดึง rubric ที่ถูกเลือก */}
+            {rubric &&
+              (() => {
+                const selectedRubric = rubrics.find((r) => r._id === rubric);
+                return selectedRubric ? (
+                  <div className="rubric-container">
+                    <table className="rubric-table mb-5">
+                      <thead>
+                        <tr>
+                          <th className="rubric-table__header">Criteria</th>
+                          {selectedRubric.criteria[0]?.levels.map(
+                            (level, index) => (
+                              <th key={index} className="rubric-table__header">
+                                Level {level.level}
+                              </th>
+                            )
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedRubric.criteria.map((criterion, index) => (
+                          <tr key={index}>
+                            <td className="rubric-table__cell">
+                              {criterion.weight}{" "}
+                              <span className="pts-label"> pts</span>
+                              <br />
+                              {criterion.name}
+                            </td>
+                            {criterion.levels.map((level, levelIndex) => (
+                              <td
+                                key={levelIndex}
+                                className="rubric-table__cell"
+                              >
+                                {level.score}{" "}
+                                <span className="pts-label"> pts</span>
+                                <br />
+                                {level.description}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null;
+              })()}
+          </>
         )}
 
         <div className="d-flex justify-content-end">
