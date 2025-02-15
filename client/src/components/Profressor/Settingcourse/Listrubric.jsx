@@ -23,7 +23,7 @@ export default function Listrubric() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRubrics(response.data);
-        console.log(response.data);
+        console.log("rubric", response.data);
       } catch (err) {
         console.error("Error fetching rubrics:", err);
       }
