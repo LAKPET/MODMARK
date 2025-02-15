@@ -1,155 +1,127 @@
 import React, { useState, useEffect } from "react";
-import { Container, Form, Button, Row, Col } from "react-bootstrap";
-import { useParams } from "react-router-dom";
+import { Modal, Button, Form } from "react-bootstrap";
+import { MDBInput } from "mdb-react-ui-kit";
 import axios from "axios";
 
-export default function DetailCourse({ Id, handleClose, refreshCourses }) {
-  const { id: paramId } = useParams();
-  const courseId = Id || paramId;
-
-  const [course, setCourse] = useState({
-    course_number: "",
-    section_number: "",
-    course_name: "",
-    course_description: "",
-    semester_term: "",
-    semester_year: "",
-  });
-
+export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
+  const [courseNumber, setCourseNumber] = useState("");
+  const [sectionName, setSectionName] = useState("");
+  const [semesterTerm, setSemesterTerm] = useState("");
+  const [semesterYear, setSemesterYear] = useState("");
+  const [courseName, setCourseName] = useState("");
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    if (courseId) {
+    if (Id) {
       fetchCourseDetails();
     }
-  }, [courseId]);
+  }, [Id]);
 
   const fetchCourseDetails = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/course/details/${courseId}`, {
+      const response = await axios.put(`${apiUrl}/section/update/${Id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setCourse(response.data);
+      const course = response.data;
+      setCourseNumber(course.course_number);
+      setSectionName(course.section_number);
+      setSemesterTerm(course.semester_term);
+      setSemesterYear(course.semester_year);
+      // setCourseName(course.course_name);
     } catch (err) {
       console.error("Failed to fetch course details:", err);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCourse((prevCourse) => ({
-      ...prevCourse,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const token = localStorage.getItem("authToken");
-      await axios.put(
-        `${apiUrl}/section/update/${courseId}`,
+    const token = localStorage.getItem("authToken");
+    axios
+      .put(
+        `${apiUrl}/section/update/${Id}`,
         {
-          course_number: course.course_number,
-          section_number: course.section_number,
-          semester_term: course.semester_term,
-          semester_year: course.semester_year,
+          course_number: courseNumber,
+          section_number: sectionName,
+          semester_term: semesterTerm,
+          semester_year: semesterYear,
+          // course_name: courseName,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
-      );
-
-      handleClose && handleClose(); // ปิด Modal (ถ้ามี)
-      refreshCourses && refreshCourses(); // รีโหลดข้อมูล (ถ้ามี)
-    } catch (err) {
-      console.error("Failed to update course:", err);
-    }
+      )
+      .then(() => {
+        handleClose();
+        refreshCourses();
+      })
+      .catch((err) => console.error("Failed to update course:", err));
   };
 
   return (
-    <Container className="mt-3 mx-3 text-start" style={{ width: "1000px" }}>
-      <h3 className="mb-3">Edit Course Details</h3>
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3">
-          <Form.Label>Course Number</Form.Label>
-          <Form.Control
-            type="text"
-            name="course_number"
-            value={course.course_number}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+    <Modal show={show} onHide={handleClose}>
+      <Modal.Header closeButton>
+        <Modal.Title>Edit Course</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-4" controlId="formCourseNumber">
+            <MDBInput
+              label="Course Number"
+              id="formCourseNumber"
+              type="text"
+              value={courseNumber}
+              onChange={(e) => setCourseNumber(e.target.value)}
+            />
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Course Name</Form.Label>
-          <Form.Control
-            type="text"
-            name="course_name"
-            value={course.course_name}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+          <Form.Group className="mb-4" controlId="formSectionName">
+            <MDBInput
+              label="Section Name"
+              id="formSectionName"
+              type="text"
+              value={sectionName}
+              onChange={(e) => setSectionName(e.target.value)}
+            />
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Course Description</Form.Label>
-          <Form.Control
-            as="textarea"
-            name="course_description"
-            value={course.course_description}
-            onChange={handleChange}
-            rows={3}
-            required
-          />
-        </Form.Group>
+          <Form.Group className="mb-4" controlId="formSemesterTerm">
+            <MDBInput
+              label="Semester Term"
+              id="formSemesterTerm"
+              type="text"
+              value={semesterTerm}
+              onChange={(e) => setSemesterTerm(e.target.value)}
+            />
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Section Name</Form.Label>
-          <Form.Control
-            type="text"
-            name="section_number"
-            value={course.section_number}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+          <Form.Group className="mb-4" controlId="formSemesterYear">
+            <MDBInput
+              label="Semester Year"
+              id="formSemesterYear"
+              type="text"
+              value={semesterYear}
+              onChange={(e) => setSemesterYear(e.target.value)}
+            />
+          </Form.Group>
 
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Semester Term</Form.Label>
-              <Form.Control
-                type="text"
-                name="semester_term"
-                value={course.semester_term}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Semester Year</Form.Label>
-              <Form.Control
-                type="text"
-                name="semester_year"
-                value={course.semester_year}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-          </Col>
-        </Row>
+          {/* <Form.Group className="mb-4" controlId="formCourseName">
+            <MDBInput
+              label="Course Name"
+              id="formCourseName"
+              type="text"
+              value={courseName}
+              onChange={(e) => setCourseName(e.target.value)}
+            />
+          </Form.Group> */}
 
-        <div className="text-end">
-          <Button type="submit" className="custom-btn">
-            Update Course
-          </Button>
-        </div>
-      </Form>
-    </Container>
+          <div className="d-flex justify-content-end">
+            <Button className="custom-btn" type="submit">
+              Update Course
+            </Button>
+          </div>
+        </Form>
+      </Modal.Body>
+    </Modal>
   );
 }

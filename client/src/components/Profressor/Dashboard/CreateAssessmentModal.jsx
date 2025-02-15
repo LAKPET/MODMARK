@@ -27,45 +27,66 @@ export default function CreateAssessmentModal({
   const [rows, setRows] = useState([]);
   const [publishDate, setPublishDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [weights, setWeights] = useState({}); // State to track weights for each row
+  const [weights, setWeights] = useState({});
   const [activeTab, setActiveTab] = useState("assessmentDetail");
   const [rubrics, setRubrics] = useState([]);
   const [rubric, setRubric] = useState("");
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleWeightChange = (id, value) => {
-    setWeights((prev) => ({ ...prev, [id]: value }));
+    setWeights((prev) => ({ ...prev, [id]: parseFloat(value) || 0 }));
   };
 
+  const resetForm = () => {
+    setAssessmentName("");
+    setAssessmentDescription("");
+    setAssessmentType("individual");
+    setGradingType(false);
+    setPublishDate("");
+    setDueDate("");
+    setWeights({});
+    setRubric("");
+    setActiveTab("assessmentDetail");
+  };
   const handleSubmit = (e) => {
     e.preventDefault();
     const token = localStorage.getItem("authToken");
+
+    const requestData = {
+      course_id: courseDetails.course_id,
+      section_id: courseDetails.section_id,
+      // professor_id: rows.p_id,
+      assessment_name: assessmentName,
+      assessment_description: assessmentDescription,
+      assignment_type: assessmentType,
+      teamgrading_type: gradingType,
+      publish_date: publishDate,
+      due_date: dueDate,
+      rubric_id: rubrics[0]._id,
+      graders: Object.entries(weights).map(([user_id, weight]) => ({
+        user_id,
+        weight: weight / 100,
+      })),
+    };
+
+    console.log("Sending data:", requestData);
+
     axios
-      .post(
-        `${apiUrl}/assessment/create`,
-        {
-          course_id: courseDetails.course_id,
-          section_id: courseDetails.section_id,
-          professor_id: courseDetails.professor_id,
-          assessment_name: assessmentName,
-          assessment_description: assessmentDescription,
-          assignment_type: assessmentType,
-          teamgrading_type: gradingType,
-          publish_date: publishDate,
-          due_date: dueDate,
-          weights, // Pass weights object
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      .then(() => {
-        handleClose();
-        refreshAssessments();
+      .post(`${apiUrl}/assessment/create`, requestData, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .catch((err) => console.error(err));
+      .then((response) => {
+        handleClose();
+        resetForm();
+      })
+      .catch((err) => {
+        console.error(
+          "Error occurred:",
+          err.response ? err.response.data : err
+        );
+      });
   };
-  console.log(courseDetails);
+
   const handleNextTab = () => {
     if (activeTab === "assessmentDetail") {
       setActiveTab("createRubric");
@@ -93,8 +114,8 @@ export default function CreateAssessmentModal({
           type="number"
           min="0"
           max="100"
-          value={weights[params.row.id] || ""}
-          onChange={(e) => handleWeightChange(params.row.id, e.target.value)}
+          value={weights[params.row.p_id] || ""}
+          onChange={(e) => handleWeightChange(params.row.p_id, e.target.value)}
         />
       ),
     },
@@ -114,6 +135,7 @@ export default function CreateAssessmentModal({
 
         // แปลงข้อมูลให้อยู่ในรูปแบบที่ต้องการ
         const formattedData = data.map((user, index) => ({
+          p_id: user.professor_id,
           id: user.personal_num || index + 1,
           firstName: user.first_name || "N/A",
           lastName: user.last_name || "N/A",
@@ -148,7 +170,7 @@ export default function CreateAssessmentModal({
 
   return (
     <Modal show={show} onHide={handleClose} className="custom-modal">
-      <Modal.Header closeButton>
+      <Modal.Header onClick={resetForm} closeButton>
         <Modal.Title>Create Assessment</Modal.Title>
       </Modal.Header>
       <Modal.Body>
