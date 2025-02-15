@@ -46,51 +46,82 @@ router.post("/all", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
-// ฟังก์ชันสำหรับแก้ไขข้อมูล Section
+// ฟังก์ชันสำหรับแก้ไขข้อมูล Section และ Course
 router.put(
   "/update/:id",
   verifyToken,
   checkAdminOrProfessor,
   async (req, res) => {
     const { id } = req.params;
-    const { section_number, semester_term, semester_year } = req.body;
+    const { section_number, semester_term, semester_year, course_number, course_name, course_description } = req.body;
 
     try {
       // ค้นหา Section ที่จะทำการแก้ไข
       const section = await Section.findById(id);
-
       if (!section) {
         return res.status(404).json({ message: "Section not found" });
       }
 
-      // อัปเดตข้อมูล Section
-      let isUpdated = false;
+      // ค้นหา Course ที่เกี่ยวข้อง
+      const course = await Course.findById(section.course_id);
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
 
+      // อัปเดตข้อมูล Section
+      let isSectionUpdated = false;
       if (section_number && section.section_number !== section_number) {
         section.section_number = section_number;
-        isUpdated = true;
+        isSectionUpdated = true;
       }
       if (semester_term && section.semester_term !== semester_term) {
         section.semester_term = semester_term;
-        isUpdated = true;
+        isSectionUpdated = true;
       }
       if (semester_year && section.semester_year !== semester_year) {
         section.semester_year = semester_year;
-        isUpdated = true;
+        isSectionUpdated = true;
+      }
+      if (course_number && section.course_number !== course_number) {
+        section.course_number = course_number;
+        isSectionUpdated = true;
+      }
+      if (course_name && section.course_name !== course_name) {
+        section.course_name = course_name;
+        isSectionUpdated = true;
+      }
+
+      // อัปเดตข้อมูล Course
+      let isCourseUpdated = false;
+      if (course_number && course.course_number !== course_number) {
+        course.course_number = course_number;
+        isCourseUpdated = true;
+      }
+      if (course_name && course.course_name !== course_name) {
+        course.course_name = course_name;
+        isCourseUpdated = true;
+      }
+      if (course_description && course.course_description !== course_description) {
+        course.course_description = course_description;
+        isCourseUpdated = true;
       }
 
       // บันทึกการเปลี่ยนแปลงเฉพาะเมื่อมีการอัปเดตข้อมูล
-      if (isUpdated) {
+      if (isSectionUpdated) {
         await section.save();
+      }
+      if (isCourseUpdated) {
+        await course.save();
       }
 
       res.status(200).json({
-        message: "Section updated successfully!",
+        message: "Section and Course updated successfully!",
         section,
+        course,
       });
     } catch (error) {
-      console.error("Error updating section:", error);
-      res.status(500).json({ message: "Error updating section", error });
+      console.error("Error updating section and course:", error);
+      res.status(500).json({ message: "Error updating section and course", error });
     }
   }
 );
