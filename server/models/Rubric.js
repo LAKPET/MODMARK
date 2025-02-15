@@ -15,6 +15,7 @@ const rubricCriteriaSchema = new mongoose.Schema({
 const rubricSchema = new mongoose.Schema({
     rubric_name: { type: String, required: true },
     description: { type: String },
+    score: { type: Number, required: true ,default: 100, min: 0, max: 100},
     criteria: [rubricCriteriaSchema],
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     section_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Section', required: true },
