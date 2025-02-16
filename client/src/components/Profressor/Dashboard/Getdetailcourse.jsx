@@ -64,7 +64,7 @@ export default function GetDetailCourse() {
             {courseDetails.course_number}
             <span className="vertical-line bg-dark mx-3"></span>
             <span className="fw-normal fs-5">
-              {courseDetails.section_term} / {courseDetails.section_year}
+              {courseDetails.semester_term} / {courseDetails.semester_year}
             </span>
           </h2>
           <div className="d-flex align-items-center">
