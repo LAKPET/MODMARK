@@ -175,6 +175,49 @@ router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   }
 });
 
+// Get all assessments in a section with graders
+router.get("/section/:section_id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+  const { section_id } = req.params;
+
+  try {
+    const assessments = await Assessment.find({ section_id })
+      .populate({
+        path: "course_id",
+        select: "course_name"
+      })
+      .populate({
+        path: "section_id",
+        select: "section_number semester_term semester_year"
+      })
+      .populate({
+        path: "professor_id",
+        select: "first_name last_name email"
+      })
+      .populate({
+        path: "rubric_id",
+        select: "rubric_name description"
+      });
+
+    const assessmentsWithGraders = await Promise.all(
+      assessments.map(async (assessment) => {
+        const graders = await GroupMember.find({ assessment_id: assessment._id, role: 'professor' })
+          .populate("user_id", "first_name last_name email")
+          .select("user_id weight");
+
+        return {
+          ...assessment.toObject(),
+          graders
+        };
+      })
+    );
+
+    res.status(200).json(assessmentsWithGraders);
+  } catch (error) {
+    console.error("Error fetching assessments:", error);
+    res.status(500).json({ message: "Error fetching assessments", error });
+  }
+});
+
 // Update an assessment
 router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { id } = req.params;

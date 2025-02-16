@@ -252,31 +252,4 @@ router.get(
   }
 );
 
-// ฟังก์ชันสำหรับดึงข้อมูล Assessment ที่เกี่ยวข้องกับ Section
-router.get(
-  "/assessments/:section_id",
-  verifyToken,
-  checkAdminOrProfessor,
-  async (req, res) => {
-    const { section_id } = req.params;
-
-    try {
-      const assessments = await Assessment.find({ section_id });
-
-      if (!assessments.length) {
-        return res
-          .status(404)
-          .json({ message: "No assessments found for this section" });
-      }
-
-      res.status(200).json(assessments);
-    } catch (error) {
-      console.error("Error fetching assessments for section:", error);
-      res
-        .status(500)
-        .json({ message: "Error fetching assessments for section", error });
-    }
-  }
-);
-
 module.exports = router;
