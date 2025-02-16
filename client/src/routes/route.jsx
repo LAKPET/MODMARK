@@ -10,7 +10,7 @@ import Unauthorized from "./Unauthorized";
 import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider } from "./AuthContext";
 import Settingcoursepage from "../pages/Profressor/Settingcoursepage";
-
+import Assessmentpage from "../pages/Profressor/Assessmentpage";
 function AppRoutes() {
   return (
     <AuthProvider>
@@ -46,8 +46,17 @@ function AppRoutes() {
           <Route
             path="/setting/:id"
             element={
-              //<ProtectedRoute requiredRole="professor">
-              <Settingcoursepage />
+              <ProtectedRoute requiredRole="professor">
+                <Settingcoursepage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/assessment/:id"
+            element={
+              // <ProtectedRoute requiredRole="professor">
+              <Assessmentpage />
               // </ProtectedRoute>
             }
           />

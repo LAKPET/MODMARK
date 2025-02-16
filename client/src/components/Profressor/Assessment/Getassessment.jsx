@@ -1,0 +1,225 @@
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Button } from "react-bootstrap";
+import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
+import CreateAssessmentModal from "../Dashboard/CreateAssessmentModal";
+import EditAssessmentModal from "./Editassessment";
+import DeleteAssessment from "./Deleteassessment";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
+import "../../../assets/Styles/Assessment/Getassessment.css";
+
+export default function Getassessment() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [courseDetails, setCourseDetails] = useState(null);
+  const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  const formatDateTime = (isoString) => {
+    const date = new Date(isoString);
+    const formattedDate = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const formattedTime = date
+      .toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+      .replace(":", ".");
+    return `${formattedDate} At ${formattedTime}`;
+  };
+
+  const handleSort = (column) => {
+    const newOrder =
+      sortColumn === column && sortOrder === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortOrder(newOrder);
+  };
+
+  const sortedAssessments = [...assessments].sort((a, b) => {
+    if (!sortColumn) return 0;
+    const valueA = a[sortColumn];
+    const valueB = b[sortColumn];
+    return sortOrder === "asc"
+      ? valueA.localeCompare(valueB)
+      : valueB.localeCompare(valueA);
+  });
+
+  const refreshAssessments = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const assessmentResponse = await axios.get(
+        `${apiUrl}/assessment/section/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setAssessments(assessmentResponse.data);
+    } catch (err) {
+      setError("Error loading data.");
+    }
+  };
+
+  useEffect(() => {
+    if (!id) {
+      setError("No section ID found in the URL.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+        const courseResponse = await axios.get(
+          `${apiUrl}/course/details/${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setCourseDetails(courseResponse.data);
+        await refreshAssessments();
+      } catch (err) {
+        setError("Error loading data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id, navigate]);
+
+  if (loading) return <div className="text-center mt-5">Loading...</div>;
+  if (error) return <div className="text-center mt-5 text-danger">{error}</div>;
+
+  return (
+    <Container className="mt-4">
+      <Row className="pb-3 mb-4">
+        <Col md={8}>
+          <h2 className="mb-0 fw-semibold d-flex align-items-center">
+            {courseDetails?.course_number}
+            <span className="vertical-line bg-dark mx-3"></span>
+            <span className="fw-normal fs-5">
+              {courseDetails?.section_term} / {courseDetails?.section_year}
+            </span>
+          </h2>
+          <div className="d-flex align-items-center">
+            <p className="text-muted p-1 mb-0">{courseDetails?.course_name}</p>
+            <span className="text-muted p-1">{`Section ${courseDetails?.section_number}`}</span>
+          </div>
+        </Col>
+        <Col className="text-end me-3">
+          <Button
+            className="custom-btn"
+            onClick={() => setShowCreateModal(true)}
+          >
+            Create Assessment
+          </Button>
+        </Col>
+      </Row>
+      <MDBTable>
+        <MDBTableHead>
+          <tr className="fw-bold">
+            <th
+              onClick={() => handleSort("assessment_name")}
+              className="sortable"
+            >
+              Assessment Name <SwapVertIcon />
+            </th>
+            <th onClick={() => handleSort("publish_date")} className="sortable">
+              Publish Date <SwapVertIcon />
+            </th>
+            <th onClick={() => handleSort("due_date")} className="sortable">
+              Due Date <SwapVertIcon />
+            </th>
+            <th>Action</th>
+          </tr>
+        </MDBTableHead>
+        <MDBTableBody>
+          {sortedAssessments.length > 0 ? (
+            sortedAssessments.map((assessment, index) => (
+              <tr key={assessment._id || index}>
+                <td>
+                  <div className="align-status">
+                    <span className="assessment-name">
+                      {assessment.assessment_name}
+                    </span>
+                    <span className="assignment_type-status">
+                      {assessment.assignment_type}
+                    </span>
+                  </div>
+                </td>
+                <td>{formatDateTime(assessment.publish_date)}</td>
+                <td>{formatDateTime(assessment.due_date)}</td>
+                <td>
+                  <EditIcon
+                    className="icon-style"
+                    onClick={() => {
+                      console.log("Edit clicked for ID:", assessment._id); // ตรวจสอบค่าที่ส่งเข้าไป
+                      setSelectedAssessmentId(assessment._id);
+                      setShowEditModal(true);
+                    }}
+                  />
+                  <DeleteIcon
+                    className="icon-style"
+                    onClick={() => {
+                      console.log("Delete clicked for ID:", assessment._id); // ตรวจสอบค่าที่ส่งเข้าไป
+                      setSelectedAssessmentId(assessment._id);
+                      setShowDeleteModal(true);
+                    }}
+                  />
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="4" className="text-center">
+                No assessments found
+              </td>
+            </tr>
+          )}
+        </MDBTableBody>
+      </MDBTable>
+      <CreateAssessmentModal
+        show={showCreateModal}
+        handleClose={() => setShowCreateModal(false)}
+        courseDetails={courseDetails}
+        refreshAssessments={refreshAssessments}
+      />
+      {selectedAssessmentId && (
+        <EditAssessmentModal
+          show={showEditModal}
+          handleClose={() => setShowEditModal(false)}
+          assessmentId={selectedAssessmentId}
+          courseDetails={courseDetails}
+          refreshAssessments={refreshAssessments}
+        />
+      )}
+      {selectedAssessmentId && (
+        <DeleteAssessment
+          show={showDeleteModal}
+          handleClose={() => setShowDeleteModal(false)}
+          assessmentId={selectedAssessmentId}
+          refreshAssessments={refreshAssessments}
+        />
+      )}
+    </Container>
+  );
+}

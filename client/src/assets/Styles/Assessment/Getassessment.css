@@ -1,0 +1,29 @@
+.align-status {
+    display: flex;
+    align-items: center;
+    
+    
+  }
+  
+  .assessment-name {
+    flex-basis: 150px; /* ความกว้างคงที่ */
+    flex-shrink: 0; /* ไม่ให้หดตัว */
+  }
+  
+  .assignment_type-status {
+    margin-left: 0; /* เอา margin ออกเพื่อชิดซ้าย */
+  }
+  
+  
+
+.assignment_type-status {
+    background-color: #8B5F34;
+    color: #fff; /* ให้ข้อความเป็นสีขาวเพื่ออ่านง่าย */
+    padding: 4px 8px; /* เพิ่มระยะห่างภายใน */
+    border-radius: 8px; /* ทำให้ขอบมน */
+    font-size: 10px; /* ปรับขนาดตัวอักษร */
+    font-weight: 600; /* ให้ตัวอักษรดูเด่นขึ้น */
+
+    display: inline-block; /* ให้แสดงผลเป็นบล็อกเล็ก */
+  }
+  

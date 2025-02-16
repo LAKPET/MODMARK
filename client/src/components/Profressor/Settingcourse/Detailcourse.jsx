@@ -52,10 +52,8 @@ export default function DetailCourse({ Id }) {
       await axios.put(`${apiUrl}/section/update/${courseId}`, course, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
     } catch (err) {
       console.error("Failed to update course:", err);
- 
     }
   };
 
@@ -115,7 +113,7 @@ export default function DetailCourse({ Id }) {
               <Form.Control
                 type="text"
                 name="semester_term"
-                value={course.section_term}
+                value={course.semester_term}
                 onChange={handleChange}
                 required
               />
@@ -127,7 +125,7 @@ export default function DetailCourse({ Id }) {
               <Form.Control
                 type="text"
                 name="semester_year"
-                value={course.section_year}
+                value={course.semester_year}
                 onChange={handleChange}
                 required
               />
