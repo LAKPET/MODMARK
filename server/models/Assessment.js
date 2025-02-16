@@ -11,7 +11,8 @@ const assessmentSchema = new mongoose.Schema({
     assignment_type: { type: String, enum: ['individual', 'group'], required: true },
     teamgrading_type: { type: Boolean, required: true },
     publish_date: { type: Date, required: true },
-    due_date: { type: Date, default: Date.now, required: true }
+    due_date: { type: Date, default: Date.now, required: true },
+    rubric_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Rubric' } // เพิ่มฟิลด์ rubric_id
 });
 
 module.exports = mongoose.model('Assessment', assessmentSchema);

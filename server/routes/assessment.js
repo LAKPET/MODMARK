@@ -73,6 +73,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
       teamgrading_type,
       publish_date,
       due_date,
+      rubric_id: rubric_id // เพิ่มฟิลด์ rubric_id
     });
 
     await newAssessment.save();
@@ -100,7 +101,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
         const newGroupMember = new GroupMember({
           group_id: gradingGroup._id,
           assessment_id: newAssessment._id,
-          user_id: grader.user_id, // ใช้ new ในการสร้าง ObjectId
+          user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
           role: 'professor',
           weight: grader.weight
         });
@@ -130,6 +131,10 @@ router.get("/", verifyToken, checkAdminOrProfessor, async (req, res) => {
       .populate({
         path: "professor_id",
         select: "first_name last_name email"
+      })
+      .populate({
+        path: "rubric_id",
+        select: "rubric_name description"
       });
     res.status(200).json(assessments);
   } catch (error) {
@@ -155,6 +160,10 @@ router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
       .populate({
         path: "professor_id",
         select: "first_name last_name email"
+      })
+      .populate({
+        path: "rubric_id",
+        select: "rubric_name description"
       });
     if (!assessment) {
       return res.status(404).json({ message: "Assessment not found" });
@@ -193,6 +202,7 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
     assessment.teamgrading_type = teamgrading_type || assessment.teamgrading_type;
     assessment.publish_date = publish_date || assessment.publish_date;
     assessment.due_date = due_date || assessment.due_date;
+    assessment.rubric_id = rubric_id || assessment.rubric_id; // เพิ่มฟิลด์ rubric_id
 
     await assessment.save();
 
@@ -234,7 +244,7 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
         const newGroupMember = new GroupMember({
           group_id: gradingGroup._id,
           assessment_id: assessment._id,
-          user_id: grader.user_id, // ใช้ new ในการสร้าง ObjectId
+          user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
           role: 'professor',
           weight: grader.weight
         });

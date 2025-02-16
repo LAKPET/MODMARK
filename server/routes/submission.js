@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const Submission = require("../models/Submission");
 const Group = require("../models/Group");
 const GroupMember = require("../models/GroupMember");
-const { verifyToken } = require("./middleware");
+const { verifyToken, checkAdminOrStudent } = require("./middleware");
 const { upload, uploadFile } = require("../services/storageService");
 const fs = require("fs");
 const path = require("path");
@@ -11,7 +11,7 @@ const path = require("path");
 const router = express.Router();
 
 // Create a new group and submit work
-router.post("/submit", verifyToken, upload.single("file"), async (req, res) => {
+router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), async (req, res) => {
   const {
     assessment_id,
     group_name,
@@ -70,7 +70,7 @@ router.post("/submit", verifyToken, upload.single("file"), async (req, res) => {
 });
 
 // Read (Get all submissions in this assessment)
-router.get("/assessment/:assessment_id", verifyToken, async (req, res) => {
+router.get("/assessment/:assessment_id", verifyToken, checkAdminOrStudent, async (req, res) => {
   const { assessment_id } = req.params;
 
   try {
@@ -119,7 +119,7 @@ router.get("/:id", verifyToken, async (req, res) => {
 });
 
 // Update a submission
-router.put("/update/:id", verifyToken, upload.single("file"), async (req, res) => {
+router.put("/update/:id", verifyToken, checkAdminOrStudent, upload.single("file"), async (req, res) => {
   const { id } = req.params;
   const {
     group_name,
@@ -157,7 +157,7 @@ router.put("/update/:id", verifyToken, upload.single("file"), async (req, res) =
 });
 
 // Delete a submission
-router.delete("/delete/:id", verifyToken, async (req, res) => {
+router.delete("/delete/:id", verifyToken, checkAdminOrStudent, async (req, res) => {
   const { id } = req.params;
 
   try {
