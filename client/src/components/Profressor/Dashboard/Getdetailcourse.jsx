@@ -1,19 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { Row, Col, Container, Button } from "react-bootstrap";
+import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../../assets/Styles/Dashboard/GetDetail.css";
 import CreateAssessmentModal from "./CreateAssessmentModal";
+import EditAssessmentModal from "../Assessment/Editassessment";
+import DeleteAssessment from "../Assessment/Deleteassessment";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 
 export default function GetDetailCourse() {
   const { id } = useParams();
-
   const navigate = useNavigate();
   const [courseDetails, setCourseDetails] = useState(null);
+  const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const apiUrl = import.meta.env.VITE_API_URL;
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
 
   useEffect(() => {
     if (!id) {
@@ -45,8 +56,57 @@ export default function GetDetailCourse() {
       }
     };
 
+    const fetchAssessments = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const assessmentResponse = await axios.get(
+          `${apiUrl}/assessment/section/${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setAssessments(assessmentResponse.data);
+      } catch (err) {
+        setError("Error loading assessments.");
+      }
+    };
+
     fetchCourseDetails();
+    fetchAssessments();
   }, [id, navigate]);
+
+  const formatDateTime = (isoString) => {
+    const date = new Date(isoString);
+    const formattedDate = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const formattedTime = date
+      .toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+      .replace(":", ".");
+    return `${formattedDate} At ${formattedTime}`;
+  };
+
+  const handleSort = (column) => {
+    const newOrder =
+      sortColumn === column && sortOrder === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortOrder(newOrder);
+  };
+
+  const sortedAssessments = [...assessments].sort((a, b) => {
+    if (!sortColumn) return 0;
+    const valueA = a[sortColumn];
+    const valueB = b[sortColumn];
+    return sortOrder === "asc"
+      ? valueA.localeCompare(valueB)
+      : valueB.localeCompare(valueA);
+  });
 
   if (loading) {
     return <div className="text-center mt-5">Loading...</div>;
@@ -94,26 +154,100 @@ export default function GetDetailCourse() {
         </Col>
       </Row>
 
-      <Row className="text-center mt-5">
-        <Col className="mt-5">
-          <h3 className="mb-4 fw-semibold fs-2">No Assessments Available</h3>
-          <h3 className="mb-4 fw-normal">
-            Create an assessment to get started
-          </h3>
-          <Button
-            className="custom-btn mt-2"
-            onClick={() => setShowModal(true)}
-          >
-            Create Assessment
-          </Button>
-        </Col>
-      </Row>
+      {assessments.length > 0 ? (
+        <MDBTable>
+          <MDBTableHead>
+            <tr className="fw-bold">
+              <th
+                onClick={() => handleSort("assessment_name")}
+                className="sortable"
+              >
+                Assessment Name <SwapVertIcon />
+              </th>
+              <th
+                onClick={() => handleSort("publish_date")}
+                className="sortable"
+              >
+                Publish Date <SwapVertIcon />
+              </th>
+              <th onClick={() => handleSort("due_date")} className="sortable">
+                Due Date <SwapVertIcon />
+              </th>
+              <th>Action</th>
+            </tr>
+          </MDBTableHead>
+          <MDBTableBody>
+            {sortedAssessments.map((assessment, index) => (
+              <tr key={assessment._id || index}>
+                <td>
+                  <div className="align-status">
+                    <span className="assessment-name">
+                      {assessment.assessment_name}
+                    </span>
+                    <span className="assignment_type-status">
+                      {assessment.assignment_type}
+                    </span>
+                  </div>
+                </td>
+                <td>{formatDateTime(assessment.publish_date)}</td>
+                <td>{formatDateTime(assessment.due_date)}</td>
+                <td>
+                  <EditIcon
+                    className="icon-style"
+                    onClick={() => {
+                      setSelectedAssessmentId(assessment._id);
+                      setShowEditModal(true);
+                    }}
+                  />
+                  <DeleteIcon
+                    className="icon-style"
+                    onClick={() => {
+                      setSelectedAssessmentId(assessment._id);
+                      setShowDeleteModal(true);
+                    }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </MDBTableBody>
+        </MDBTable>
+      ) : (
+        <Row className="text-center mt-5">
+          <Col className="mt-5">
+            <h3 className="mb-4 fw-semibold fs-2">No Assessments Available</h3>
+            <h3 className="mb-4 fw-normal">
+              Create an assessment to get started
+            </h3>
+            <Button
+              className="custom-btn mt-2"
+              onClick={() => setShowModal(true)}
+            >
+              Create Assessment
+            </Button>
+          </Col>
+        </Row>
+      )}
 
       <CreateAssessmentModal
         show={showModal}
         handleClose={() => setShowModal(false)}
         courseDetails={courseDetails}
       />
+      {selectedAssessmentId && (
+        <EditAssessmentModal
+          show={showEditModal}
+          handleClose={() => setShowEditModal(false)}
+          assessmentId={selectedAssessmentId}
+          courseDetails={courseDetails}
+        />
+      )}
+      {selectedAssessmentId && (
+        <DeleteAssessment
+          show={showDeleteModal}
+          handleClose={() => setShowDeleteModal(false)}
+          assessmentId={selectedAssessmentId}
+        />
+      )}
     </Container>
   );
 }
