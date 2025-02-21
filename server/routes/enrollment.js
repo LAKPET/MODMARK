@@ -38,11 +38,9 @@ router.post("/enroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
       const userByEmail = await User.findOne({ email });
 
       if (!userByPersonalNum || !userByEmail) {
-        return res
-          .status(404)
-          .json({
-            message: `User with personal_num ${personal_num} or email ${email} not found in the system`,
-          });
+        return res.status(404).json({
+          message: `User with personal_num ${personal_num} or email ${email} not found in the system`,
+        });
       }
 
       if (userByPersonalNum._id.toString() !== userByEmail._id.toString()) {
@@ -52,11 +50,9 @@ router.post("/enroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
       }
       const user = userByPersonalNum;
       if (user.role !== "student") {
-        return res
-          .status(400)
-          .json({
-            message: `User with personal_num ${personal_num} is not a student`,
-          });
+        return res.status(400).json({
+          message: `User with personal_num ${personal_num} is not a student`,
+        });
       }
 
       // ตรวจสอบว่า Student ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
@@ -98,41 +94,52 @@ router.post("/enroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
 });
 
 // ฟังก์ชันสำหรับลบนักเรียนหรืออาจารย์จาก Section
-router.delete("/unenroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
-  const { section_id, personal_id } = req.body;
+router.post(
+  "/unenroll",
+  verifyToken,
+  checkAdminOrProfessor,
+  async (req, res) => {
+    const { section_id, personal_id } = req.body;
 
-  if (!section_id || !personal_id) {
-    return res.status(400).json({ message: "section_id and personal_num are required" });
-  }
-
-  try {
-    // ตรวจสอบว่า Section มีอยู่หรือไม่
-    const section = await Section.findById(section_id);
-    if (!section) {
-      return res.status(404).json({ message: "Section not found" });
+    if (!section_id || !personal_id) {
+      return res
+        .status(400)
+        .json({ message: "section_id and personal_num are required" });
     }
 
-    // ลบ Enrollment ของนักเรียน
-    const enrollment = await Enrollment.findOneAndDelete({
-      section_id: section._id,
-      student_id: personal_id,
-    });
+    try {
+      // ตรวจสอบว่า Section มีอยู่หรือไม่
+      const section = await Section.findById(section_id);
+      if (!section) {
+        return res.status(404).json({ message: "Section not found" });
+      }
 
-    // ลบ CourseInstructor ของอาจารย์
-    const courseInstructor = await CourseInstructor.findOneAndDelete({
-      section_id: section._id,
-      professor_id: personal_id,
-    });
+      // ลบ Enrollment ของนักเรียน
+      const enrollment = await Enrollment.findOneAndDelete({
+        section_id: section._id,
+        student_id: personal_id,
+      });
 
-    if (!enrollment && !courseInstructor) {
-      return res.status(404).json({ message: "Enrollment or CourseInstructor not found" });
+      // ลบ CourseInstructor ของอาจารย์
+      const courseInstructor = await CourseInstructor.findOneAndDelete({
+        section_id: section._id,
+        professor_id: personal_id,
+      });
+
+      if (!enrollment && !courseInstructor) {
+        return res
+          .status(404)
+          .json({ message: "Enrollment or CourseInstructor not found" });
+      }
+
+      res
+        .status(200)
+        .json({ message: "User successfully unenrolled from the section" });
+    } catch (error) {
+      console.error("Error unenrolling user:", error.message);
+      res.status(500).json({ message: "Error unenrolling user" });
     }
-
-    res.status(200).json({ message: "User successfully unenrolled from the section" });
-  } catch (error) {
-    console.error("Error unenrolling user:", error.message);
-    res.status(500).json({ message: "Error unenrolling user" });
   }
-});
+);
 
 module.exports = router;

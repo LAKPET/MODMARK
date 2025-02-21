@@ -8,8 +8,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import AddUserCourse from "../../Admin/course/Addusercourse"; // Import AddUserCourse component
-import Edituser from "../../Admin/user/Edituser"; // Import Edituser component
-import DeleteUser from "../../Admin/user/DeleteUser"; // Import DeleteUser component
+import DeleteUser from "../../Profressor/Team/DeleteUser";
 import "../../../assets/Styles/Team/Getteam.css";
 
 export default function Getteam() {
@@ -288,6 +287,7 @@ export default function Getteam() {
       <DeleteUser
         show={showDeleteModal}
         handleClose={() => setShowDeleteModal(false)}
+        Id={id}
         userId={selectedMemberId}
         refreshUsers={refreshMembers}
       />
