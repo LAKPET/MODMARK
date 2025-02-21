@@ -117,9 +117,6 @@ export default function CourseTable() {
   const handleCloseDeleteModal = () => setShowDeleteModal(false);
   const handleCloseAddUserModal = () => setShowAddUserModal(false);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
-
   return (
     <>
       <div className="mb-4">
@@ -176,89 +173,96 @@ export default function CourseTable() {
           Create Course
         </Button>
       </div>
-      <Paper sx={{ width: "100%", overflow: "hidden", marginTop: "20px" }}>
-        <TableContainer sx={{ maxHeight: 500 }}>
-          <Table stickyHeader aria-label="sticky table">
-            <TableHead>
-              <TableRow>
-                {columns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    align={column.align}
-                    style={{ minWidth: column.minWidth }}
-                    className={column.className}
-                  >
-                    {column.label}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {courses.length > 0
-                ? courses
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((course) => (
-                      <TableRow
-                        hover
-                        role="checkbox"
-                        tabIndex={-1}
-                        key={course._id}
-                      >
-                        {columns.map((column) => {
-                          const value = course[column.id];
-                          return (
-                            <TableCell
-                              key={column.id}
-                              align={column.align}
-                              className={
-                                column.id === "actions" ? "actions-cell" : ""
-                              }
-                            >
-                              {column.id === "actions" ? (
-                                <div className="actions-cell">
-                                  <PersonAddIcon
-                                    className="icon-style"
-                                    onClick={() => handleAddUser(course._id)}
-                                  />
-                                  <EditIcon
-                                    className="icon-style"
-                                    onClick={() => handleEdit(course._id)}
-                                  />
-                                  <DeleteIcon
-                                    className="icon-style"
-                                    onClick={() => handleDelete(course._id)}
-                                  />
-                                </div>
-                              ) : (
-                                value
-                              )}
-                            </TableCell>
-                          );
-                        })}
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <Paper sx={{ width: "100%", overflow: "hidden", marginTop: "20px" }}>
+          <TableContainer sx={{ maxHeight: 500 }}>
+            <Table stickyHeader aria-label="sticky table">
+              <TableHead>
+                <TableRow>
+                  {columns.map((column) => (
+                    <TableCell
+                      key={column.id}
+                      align={column.align}
+                      style={{ minWidth: column.minWidth }}
+                      className={column.className}
+                    >
+                      {column.label}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {courses.length > 0
+                  ? courses
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((course) => (
+                        <TableRow
+                          hover
+                          role="checkbox"
+                          tabIndex={-1}
+                          key={course._id}
+                        >
+                          {columns.map((column) => {
+                            const value = course[column.id];
+                            return (
+                              <TableCell
+                                key={column.id}
+                                align={column.align}
+                                className={
+                                  column.id === "actions" ? "actions-cell" : ""
+                                }
+                              >
+                                {column.id === "actions" ? (
+                                  <div className="actions-cell">
+                                    <PersonAddIcon
+                                      className="icon-style"
+                                      onClick={() => handleAddUser(course._id)}
+                                    />
+                                    <EditIcon
+                                      className="icon-style"
+                                      onClick={() => handleEdit(course._id)}
+                                    />
+                                    <DeleteIcon
+                                      className="icon-style"
+                                      onClick={() => handleDelete(course._id)}
+                                    />
+                                  </div>
+                                ) : (
+                                  value
+                                )}
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      ))
+                  : searchPerformed && (
+                      <TableRow>
+                        <TableCell colSpan={columns.length} align="center">
+                          ไม่มี course ใน section นี้
+                        </TableCell>
                       </TableRow>
-                    ))
-                : searchPerformed && (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} align="center">
-                        ไม่มี course ใน section นี้
-                      </TableCell>
-                    </TableRow>
-                  )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                    )}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        <TablePagination
-          rowsPerPageOptions={[5, 10, { value: -1, label: "All" }]}
-          component="div"
-          count={courses.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          ActionsComponent={TablePaginationActions} // Use the component
-        />
-      </Paper>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, { value: -1, label: "All" }]}
+            component="div"
+            count={courses.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            ActionsComponent={TablePaginationActions} // Use the component
+          />
+        </Paper>
+      )}
 
       <Createcourse
         show={showCreateModal}
