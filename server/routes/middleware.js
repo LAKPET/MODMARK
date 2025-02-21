@@ -2,41 +2,69 @@ const jwt = require("jsonwebtoken");
 const redis = require("redis");
 const User = require("../models/User");
 require("dotenv").config();
-const JWT_SECRET = process.env.JWT_SECRET;
 
-// ตรวจสอบว่า Redis เชื่อมต่อแล้วหรือไม่เมื่อแอปเริ่มทำงาน
+const JWT_SECRET = process.env.JWT_SECRET;
+const TOKEN_EXPIRATION = 8 * 60 * 60; // 8 ชั่วโมง (วินาที)
+
 const redisClient = redis.createClient();
 
 redisClient.connect()
   .then(() => console.log("Redis connected successfully"))
   .catch(err => console.error("Redis connection error:", err));
 
-redisClient.on('error', (err) => {
+redisClient.on("error", (err) => {
   console.log("Redis client error:", err);
 });
 
-// Middleware ตรวจสอบ token
-const verifyToken = (req, res, next) => {
-  const token = req.header("Authorization").replace("Bearer ", "");
+// 🔥 สร้าง Token (เรียกใช้ในระบบ Authentication เช่น Login)
+const generateToken = async (user) => {
+  const token = jwt.sign({ id: user._id, role: user.role, email: user.email, first_name: user.first_name, last_name: user.last_name, username: user.username, personal_num: user.personal_num }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION });
+  await redisClient.set(token, "valid", { EX: TOKEN_EXPIRATION }); // กำหนดอายุ 8 ชั่วโมง
+  return token;
+};
 
-  if (!token) {
-    return res.status(401).json({ message: "Access Denied" });
-  }
-
+// ✅ Middleware ตรวจสอบ Token
+const verifyToken = async (req, res, next) => {
   try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      return res.status(401).json({ message: "Access Denied" });
+    }
+
+    // ตรวจสอบ token ใน Redis
+    const tokenExists = await redisClient.get(token);
+    if (!tokenExists) {
+      return res.status(401).json({ message: "Invalid or Expired Token" });
+    }
+
+    // ตรวจสอบ JWT
     const verified = jwt.verify(token, JWT_SECRET);
     req.user = verified;
     next();
   } catch (error) {
-    res.status(400).json({ message: "Invalid Token" });
+    return res.status(400).json({ message: "Invalid Token", error: error.message });
   }
 };
 
-// Middleware สำหรับตรวจสอบว่าเป็นแอดมินหรือไม่
+// ✅ ลบ Token ออกจากระบบ (Logout)
+const logout = async (req, res) => {
+  try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (token) {
+      await redisClient.del(token); // ลบ Token ออกจาก Redis
+    }
+    return res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
+// ✅ Middleware ตรวจสอบ Role
 const checkAdmin = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-    if (user.role !== "admin") {
+    if (!user || user.role !== "admin") {
       return res.status(403).json({ message: "Access Denied" });
     }
     next();
@@ -45,14 +73,10 @@ const checkAdmin = async (req, res, next) => {
   }
 };
 
-// Middleware สำหรับตรวจสอบว่าเป็นแอดมินหรืออาจารย์
 const checkAdminOrProfessor = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id); // ตรวจสอบว่าผู้ใช้มีอยู่ในฐานข้อมูลหรือไม่
-    if (!user) {
-      return res.status(404).json({ message: "User not found" }); // หากไม่พบผู้ใช้ ส่งสถานะ 404 พร้อมข้อความ
-    }
-    if (user.role !== "admin" && user.role !== "professor") {
+    const user = await User.findById(req.user.id);
+    if (!user || (user.role !== "admin" && user.role !== "professor")) {
       return res.status(403).json({ message: "Access Denied" });
     }
     next();
@@ -61,14 +85,33 @@ const checkAdminOrProfessor = async (req, res, next) => {
   }
 };
 
-// Middleware สำหรับตรวจสอบว่าเป็นแอดมินหรืออาจารย์
+const checkAdminOrProfessorOrStudent = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || (user.role !== "admin" && user.role !== "professor" && user.role !== "student")) {
+      return res.status(403).json({ message: "Access Denied" });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
 const checkAdminOrStudent = (req, res, next) => {
-  if (req.user.role !== "admin" && req.user.role !== "student") {
+  if (!req.user || (req.user.role !== "admin" && req.user.role !== "student")) {
     return res.status(403).json({
-      message: "Only admins and student can access this resource"
+      message: "Only admins and students can access this resource",
     });
   }
   next();
 };
 
-module.exports = { verifyToken, checkAdmin, checkAdminOrProfessor, checkAdminOrStudent };
+module.exports = { 
+  generateToken, 
+  verifyToken, 
+  logout, 
+  checkAdmin, 
+  checkAdminOrProfessor, 
+  checkAdminOrProfessorOrStudent, 
+  checkAdminOrStudent 
+};

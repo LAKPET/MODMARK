@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Submission = require("../models/Submission");
 const Group = require("../models/Group");
 const GroupMember = require("../models/GroupMember");
+const User = require("../models/User");
 const { verifyToken, checkAdminOrStudent } = require("./middleware");
 const { upload, uploadFile } = require("../services/storageService");
 const fs = require("fs");
@@ -38,14 +39,22 @@ router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), 
 
     await newGroup.save();
 
+    const membersArray = typeof members === "string" ? JSON.parse(members) : members;
     // Add group members
-    for (const member of members) {
+    for (const member of membersArray) {
+      const existingUser = await User.findById(member.user_id);
+
+      if (!existingUser) {
+        console.error(`User with ID ${member.user_id} not found.`);
+        continue; // ข้าม iteration นี้ถ้าไม่มี user จริง
+      }
+
       const newGroupMember = new GroupMember({
         group_id: newGroup._id,
         assessment_id: new mongoose.Types.ObjectId(assessment_id), // แปลง assessment_id เป็น ObjectId
-        user_id: new mongoose.Types.ObjectId(member.user_id), // แปลง user_id เป็น ObjectId
+        user_id: existingUser._id, // ใช้ _id จากฐานข้อมูลที่มีอยู่จริง
         role: 'student',
-        weight: 1 // กำหนด weight เป็น 1 สำหรับนักเรียน
+        weight: 1
       });
       await newGroupMember.save();
     }
@@ -54,7 +63,7 @@ router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), 
     const newSubmission = new Submission({
       assessment_id: new mongoose.Types.ObjectId(assessment_id), // แปลง assessment_id เป็น ObjectId
       group_id: newGroup._id,
-      student_id: req.user._id,
+      student_id: req.user.id,
       file_url, // เก็บ URL ของไฟล์ที่อัปโหลด
       file_type,
       status: 'submit'

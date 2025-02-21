@@ -84,8 +84,13 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
         section_id: newSection._id,
         professor_id: req.user.id, // ตรวจสอบว่า req.user.id ถูกตั้งค่าอย่างถูกต้อง
         personal_num: req.user.personal_num, // ID ของอาจารย์ที่สร้าง Section
+        email: req.user.email,
+        first_name: req.user.first_name,
+        last_name: req.user.last_name,
         course_number: existingCourse.course_number,
         section_number: newSection.section_number, // เปลี่ยนจาก section_name เป็น section_number
+        semester_term: newSection.semester_term,
+        semester_year: newSection.semester_year,
       });
       await newCourseInstructor.save();
     }

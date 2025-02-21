@@ -135,3 +135,6 @@ dist
 .pnp.*
 client/package-lock.json
 client/package.json
+
+server/uploads/
+client/package.json
