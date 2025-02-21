@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Enrollment = require("../models/Enrollment");
+const CourseInstructor = require("../models/CourseInstructor");
 const User = require("../models/User");
 const Section = require("../models/Section");
 const bcrypt = require("bcryptjs");
@@ -93,6 +94,44 @@ router.post("/enroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
   } catch (error) {
     console.error("Error enrolling students:", error.message);
     res.status(500).json({ message: "Error enrolling students" });
+  }
+});
+
+// ฟังก์ชันสำหรับลบนักเรียนหรืออาจารย์จาก Section
+router.delete("/unenroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
+  const { section_id, personal_id } = req.body;
+
+  if (!section_id || !personal_id) {
+    return res.status(400).json({ message: "section_id and personal_num are required" });
+  }
+
+  try {
+    // ตรวจสอบว่า Section มีอยู่หรือไม่
+    const section = await Section.findById(section_id);
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    // ลบ Enrollment ของนักเรียน
+    const enrollment = await Enrollment.findOneAndDelete({
+      section_id: section._id,
+      student_id: personal_id,
+    });
+
+    // ลบ CourseInstructor ของอาจารย์
+    const courseInstructor = await CourseInstructor.findOneAndDelete({
+      section_id: section._id,
+      professor_id: personal_id,
+    });
+
+    if (!enrollment && !courseInstructor) {
+      return res.status(404).json({ message: "Enrollment or CourseInstructor not found" });
+    }
+
+    res.status(200).json({ message: "User successfully unenrolled from the section" });
+  } catch (error) {
+    console.error("Error unenrolling user:", error.message);
+    res.status(500).json({ message: "Error unenrolling user" });
   }
 });
 
