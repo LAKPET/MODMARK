@@ -23,7 +23,7 @@ export default function Getteam() {
   const [studentsError, setStudentsError] = useState(null);
   const [professorsError, setProfessorsError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
   const [showStudentsTable, setShowStudentsTable] = useState(false);
@@ -188,13 +188,6 @@ export default function Getteam() {
                   <td>{student.last_name}</td>
                   <td>{student.email}</td>
                   <td>
-                    <EditIcon
-                      className="icon-style"
-                      onClick={() => {
-                        setSelectedMemberId(student.student_id);
-                        setShowEditModal(true);
-                      }}
-                    />
                     <DeleteIcon
                       className="icon-style"
                       onClick={() => {
@@ -263,13 +256,6 @@ export default function Getteam() {
                   <td>{professor.last_name}</td>
                   <td>{professor.email}</td>
                   <td>
-                    <EditIcon
-                      className="icon-style"
-                      onClick={() => {
-                        setSelectedMemberId(professor.professor_id);
-                        setShowEditModal(true);
-                      }}
-                    />
                     <DeleteIcon
                       className="icon-style"
                       onClick={() => {
@@ -298,12 +284,7 @@ export default function Getteam() {
         Id={id}
         refreshCourses={refreshMembers}
       />
-      <Edituser
-        show={showEditModal}
-        handleClose={() => setShowEditModal(false)}
-        userId={selectedMemberId}
-        refreshUsers={refreshMembers}
-      />
+
       <DeleteUser
         show={showDeleteModal}
         handleClose={() => setShowDeleteModal(false)}
