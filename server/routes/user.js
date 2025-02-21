@@ -4,16 +4,35 @@ const User = require("../models/User"); // Ensure path is correct
 const Section = require("../models/Section");
 const Enrollment = require("../models/Enrollment");
 const CourseInstructor = require("../models/CourseInstructor");
-const { verifyToken, checkAdmin } = require("./middleware");
+const {
+  verifyToken,
+  checkAdmin,
+  checkAdminOrProfessor,
+} = require("./middleware");
 
 const router = express.Router();
 
 // ฟังก์ชันสำหรับสร้างผู้ใช้ใหม่ (เฉพาะแอดมิน)
 router.post("/create", verifyToken, checkAdmin, async (req, res) => {
-  const { personal_num, first_name, last_name, username, email, password, role } = req.body;
+  const {
+    personal_num,
+    first_name,
+    last_name,
+    username,
+    email,
+    password,
+    role,
+  } = req.body;
 
   // ตรวจสอบข้อมูลที่จำเป็น
-  if (!personal_num || !first_name || !last_name || !email || !username || !password) {
+  if (
+    !personal_num ||
+    !first_name ||
+    !last_name ||
+    !email ||
+    !username ||
+    !password
+  ) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
@@ -21,12 +40,16 @@ router.post("/create", verifyToken, checkAdmin, async (req, res) => {
     // ตรวจสอบว่าผู้ใช้นี้มีอยู่ในระบบหรือไม่
     const existingUserByPersonalNum = await User.findOne({ personal_num });
     if (existingUserByPersonalNum) {
-      return res.status(400).json({ message: "User with this personal number already exists." });
+      return res
+        .status(400)
+        .json({ message: "User with this personal number already exists." });
     }
 
     const existingUserByEmail = await User.findOne({ email });
     if (existingUserByEmail) {
-      return res.status(400).json({ message: "User with this email already exists." });
+      return res
+        .status(400)
+        .json({ message: "User with this email already exists." });
     }
 
     // เข้ารหัสรหัสผ่านก่อนบันทึก
@@ -150,7 +173,9 @@ router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => {
     // ลบผู้ใช้ออกจากฐานข้อมูล
     await user.deleteOne();
 
-    res.status(200).json({ message: "User and related records deleted successfully!" });
+    res
+      .status(200)
+      .json({ message: "User and related records deleted successfully!" });
   } catch (error) {
     console.error("Error deleting user:", error);
     res.status(500).json({ message: "Something went wrong", error });
@@ -160,8 +185,15 @@ router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => {
 // ฟังก์ชันสำหรับแก้ไขข้อมูลผู้ใช้ (เจ้าของข้อมูลและแอดมิน)
 router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
   const { id } = req.params;
-  const { personal_num, first_name, last_name, username, email, password, role } =
-    req.body;
+  const {
+    personal_num,
+    first_name,
+    last_name,
+    username,
+    email,
+    password,
+    role,
+  } = req.body;
 
   try {
     const user = await User.findById(id);
@@ -180,7 +212,9 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
     if (personal_num && personal_num !== user.personal_num) {
       const existingUserByPersonalNum = await User.findOne({ personal_num });
       if (existingUserByPersonalNum) {
-        return res.status(400).json({ message: "User with this personal number already exists." });
+        return res
+          .status(400)
+          .json({ message: "User with this personal number already exists." });
       }
       user.personal_num = personal_num;
     }
@@ -188,7 +222,9 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
     if (email && email !== user.email) {
       const existingUserByEmail = await User.findOne({ email });
       if (existingUserByEmail) {
-        return res.status(400).json({ message: "User with this email already exists." });
+        return res
+          .status(400)
+          .json({ message: "User with this email already exists." });
       }
       user.email = email;
     }
@@ -229,7 +265,9 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
       }
     );
 
-    res.status(200).json({ message: "User and related records updated successfully!" });
+    res
+      .status(200)
+      .json({ message: "User and related records updated successfully!" });
   } catch (error) {
     console.error("Error updating user:", error);
     res.status(500).json({ message: "Something went wrong", error });

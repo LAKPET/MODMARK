@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
+import axios from "axios"; // Import axios for making HTTP requests
 import "../../../assets/Styles/Navbar.css";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
 
@@ -9,13 +10,28 @@ function Navber() {
   const username = localStorage.getItem("Username");
   const navigate = useNavigate(); // Use navigate for redirection
 
-  const handleLogout = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem("Username");
-    localStorage.removeItem("authToken");
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/logout`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    // Redirect to login page
-    navigate("/login");
+      // Clear user data from localStorage
+      localStorage.removeItem("Username");
+      localStorage.removeItem("authToken");
+
+      // Redirect to login page
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
   };
 
   return (

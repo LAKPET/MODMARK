@@ -1,0 +1,5 @@
+.short-border {
+    border-bottom: 2px solid #a4a4a4; /* เส้นขอบสีเทา */
+    width: 100%; /* ให้เส้นเต็มความกว้าง */
+    margin-bottom: 10px; /* เพิ่มระยะห่าง */
+  }

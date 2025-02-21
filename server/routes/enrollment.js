@@ -4,16 +4,22 @@ const Enrollment = require("../models/Enrollment");
 const User = require("../models/User");
 const Section = require("../models/Section");
 const bcrypt = require("bcryptjs");
-const { verifyToken, checkAdmin } = require("./middleware");
+const {
+  verifyToken,
+  checkAdmin,
+  checkAdminOrProfessor,
+} = require("./middleware");
 
 const router = express.Router();
 
 // ฟังก์ชันสำหรับลงทะเบียนนักเรียนใน Section
-router.post("/enroll", verifyToken, checkAdmin, async (req, res) => {
+router.post("/enroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
   const { section_id, students } = req.body;
 
   if (!section_id || !Array.isArray(students) || students.length === 0) {
-    return res.status(400).json({ message: "section_id and students are required" });
+    return res
+      .status(400)
+      .json({ message: "section_id and students are required" });
   }
 
   try {
@@ -29,17 +35,27 @@ router.post("/enroll", verifyToken, checkAdmin, async (req, res) => {
       const { personal_num, email } = student;
       const userByPersonalNum = await User.findOne({ personal_num });
       const userByEmail = await User.findOne({ email });
-      
+
       if (!userByPersonalNum || !userByEmail) {
-        return res.status(404).json({ message: `User with personal_num ${personal_num} or email ${email} not found in the system` });
+        return res
+          .status(404)
+          .json({
+            message: `User with personal_num ${personal_num} or email ${email} not found in the system`,
+          });
       }
-      
+
       if (userByPersonalNum._id.toString() !== userByEmail._id.toString()) {
-        return res.status(400).json({ message: "Personal number and email do not match" });
+        return res
+          .status(400)
+          .json({ message: "Personal number and email do not match" });
       }
       const user = userByPersonalNum;
       if (user.role !== "student") {
-        return res.status(400).json({ message: `User with personal_num ${personal_num} is not a student` });
+        return res
+          .status(400)
+          .json({
+            message: `User with personal_num ${personal_num} is not a student`,
+          });
       }
 
       // ตรวจสอบว่า Student ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
