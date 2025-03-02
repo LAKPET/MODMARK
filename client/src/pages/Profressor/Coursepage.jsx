@@ -6,7 +6,7 @@ import { Container, Row, Col, Button } from "react-bootstrap";
 import "../../assets/Styles/Course/Coursepage.css";
 import Getcourse from "../../components/Profressor/Course/Getcourse";
 import { useAuth } from "../../routes/AuthContext";
-
+import "../../styles/Main.css";
 function Coursepage() {
   const [showModal, setShowModal] = useState(false);
   const { user } = useAuth();

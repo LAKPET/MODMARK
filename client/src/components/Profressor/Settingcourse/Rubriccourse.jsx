@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
-import { TextField, IconButton, Snackbar, Alert, List } from "@mui/material";
+import { TextField, IconButton } from "@mui/material";
 import ListRubric from "./Listrubric";
 import AddIcon from "@mui/icons-material/Add";
 import ClearIcon from "@mui/icons-material/Clear";
+import ModalComponent from "../../../controls/modal"; // Import ModalComponent
 import "../../../assets/Styles/Settingcourse/Rubrictable.css";
 
 const RubricMain = () => {
@@ -14,6 +15,7 @@ const RubricMain = () => {
   console.log(id);
 
   const [showListRubric, setShowListRubric] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
 
   const handleListRubric = () => {
     setShowListRubric(true);
@@ -147,6 +149,7 @@ const RubricMain = () => {
 
       const data = await response.json();
       console.log("Success:", data);
+      setShowSuccessModal(true); // Show success modal
     } catch (error) {
       console.error("Error:", error);
     }
@@ -165,7 +168,7 @@ const RubricMain = () => {
             List Rubric
           </Button>
           <Button className="custom-btn" onClick={handleSubmit}>
-            + Add Criterion
+            + Add Rubric
           </Button>
         </Col>
       </Row>
@@ -306,6 +309,13 @@ const RubricMain = () => {
           </tbody>
         </table>
       </div>
+
+      <ModalComponent
+        open={showSuccessModal}
+        handleClose={() => setShowSuccessModal(false)}
+        title="Add Rubric"
+        description="The rubric has been successfully added."
+      />
     </Container>
   );
 };

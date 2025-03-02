@@ -1,25 +1,21 @@
 import React from "react";
-import Navber from "../../components/Student/Course/Navbar";
-import Sidebar from "../../components/Student/Course/Sidebar";
+import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col } from "react-bootstrap";
-import "../../assets/Styles/Course/Coursepage.css";
-import Getcourse from "../../components/Student/Course/Getcourse";
+import Sidebar from "../../components/Student/Dashboard/Sidebar";
+import Navber from "../../components/Student/Dashboard/Navbar";
+import GetDetailCourse from "../../components/Student/Dashboard/Getdetailcourse";
 import "../../styles/Main.css";
-function Coursepage() {
+export default function Dashboardpage_stu() {
+  const { id } = useParams();
   return (
     <div>
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Navbar */}
       <Navber />
-
-      {/* Main Content */}
       <div className="main-content">
         <Container className="mt-2">
           <Row className="align-items-center">
             <Col className="d-flex justify-content-start">
-              <h3 className="fw-bold">My Course</h3>
+              <h3 className="fw-bold">My Dashboard</h3>
             </Col>
           </Row>
           <Row>
@@ -27,7 +23,7 @@ function Coursepage() {
           </Row>
           <Row>
             <Col>
-              <Getcourse />
+              <GetDetailCourse id={id} />
             </Col>
           </Row>
         </Container>
@@ -35,5 +31,3 @@ function Coursepage() {
     </div>
   );
 }
-
-export default Coursepage;

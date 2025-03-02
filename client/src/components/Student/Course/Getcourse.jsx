@@ -35,7 +35,7 @@ export default function Getcourse() {
   }, []);
 
   const handleCourseClick = (sectionId) => {
-    navigate(`/dashboard/${sectionId}`);
+    navigate(`/student/dashboard/${sectionId}`);
   };
 
   if (loading) {

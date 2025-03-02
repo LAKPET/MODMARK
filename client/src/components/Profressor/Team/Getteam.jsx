@@ -10,6 +10,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import AddUserCourse from "../../Admin/course/Addusercourse"; // Import AddUserCourse component
 import DeleteUser from "../../Profressor/Team/DeleteUser";
 import "../../../assets/Styles/Team/Getteam.css";
+import CircularProgress from "@mui/material/CircularProgress";
 
 export default function Getteam() {
   const { id } = useParams();
@@ -22,6 +23,7 @@ export default function Getteam() {
   const [studentsError, setStudentsError] = useState(null);
   const [professorsError, setProfessorsError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
@@ -110,7 +112,13 @@ export default function Getteam() {
     fetchData();
   }, [id, navigate]);
 
-  if (loading) return <div className="text-center mt-5">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="text-center mt-5 spinner">
+        <CircularProgress color="inherit" />
+      </div>
+    );
+  }
   if (courseError)
     return <div className="text-center mt-5 text-danger">{courseError}</div>;
 
@@ -282,6 +290,7 @@ export default function Getteam() {
         handleClose={() => setShowCreateModal(false)}
         Id={id}
         refreshCourses={refreshMembers}
+        onSuccess={() => setShowSuccessModal(true)} // Show success modal on success
       />
 
       <DeleteUser

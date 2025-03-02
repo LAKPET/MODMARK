@@ -3,7 +3,7 @@ import Navber from "../../components/Profressor/Dashboard/Navbar";
 import Sidebar from "../../components/Profressor/Dashboard/Sidebar";
 import { Container } from "react-bootstrap";
 import Getteam from "../../components/Profressor/Team/Getteam";
-
+import "../../styles/Main.css";
 export default function Teampage() {
   return (
     <div>

@@ -14,12 +14,11 @@ import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/modal"; // Import ModalComponent
 
-export default function EditAssessmentModal({
+export default function CreateAssessmentModal({
   show,
   handleClose,
   refreshAssessments,
   courseDetails,
-  assessmentId,
 }) {
   const { id } = useParams();
   const [assessmentName, setAssessmentName] = useState("");
@@ -35,51 +34,6 @@ export default function EditAssessmentModal({
   const [rubric, setRubric] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
   const apiUrl = import.meta.env.VITE_API_URL;
-
-  const formatDateTimeLocal = (isoString) => {
-    const date = new Date(isoString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  useEffect(() => {
-    if (assessmentId && show) {
-      const fetchAssessmentDetails = async () => {
-        try {
-          const token = localStorage.getItem("authToken");
-          const response = await axios.get(
-            `${apiUrl}/assessment/${assessmentId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          const data = response.data;
-          console.log("Assessment details:", data);
-          setAssessmentName(data.assessment_name);
-          setAssessmentDescription(data.assessment_description);
-          setAssessmentType(data.assignment_type);
-          setGradingType(data.teamgrading_type);
-          setPublishDate(formatDateTimeLocal(data.publish_date));
-          setDueDate(formatDateTimeLocal(data.due_date));
-          setWeights(
-            data.graders.reduce((acc, grader) => {
-              acc[grader.user_id._id] = grader.weight * 100;
-              return acc;
-            }, {})
-          );
-          setRubric(data.rubric_id || "");
-        } catch (error) {
-          console.error("Error fetching assessment details:", error);
-        }
-      };
-
-      fetchAssessmentDetails();
-    }
-  }, [assessmentId, show, apiUrl]);
 
   const handleWeightChange = (id, value) => {
     setWeights((prev) => ({ ...prev, [id]: parseFloat(value) || 0 }));
@@ -104,27 +58,29 @@ export default function EditAssessmentModal({
     const requestData = {
       course_id: courseDetails.course_id,
       section_id: courseDetails.section_id,
+      // professor_id: rows.p_id,
       assessment_name: assessmentName,
       assessment_description: assessmentDescription,
       assignment_type: assessmentType,
       teamgrading_type: gradingType,
       publish_date: publishDate,
       due_date: dueDate,
-      rubric_id: rubric,
+      rubric_id: rubrics[0]._id,
       graders: Object.entries(weights).map(([user_id, weight]) => ({
         user_id,
         weight: weight / 100,
       })),
     };
 
+    console.log("Sending data:", requestData);
+
     axios
-      .put(`${apiUrl}/assessment/update/${assessmentId}`, requestData, {
+      .post(`${apiUrl}/assessment/create`, requestData, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
         handleClose();
         resetForm();
-        refreshAssessments();
         setShowSuccessModal(true); // Show success modal
       })
       .catch((err) => {
@@ -172,22 +128,16 @@ export default function EditAssessmentModal({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("authToken"); // ดึง token ก่อน
         if (!token) throw new Error("No auth token found");
 
-        if (!id) {
-          console.warn("Section ID is missing");
-          return;
-        }
-
-        console.log("Fetching professors for section:", id);
-
-        const response = await axios.get(`${apiUrl}/section/professors/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const response = await axios.get(
+          `http://localhost:5001/section/professors/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         const data = response.data;
 
+        // แปลงข้อมูลให้อยู่ในรูปแบบที่ต้องการ
         const formattedData = data.map((user, index) => ({
           p_id: user.professor_id,
           id: user.personal_num || index + 1,
@@ -196,8 +146,8 @@ export default function EditAssessmentModal({
           email: user.email || "N/A",
         }));
 
-        console.log("Professors Data:", formattedData);
         setRows(formattedData);
+        console.log(formattedData);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -205,29 +155,28 @@ export default function EditAssessmentModal({
 
     const fetchRubrics = async () => {
       try {
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("authToken"); // ดึง token อีกครั้ง
         if (!token) throw new Error("No auth token found");
 
-        const response = await axios.get(`${apiUrl}/rubric/section/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `http://localhost:5001/rubric/section/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setRubrics(response.data);
       } catch (error) {
         console.error("Error fetching rubrics:", error);
       }
     };
 
-    if (id && apiUrl) {
-      fetchData();
-      fetchRubrics();
-    }
-  }, [id, apiUrl, courseDetails?.section_id]);
+    fetchData();
+    fetchRubrics();
+  }, [id]); // เพิ่ม `id` เป็น dependency
 
   return (
     <>
       <Modal show={show} onHide={handleClose} className="custom-modal">
         <Modal.Header onClick={resetForm} closeButton>
-          <Modal.Title>Edit Assessment</Modal.Title>
+          <Modal.Title>Create Assessment</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="custom-tab-container">
@@ -376,6 +325,7 @@ export default function EditAssessmentModal({
                 </FormControl>
               </Form.Group>
 
+              {/* ดึง rubric ที่ถูกเลือก */}
               {rubric &&
                 (() => {
                   const selectedRubric = rubrics.find((r) => r._id === rubric);
@@ -444,7 +394,7 @@ export default function EditAssessmentModal({
             )}
             {activeTab === "createRubric" && (
               <Button className="custom-btn" onClick={handleSubmit}>
-                Save
+                Create Assessment
               </Button>
             )}
           </div>
@@ -454,8 +404,8 @@ export default function EditAssessmentModal({
       <ModalComponent
         open={showSuccessModal}
         handleClose={() => setShowSuccessModal(false)}
-        title="Edit Assessment"
-        description="The assessment has been successfully edited."
+        title="Create Assessment"
+        description="The assessment has been successfully created."
       />
     </>
   );

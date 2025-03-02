@@ -3,14 +3,16 @@ import { Container, Row, Col, Button } from "react-bootstrap";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import CreateAssessmentModal from "../Dashboard/CreateAssessmentModal";
+import CreateAssessmentModal from "./CreateAssessmentModal";
 import EditAssessmentModal from "./Editassessment";
 import DeleteAssessment from "./Deleteassessment";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 import "../../../assets/Styles/Assessment/Getassessment.css";
-
+import { formatDateTime } from "../../../utils/FormatDateTime";
+import { sortAssessments } from "../../../utils/SortAssessment";
+import CircularProgress from "@mui/material/CircularProgress";
 export default function Getassessment() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -27,23 +29,6 @@ export default function Getassessment() {
   const [sortColumn, setSortColumn] = useState(null);
   const [sortOrder, setSortOrder] = useState("asc");
 
-  const formatDateTime = (isoString) => {
-    const date = new Date(isoString);
-    const formattedDate = date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-    const formattedTime = date
-      .toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-      .replace(":", ".");
-    return `${formattedDate} At ${formattedTime}`;
-  };
-
   const handleSort = (column) => {
     const newOrder =
       sortColumn === column && sortOrder === "asc" ? "desc" : "asc";
@@ -51,14 +36,7 @@ export default function Getassessment() {
     setSortOrder(newOrder);
   };
 
-  const sortedAssessments = [...assessments].sort((a, b) => {
-    if (!sortColumn) return 0;
-    const valueA = a[sortColumn];
-    const valueB = b[sortColumn];
-    return sortOrder === "asc"
-      ? valueA.localeCompare(valueB)
-      : valueB.localeCompare(valueA);
-  });
+  const sortedAssessments = sortAssessments(assessments, sortColumn, sortOrder);
 
   const refreshAssessments = async () => {
     try {
@@ -106,7 +84,13 @@ export default function Getassessment() {
     fetchData();
   }, [id, navigate]);
 
-  if (loading) return <div className="text-center mt-5">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="text-center mt-5 spinner">
+        <CircularProgress color="inherit" />
+      </div>
+    );
+  }
   if (error) return <div className="text-center mt-5 text-danger">{error}</div>;
 
   return (

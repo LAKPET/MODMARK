@@ -1,15 +1,16 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
-import Logo from "../../assets/Picture/Logo.png";
-import { useLocation } from "react-router-dom"; // Import useLocation hook
+import Logo from "../../../assets/Picture/Logo.png";
+import { useLocation, useNavigate } from "react-router-dom"; // Import useLocation and useNavigate hooks
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AssessmentIcon from "@mui/icons-material/Assessment";
-import GroupIcon from "@mui/icons-material/Group";
-import SettingsIcon from "@mui/icons-material/Settings";
-import "../../assets/Styles/Sidebar.css";
+import CreditScoreIcon from "@mui/icons-material/CreditScore";
+
+import "../../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
   const location = useLocation(); // Get the current route
+  const navigate = useNavigate(); // Use navigate for redirection
 
   // Helper function to determine if a link is active
   const isActive = (path) => location.pathname === path;
@@ -57,22 +58,13 @@ function Sidebar() {
           <span>Assessment</span>
         </Nav.Link>
         <Nav.Link
-          href="/team"
+          href="/score&feedback"
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/team") ? "active" : ""
+            isActive("/score&feedback") ? "active" : ""
           }`}
         >
-          <GroupIcon className="me-2" />
-          <span>Team</span>
-        </Nav.Link>
-        <Nav.Link
-          href="/settingcourse"
-          className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/settingcourse") ? "active" : ""
-          }`}
-        >
-          <SettingsIcon className="me-2" />
-          <span>Setting Course</span>
+          <CreditScoreIcon className="me-2" />
+          <span>Score and Feedback</span>
         </Nav.Link>
       </Nav>
 

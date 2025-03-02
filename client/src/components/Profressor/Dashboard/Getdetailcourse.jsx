@@ -4,13 +4,15 @@ import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../../assets/Styles/Dashboard/GetDetail.css";
-import CreateAssessmentModal from "./CreateAssessmentModal";
+import CreateAssessmentModal from "../Assessment/CreateAssessmentModal";
 import EditAssessmentModal from "../Assessment/Editassessment";
 import DeleteAssessment from "../Assessment/Deleteassessment";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
-
+import { formatDateTime } from "../../../utils/FormatDateTime";
+import { sortAssessments } from "../../../utils/SortAssessment";
+import CircularProgress from "@mui/material/CircularProgress";
 export default function GetDetailCourse() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -75,23 +77,6 @@ export default function GetDetailCourse() {
     fetchAssessments();
   }, [id, navigate]);
 
-  const formatDateTime = (isoString) => {
-    const date = new Date(isoString);
-    const formattedDate = date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-    const formattedTime = date
-      .toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-      .replace(":", ".");
-    return `${formattedDate} At ${formattedTime}`;
-  };
-
   const handleSort = (column) => {
     const newOrder =
       sortColumn === column && sortOrder === "asc" ? "desc" : "asc";
@@ -99,17 +84,14 @@ export default function GetDetailCourse() {
     setSortOrder(newOrder);
   };
 
-  const sortedAssessments = [...assessments].sort((a, b) => {
-    if (!sortColumn) return 0;
-    const valueA = a[sortColumn];
-    const valueB = b[sortColumn];
-    return sortOrder === "asc"
-      ? valueA.localeCompare(valueB)
-      : valueB.localeCompare(valueA);
-  });
+  const sortedAssessments = sortAssessments(assessments, sortColumn, sortOrder);
 
   if (loading) {
-    return <div className="text-center mt-5">Loading...</div>;
+    return (
+      <div className="text-center mt-5 spinner">
+        <CircularProgress color="inherit" />
+      </div>
+    );
   }
 
   if (error) {

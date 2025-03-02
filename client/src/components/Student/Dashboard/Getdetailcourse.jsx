@@ -1,18 +1,47 @@
-import React, { useEffect, useState } from "react";
-import { Row, Col, Container, Button } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Row, Col, Container } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import "../../assets/Styles/Dashboard/GetDetail.css";
-import CreateAssessmentModal from "../../components/Dashboard/CreateAssessmentModal";
+import Button from "@mui/material/Button";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { styled } from "@mui/material/styles";
+
+const VisuallyHiddenInput = styled("input")({
+  clip: "rect(0 0 0 0)",
+  clipPath: "inset(50%)",
+  height: 1,
+  overflow: "hidden",
+  position: "absolute",
+  bottom: 0,
+  left: 0,
+  whiteSpace: "nowrap",
+  width: 1,
+});
 
 export default function GetDetailCourse() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [courseDetails, setCourseDetails] = useState(null);
+  const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const apiUrl = import.meta.env.VITE_API_URL;
-  const [showModal, setShowModal] = useState(false);
+
+  const refreshAssessments = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const assessmentResponse = await axios.get(
+        `${apiUrl}/assessment/section/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setAssessments(assessmentResponse.data);
+    } catch (err) {
+      setError("Error loading data.");
+    }
+  };
 
   useEffect(() => {
     if (!id) {
@@ -21,87 +50,71 @@ export default function GetDetailCourse() {
       return;
     }
 
-    const fetchCourseDetails = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken");
         if (!token) {
           navigate("/login");
           return;
         }
-
-        const response = await axios.get(`${apiUrl}/course/details/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setCourseDetails(response.data);
-      } catch (error) {
-        setError("Error loading course details.");
+        const courseResponse = await axios.get(
+          `${apiUrl}/course/details/${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setCourseDetails(courseResponse.data);
+        await refreshAssessments();
+      } catch (err) {
+        setError("Error loading data.");
       } finally {
         setLoading(false);
       }
     };
-
-    fetchCourseDetails();
+    fetchData();
   }, [id, navigate]);
 
-  if (loading) {
-    return <div className="text-center mt-5">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center mt-5 text-danger">{error}</div>;
-  }
+  if (loading) return <div className="text-center mt-5">Loading...</div>;
+  if (error) return <div className="text-center mt-5 text-danger">{error}</div>;
 
   return (
     <Container className="mt-4">
       <Row className="pb-3 mb-4">
-        <Col md={8}>
-          <h2 className="mb-0 fw-semibold d-flex align-items-center">
-            {courseDetails.course_number}
-            <span className="vertical-line bg-dark mx-3"></span>
-            <span className="fw-normal fs-5">
-              {courseDetails.section_term} / {courseDetails.section_year}
-            </span>
-          </h2>
-          <div className="d-flex align-items-center">
-            <p className="text-muted p-1 mb-0">{courseDetails.course_name}</p>
-            <span className="text-muted p-1">{`Section ${courseDetails.section_name}`}</span>
-          </div>
-        </Col>
+        <Col md={8}>dash1</Col>
       </Row>
 
       <Row className="mb-4 text-dark">
-        <Col md={8}>
-          <h5 className="pb-3 mb-4 short-border fw-semibold">Description</h5>
-          <p>{courseDetails.course_description}</p>
-        </Col>
+        <Col md={8}>Overall Score</Col>
         <Col md={4}>
-          <h5 className="pb-3 mb-4 short-border fw-semibold">Team</h5>
-          <p className="text-muted">No team information available.</p>
+          {assessments.length > 0 ? (
+            assessments.map((assessment) => (
+              <div key={assessment._id}>
+                {assessment.assessment_name}
+                <Button
+                  component="label"
+                  role={undefined}
+                  variant="contained"
+                  tabIndex={-1}
+                  startIcon={<CloudUploadIcon />}
+                  style={{
+                    marginLeft: "10px",
+                    backgroundColor: "green",
+                  }}
+                >
+                  Upload files
+                  <VisuallyHiddenInput
+                    type="file"
+                    onChange={(event) => console.log(event.target.files)}
+                    multiple
+                  />
+                </Button>
+              </div>
+            ))
+          ) : (
+            <div>No assessments found</div>
+          )}
         </Col>
       </Row>
-
-      <Row className="text-center mt-5">
-        <Col className="mt-5">
-          <h3 className="mb-4 fw-semibold fs-2">No Assessments Available</h3>
-          <h3 className="mb-4 fw-normal">
-            Create an assessment to get started
-          </h3>
-          <Button
-            className="custom-btn mt-2"
-            onClick={() => setShowModal(true)}
-          >
-            Create Assessment
-          </Button>
-        </Col>
-      </Row>
-
-      <CreateAssessmentModal
-        show={showModal}
-        handleClose={() => setShowModal(false)}
-      />
     </Container>
   );
 }

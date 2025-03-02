@@ -6,16 +6,19 @@ import * as XLSX from "xlsx";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
+import ModalComponent from "../../../controls/modal"; // Import ModalComponent
 
 export default function AddUserCourse({
   show,
   handleClose,
   Id,
   refreshCourses,
+  onSuccess, // Add onSuccess prop
 }) {
   const [userId, setUserId] = useState("");
   const [excelData, setExcelData] = useState([]);
   const [role, setRole] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleRoleChange = (e) => {
@@ -80,6 +83,8 @@ export default function AddUserCourse({
         console.log("Success:", response.data);
         handleClose();
         refreshCourses();
+        onSuccess(); // Call onSuccess function
+        setShowSuccessModal(true); // Show success modal
       } catch (error) {
         console.error("Request failed:", error);
       }
@@ -89,49 +94,59 @@ export default function AddUserCourse({
   };
 
   return (
-    <Modal show={show} onHide={handleClose}>
-      <Modal.Header closeButton>
-        <Modal.Title>Add User </Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-4" controlId="formUserId">
-            <InputLabel className="mb-2" id="role-select-label">
-              User Role
-            </InputLabel>
-            <Select
-              labelId="role-select-label"
-              id="role-select"
-              value={role}
-              onChange={handleRoleChange}
-              fullWidth
-            >
-              <MenuItem value="student">Student</MenuItem>
-              <MenuItem value="professor">Professor</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
-            </Select>
-            {role && (
-              <>
-                <InputLabel className="mt-3 mb-2" id="file-upload-label">
-                  You can import users <span className=" fw-bold">{role}</span>{" "}
-                  by CSV or Excel file
-                </InputLabel>
-                <MDBFile
-                  className="mb-4"
-                  id="customFile"
-                  onChange={handleFileUpload}
-                />
-              </>
-            )}
-          </Form.Group>
+    <>
+      <Modal show={show} onHide={handleClose}>
+        <Modal.Header closeButton>
+          <Modal.Title>Add User </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-4" controlId="formUserId">
+              <InputLabel className="mb-2" id="role-select-label">
+                User Role
+              </InputLabel>
+              <Select
+                labelId="role-select-label"
+                id="role-select"
+                value={role}
+                onChange={handleRoleChange}
+                fullWidth
+              >
+                <MenuItem value="student">Student</MenuItem>
+                <MenuItem value="professor">Professor</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+              </Select>
+              {role && (
+                <>
+                  <InputLabel className="mt-3 mb-2" id="file-upload-label">
+                    You can import users{" "}
+                    <span className=" fw-bold">{role}</span> by CSV or Excel
+                    file
+                  </InputLabel>
+                  <MDBFile
+                    className="mb-4"
+                    id="customFile"
+                    onChange={handleFileUpload}
+                  />
+                </>
+              )}
+            </Form.Group>
 
-          <div className="d-flex justify-content-end">
-            <Button className="custom-btn" type="submit">
-              Add User
-            </Button>
-          </div>
-        </Form>
-      </Modal.Body>
-    </Modal>
+            <div className="d-flex justify-content-end">
+              <Button className="custom-btn" type="submit">
+                Add User
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      <ModalComponent
+        open={showSuccessModal}
+        handleClose={() => setShowSuccessModal(false)}
+        title="Add User"
+        description="The user has been successfully added."
+      />
+    </>
   );
 }

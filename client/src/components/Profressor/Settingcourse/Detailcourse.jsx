@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Container, Form, Button, Row, Col } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import ModalComponent from "../../../controls/modal"; // Import ModalComponent
 
 export default function DetailCourse({ Id }) {
   const { id: paramId } = useParams();
@@ -14,6 +15,7 @@ export default function DetailCourse({ Id }) {
     semester_term: "",
     semester_year: "",
   });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -52,6 +54,7 @@ export default function DetailCourse({ Id }) {
       await axios.put(`${apiUrl}/section/update/${courseId}`, course, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      setShowSuccessModal(true);
     } catch (err) {
       console.error("Failed to update course:", err);
     }
@@ -138,6 +141,13 @@ export default function DetailCourse({ Id }) {
           </Button>
         </div>
       </Form>
+
+      <ModalComponent
+        open={showSuccessModal}
+        handleClose={() => setShowSuccessModal(false)}
+        title="Update Course"
+        description="The course details have been successfully updated."
+      />
     </Container>
   );
 }

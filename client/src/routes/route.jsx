@@ -12,6 +12,8 @@ import { AuthProvider } from "./AuthContext";
 import Settingcoursepage from "../pages/Profressor/Settingcoursepage";
 import Assessmentpage from "../pages/Profressor/Assessmentpage";
 import Teampage from "../pages/Profressor/Teampage";
+
+import Dashboardpage_stu from "../pages/Student/Dashboardpage_stu";
 function AppRoutes() {
   return (
     <AuthProvider>
@@ -28,14 +30,7 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/student/course"
-            element={
-              <ProtectedRoute requiredRole="student">
-                <StudentCoursepage />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/dashboard/:id"
             element={
@@ -66,6 +61,22 @@ function AppRoutes() {
             element={
               <ProtectedRoute requiredRole="professor">
                 <Teampage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/course"
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentCoursepage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/dashboard/:id"
+            element={
+              <ProtectedRoute requiredRole="student">
+                <Dashboardpage_stu />
               </ProtectedRoute>
             }
           />

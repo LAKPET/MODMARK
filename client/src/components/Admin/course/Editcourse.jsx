@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { MDBInput } from "mdb-react-ui-kit";
 import axios from "axios";
+import ModalComponent from "../../../controls/modal"; // Import ModalComponent
 
 export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [courseNumber, setCourseNumber] = useState("");
@@ -9,6 +10,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [semesterTerm, setSemesterTerm] = useState("");
   const [semesterYear, setSemesterYear] = useState("");
   const [courseName, setCourseName] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -54,74 +56,84 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
       .then(() => {
         handleClose();
         refreshCourses();
+        setShowSuccessModal(true); // Show success modal
       })
       .catch((err) => console.error("Failed to update course:", err));
   };
 
   return (
-    <Modal show={show} onHide={handleClose}>
-      <Modal.Header closeButton>
-        <Modal.Title>Edit Course</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-4" controlId="formCourseNumber">
-            <MDBInput
-              label="Course Number"
-              id="formCourseNumber"
-              type="text"
-              value={courseNumber}
-              onChange={(e) => setCourseNumber(e.target.value)}
-            />
-          </Form.Group>
+    <>
+      <Modal show={show} onHide={handleClose}>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Course</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-4" controlId="formCourseNumber">
+              <MDBInput
+                label="Course Number"
+                id="formCourseNumber"
+                type="text"
+                value={courseNumber}
+                onChange={(e) => setCourseNumber(e.target.value)}
+              />
+            </Form.Group>
 
-          <Form.Group className="mb-4" controlId="formSectionName">
-            <MDBInput
-              label="Section Name"
-              id="formSectionName"
-              type="text"
-              value={sectionName}
-              onChange={(e) => setSectionName(e.target.value)}
-            />
-          </Form.Group>
+            <Form.Group className="mb-4" controlId="formSectionName">
+              <MDBInput
+                label="Section Name"
+                id="formSectionName"
+                type="text"
+                value={sectionName}
+                onChange={(e) => setSectionName(e.target.value)}
+              />
+            </Form.Group>
 
-          <Form.Group className="mb-4" controlId="formSemesterTerm">
-            <MDBInput
-              label="Semester Term"
-              id="formSemesterTerm"
-              type="text"
-              value={semesterTerm}
-              onChange={(e) => setSemesterTerm(e.target.value)}
-            />
-          </Form.Group>
+            <Form.Group className="mb-4" controlId="formSemesterTerm">
+              <MDBInput
+                label="Semester Term"
+                id="formSemesterTerm"
+                type="text"
+                value={semesterTerm}
+                onChange={(e) => setSemesterTerm(e.target.value)}
+              />
+            </Form.Group>
 
-          <Form.Group className="mb-4" controlId="formSemesterYear">
-            <MDBInput
-              label="Semester Year"
-              id="formSemesterYear"
-              type="text"
-              value={semesterYear}
-              onChange={(e) => setSemesterYear(e.target.value)}
-            />
-          </Form.Group>
+            <Form.Group className="mb-4" controlId="formSemesterYear">
+              <MDBInput
+                label="Semester Year"
+                id="formSemesterYear"
+                type="text"
+                value={semesterYear}
+                onChange={(e) => setSemesterYear(e.target.value)}
+              />
+            </Form.Group>
 
-          {/* <Form.Group className="mb-4" controlId="formCourseName">
-            <MDBInput
-              label="Course Name"
-              id="formCourseName"
-              type="text"
-              value={courseName}
-              onChange={(e) => setCourseName(e.target.value)}
-            />
-          </Form.Group> */}
+            {/* <Form.Group className="mb-4" controlId="formCourseName">
+              <MDBInput
+                label="Course Name"
+                id="formCourseName"
+                type="text"
+                value={courseName}
+                onChange={(e) => setCourseName(e.target.value)}
+              />
+            </Form.Group> */}
 
-          <div className="d-flex justify-content-end">
-            <Button className="custom-btn" type="submit">
-              Update Course
-            </Button>
-          </div>
-        </Form>
-      </Modal.Body>
-    </Modal>
+            <div className="d-flex justify-content-end">
+              <Button className="custom-btn" type="submit">
+                Update Course
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      <ModalComponent
+        open={showSuccessModal}
+        handleClose={() => setShowSuccessModal(false)}
+        title="Update Course"
+        description="The course details have been successfully updated."
+      />
+    </>
   );
 }

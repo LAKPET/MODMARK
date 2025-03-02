@@ -3,6 +3,7 @@ import Navber from "../../components/Profressor/Dashboard/Navbar";
 import Sidebar from "../../components/Profressor/Dashboard/Sidebar";
 import { Container } from "react-bootstrap";
 import Getassessment from "../../components/Profressor/Assessment/Getassessment";
+import "../../styles/Main.css";
 export default function Assessmentpage() {
   return (
     <div>

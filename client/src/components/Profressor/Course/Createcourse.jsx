@@ -7,6 +7,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
+import ModalComponent from "../../../controls/modal"; // Import ModalComponent
 import "../../../assets/Styles/Course/Createcourse.css";
 
 export default function Createcourse({ show, handleClose }) {
@@ -16,6 +17,7 @@ export default function Createcourse({ show, handleClose }) {
   const [section, setSection] = useState("");
   const [term, setTerm] = useState("");
   const [year, setYear] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e) => {
@@ -54,6 +56,7 @@ export default function Createcourse({ show, handleClose }) {
       });
       console.log("Course created successfully:", response.data);
       handleClose(); // Close the modal after success
+      setShowSuccessModal(true); // Show success modal
     } catch (error) {
       console.error(
         "Error creating course:",
@@ -68,94 +71,100 @@ export default function Createcourse({ show, handleClose }) {
   };
 
   return (
-    <Modal show={show} onHide={handleClose} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Create Course</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3" controlId="courseNumber">
-            <MDBInput
-              label="Enter course number"
-              id="courseNumber"
-              type="text"
-              size="lg"
-              value={courseNumber}
-              onChange={(e) => setCourseNumber(e.target.value)}
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="courseName">
-            <MDBInput
-              label="Enter course name"
-              id="courseName"
-              type="text"
-              size="lg"
-              value={courseName}
-              onChange={(e) => setCourseName(e.target.value)}
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="courseDescription">
-            <MDBInput
-              label="Enter course description"
-              id="courseDescription"
-              type="textarea"
-              size="lg"
-              value={courseDescription}
-              onChange={(e) => setCourseDescription(e.target.value)}
-            />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="section">
-            <MDBInput
-              label="Enter section"
-              id="section"
-              type="text"
-              size="lg"
-              value={section}
-              onChange={(e) => setSection(e.target.value)}
-            />
-          </Form.Group>
-          <Box className="mb-3">
-            <FormControl fullWidth>
-              <InputLabel id="term-select-label">Term</InputLabel>
-              <Select
-                labelId="term-select-label"
-                id="term-select"
-                value={term}
-                label="Term"
-                onChange={(e) => setTerm(e.target.value)}
-              >
-                <MenuItem value={1}>1</MenuItem>
-                <MenuItem value={2}>2</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-          <Box className="mb-3">
-            <FormControl fullWidth>
-              <InputLabel id="year-select-label">Year</InputLabel>
-              <Select
-                labelId="year-select-label"
-                id="year-select"
-                value={year}
-                label="Year"
-                onChange={(e) => setYear(e.target.value)}
-              >
-                <MenuItem value="2024">2024</MenuItem>
-                <MenuItem value="2025">2025</MenuItem>
-                <MenuItem value="2026">2026</MenuItem>
-                <MenuItem value="2027">2027</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-          <div className="d-flex justify-content-end">
-            {/* <MDBBtn color="secondary" onClick={handleClose} className="me-2">
-              Cancel
-            </MDBBtn> */}
-            <MDBBtn className="btn-create-course" type="submit">
-              Create Course
-            </MDBBtn>
-          </div>
-        </Form>
-      </Modal.Body>
-    </Modal>
+    <>
+      <Modal show={show} onHide={handleClose} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Create Course</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3" controlId="courseNumber">
+              <MDBInput
+                label="Enter course number"
+                id="courseNumber"
+                type="text"
+                size="lg"
+                value={courseNumber}
+                onChange={(e) => setCourseNumber(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="courseName">
+              <MDBInput
+                label="Enter course name"
+                id="courseName"
+                type="text"
+                size="lg"
+                value={courseName}
+                onChange={(e) => setCourseName(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="courseDescription">
+              <MDBInput
+                label="Enter course description"
+                id="courseDescription"
+                type="textarea"
+                size="lg"
+                value={courseDescription}
+                onChange={(e) => setCourseDescription(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="section">
+              <MDBInput
+                label="Enter section"
+                id="section"
+                type="text"
+                size="lg"
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+              />
+            </Form.Group>
+            <Box className="mb-3">
+              <FormControl fullWidth>
+                <InputLabel id="term-select-label">Term</InputLabel>
+                <Select
+                  labelId="term-select-label"
+                  id="term-select"
+                  value={term}
+                  label="Term"
+                  onChange={(e) => setTerm(e.target.value)}
+                >
+                  <MenuItem value={1}>1</MenuItem>
+                  <MenuItem value={2}>2</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Box className="mb-3">
+              <FormControl fullWidth>
+                <InputLabel id="year-select-label">Year</InputLabel>
+                <Select
+                  labelId="year-select-label"
+                  id="year-select"
+                  value={year}
+                  label="Year"
+                  onChange={(e) => setYear(e.target.value)}
+                >
+                  <MenuItem value="2024">2024</MenuItem>
+                  <MenuItem value="2025">2025</MenuItem>
+                  <MenuItem value="2026">2026</MenuItem>
+                  <MenuItem value="2027">2027</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <div className="d-flex justify-content-end">
+              <MDBBtn className="btn-create-course" type="submit">
+                Create Course
+              </MDBBtn>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      <ModalComponent
+        open={showSuccessModal}
+        handleClose={() => setShowSuccessModal(false)}
+        title="Create Course"
+        description="The course has been successfully created."
+      />
+    </>
   );
 }
