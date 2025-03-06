@@ -7,6 +7,13 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRATION = 8 * 60 * 60; // 8 ชั่วโมง (วินาที)
 
 const redisClient = redis.createClient();
+// const redisClient = redis.createClient({
+//   socket: {
+//     host: process.env.REDIS_HOST || "127.0.0.1",
+//     port: process.env.REDIS_PORT || 6379
+//   }
+// });
+
 
 redisClient.connect()
   .then(() => console.log("Redis connected successfully"))

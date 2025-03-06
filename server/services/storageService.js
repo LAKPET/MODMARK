@@ -1,8 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const cloudinary = require("../../cloudinaryConfig");
-const { storageType } = require("../../config");
+const cloudinary = require("./cloudinaryConfig");
+const { storageType } = require("./config");
 
 // ตั้งค่า Local Storage
 const localStorage = multer.diskStorage({

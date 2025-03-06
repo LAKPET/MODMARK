@@ -16,12 +16,21 @@ const submissionRoutes = require("./routes/submission"); // Import submission ro
 
 const app = express();
 
+// const corsOptions = {
+//   origin: 'http://localhost:5173', // URL ของ Frontend
+//   methods: ['GET', 'POST'],
+//   allowedHeaders: ['Content-Type'],
+// };
+// app.use(cors(corsOptions));
 app.use(cors());
+
 app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
   res.send("Welcome to the API!");
 });
+
+// const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/modmark";
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/modmark")
@@ -38,7 +47,7 @@ app.use("/section", sectionRoutes);
 app.use("/rubric", rubricRoutes); // Use rubric routes
 app.use("/submission", submissionRoutes); // Use submission routes
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
