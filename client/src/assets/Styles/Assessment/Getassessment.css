@@ -8,6 +8,7 @@
   .assessment-name {
     flex-basis: 150px; /* ความกว้างคงที่ */
     flex-shrink: 0; /* ไม่ให้หดตัว */
+    color: black;
   }
   
   .assignment_type-status {
