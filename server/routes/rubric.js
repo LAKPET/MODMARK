@@ -1,15 +1,22 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Rubric = require("../models/Rubric");
-const { verifyToken, checkAdminOrProfessor } = require("./middleware");
+const Section = require("../models/Section"); // Add this line to import the Section model
+const { verifyToken, checkAdminOrProfessorOrTeacherAssistant } = require("./middleware");
 
 const router = express.Router();
 
 // Create a new rubric
-router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { title, description, score, criteria, section_id } = req.body;
 
   try {
+    // Check if the section_id exists
+    const section = await Section.findById(section_id);
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
     const newRubric = new Rubric({
       rubric_name: title,
       description,
@@ -29,7 +36,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
 });
 
 // Get all rubrics
-router.get("/", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.get("/", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   try {
     const rubrics = await Rubric.find().populate("created_by", "first_name last_name email");
     res.status(200).json(rubrics);
@@ -40,7 +47,7 @@ router.get("/", verifyToken, checkAdminOrProfessor, async (req, res) => {
 });
 
 // Get a specific rubric by ID
-router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.get("/:id", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -56,7 +63,7 @@ router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
 });
 
 // Get rubrics by section ID
-router.get("/section/:section_id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.get("/section/:section_id", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { section_id } = req.params;
 
   try {
@@ -72,7 +79,7 @@ router.get("/section/:section_id", verifyToken, checkAdminOrProfessor, async (re
 });
 
 // Update a rubric
-router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.put("/update/:id", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { id } = req.params;
   const { title, description, criteria, score, section_id, is_global } = req.body;
 
@@ -98,7 +105,7 @@ router.put("/update/:id", verifyToken, checkAdminOrProfessor, async (req, res) =
 });
 
 // Delete a rubric
-router.delete("/delete/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.delete("/delete/:id", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { id } = req.params;
 
   try {

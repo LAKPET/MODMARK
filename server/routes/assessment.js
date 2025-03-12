@@ -9,14 +9,14 @@ const User = require("../models/User");
 const Section = require("../models/Section"); // Import Section model
 const {
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   checkAdminOrProfessorOrStudent,
 } = require("./middleware");
 
 const router = express.Router();
 
 // Create a new assessment with rubric
-router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const {
     course_id,
     section_id,
@@ -118,7 +118,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
           group_id: gradingGroup._id,
           assessment_id: newAssessment._id,
           user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
-          role: "professor",
+          role: grader.role, // Allow role to be professor or TA
           weight: grader.weight,
         });
         await newGroupMember.save();
@@ -139,7 +139,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
 });
 
 // Get all assessments
-router.get("/", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.get("/", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   try {
     const assessments = await Assessment.find()
       .populate({
@@ -163,7 +163,7 @@ router.get("/", verifyToken, checkAdminOrProfessor, async (req, res) => {
       assessments.map(async (assessment) => {
         const graders = await GroupMember.find({
           assessment_id: assessment._id,
-          role: "professor",
+          role: { $in: ["professor", "TA"] }, // Include both professor and TA
         })
           .populate("user_id", "first_name last_name email")
           .select("user_id weight");
@@ -183,7 +183,7 @@ router.get("/", verifyToken, checkAdminOrProfessor, async (req, res) => {
 });
 
 // Get a specific assessment by ID
-router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.get("/:id", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -211,7 +211,7 @@ router.get("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
 
     const graders = await GroupMember.find({
       assessment_id: assessment._id,
-      role: "professor",
+      role: { $in: ["professor", "TA"] }, // Include both professor and TA
     })
       .populate("user_id", "first_name last_name email")
       .select("user_id weight");
@@ -254,7 +254,7 @@ router.get(
         assessments.map(async (assessment) => {
           const graders = await GroupMember.find({
             assessment_id: assessment._id,
-            role: "professor",
+            role: { $in: ["professor", "TA"] }, // Include both professor and TA
           })
             .populate("user_id", "first_name last_name email")
             .select("user_id weight");
@@ -278,7 +278,7 @@ router.get(
 router.put(
   "/update/:id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { id } = req.params;
     const {
@@ -358,14 +358,14 @@ router.put(
 
         await GroupMember.deleteMany({
           group_id: gradingGroup._id,
-          role: "professor",
+          role: { $in: ["professor", "TA"] }, // Include both professor and TA
         });
         for (const grader of graders) {
           const newGroupMember = new GroupMember({
             group_id: gradingGroup._id,
             assessment_id: assessment._id,
             user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
-            role: "professor",
+            role: grader.role, // Allow role to be professor or TA
             weight: grader.weight,
           });
           await newGroupMember.save();
@@ -386,7 +386,7 @@ router.put(
 router.delete(
   "/delete/:id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { id } = req.params;
 
@@ -397,7 +397,7 @@ router.delete(
       }
 
       await Group.deleteMany({ assessment_id: id });
-      await GroupMember.deleteMany({ assessment_id: id });
+      await GroupMember.deleteMany({ assessment_id: id, role: { $in: ["professor", "TA"] } }); // Include both professor and TA
       await AssessmentRubric.deleteMany({ assessment_id: id });
 
       await assessment.deleteOne();

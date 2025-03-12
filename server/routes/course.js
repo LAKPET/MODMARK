@@ -7,14 +7,14 @@ const CourseInstructor = require("../models/CourseInstructor");
 const {
   verifyToken,
   checkAdmin,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   checkAdminOrStudent,
 } = require("./middleware");
 
 const router = express.Router();
 
 // สร้าง Course พร้อม Section
-router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const {
     course_number,
     course_name,
@@ -79,7 +79,7 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
 
     // ลงทะเบียนอาจารย์อัตโนมัติหากผู้ใช้ไม่ใช่ admin
     let newCourseInstructor = null;
-    if (req.user.role === "professor") {
+    if (req.user.role === "professor" || req.user.role === "ta") {
       newCourseInstructor = new CourseInstructor({
         section_id: newSection._id,
         professor_id: req.user.id, // ตรวจสอบว่า req.user.id ถูกตั้งค่าอย่างถูกต้อง
@@ -138,7 +138,7 @@ router.get("/my-courses", verifyToken, async (req, res) => {
       }));
     }
     // ถ้าเป็นอาจารย์ให้ดึงข้อมูลจาก CourseInstructor
-    else if (req.user.role === "professor") {
+    else if (req.user.role === "professor" || req.user.role === "ta") {
       const courseInstructors = await CourseInstructor.find({
         personal_num: req.user.personal_num,
       }).populate({
@@ -220,7 +220,7 @@ router.get("/details/:id", verifyToken, async (req, res) => {
 router.put(
   "/update/:id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { id } = req.params;
     const { course_number, course_name, course_description } = req.body;
@@ -313,7 +313,7 @@ router.put(
 router.delete(
   "/delete/:id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { id } = req.params;
 

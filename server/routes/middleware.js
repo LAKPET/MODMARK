@@ -104,6 +104,18 @@ const checkAdminOrProfessorOrStudent = async (req, res, next) => {
   }
 };
 
+const checkAdminOrProfessorOrTeacherAssistant = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || (user.role !== "admin" && user.role !== "professor" && user.role !== "ta")) {
+      return res.status(403).json({ message: "Access Denied" });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
 const checkAdminOrStudent = (req, res, next) => {
   if (!req.user || (req.user.role !== "admin" && req.user.role !== "student")) {
     return res.status(403).json({
@@ -120,5 +132,6 @@ module.exports = {
   checkAdmin, 
   checkAdminOrProfessor, 
   checkAdminOrProfessorOrStudent, 
+  checkAdminOrProfessorOrTeacherAssistant,
   checkAdminOrStudent 
 };
