@@ -11,9 +11,10 @@ import ProtectedRoute from "./ProtectedRoute";
 import { AuthProvider } from "./AuthContext";
 import Settingcoursepage from "../pages/Profressor/Settingcoursepage";
 import Assessmentpage from "../pages/Profressor/Assessmentpage";
+import Alluserassessmentpage from "../pages/Profressor/Alluserassessmentpage";
 import Teampage from "../pages/Profressor/Teampage";
-
 import Dashboardpage_stu from "../pages/Student/Dashboardpage_stu";
+
 function AppRoutes() {
   return (
     <AuthProvider>
@@ -25,16 +26,15 @@ function AppRoutes() {
           <Route
             path="/professor/course"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <ProfessorCoursepage />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/dashboard/:id"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Dashboardpage />
               </ProtectedRoute>
             }
@@ -42,24 +42,31 @@ function AppRoutes() {
           <Route
             path="/setting/:id"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Settingcoursepage />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/assessment/:id"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Assessmentpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assessment/:id/allassessmentuser"
+            element={
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
+                <Alluserassessmentpage />
               </ProtectedRoute>
             }
           />
           <Route
             path="/team/:id"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Teampage />
               </ProtectedRoute>
             }

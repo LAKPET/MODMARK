@@ -64,7 +64,7 @@ export default function AddUserCourse({
           section_id: Id,
           students: studentsOrInstructors,
         };
-      } else if (role === "professor") {
+      } else if (role === "professor" || role === "ta") {
         apiEndpoint = `${apiUrl}/course-instructor/register-instructor`;
         payload = {
           section_id: Id,
@@ -114,6 +114,7 @@ export default function AddUserCourse({
               >
                 <MenuItem value="student">Student</MenuItem>
                 <MenuItem value="professor">Professor</MenuItem>
+                <MenuItem value="ta">TA</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
               {role && (

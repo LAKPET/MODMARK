@@ -30,7 +30,9 @@ function Sidebar() {
     >
       {/* Logo */}
       <div className="mb-4 mt-2 text-center">
-        <img src={Logo} alt="Logo" width="140" height="100" />
+        <NavLink to="/professor/course">
+          <img src={Logo} alt="Logo" width="140" height="100" />
+        </NavLink>
         <h5 className="mt-4 text-white fw-bold">
           <span style={{ color: "#F49427" }}>Mod</span>mark
         </h5>

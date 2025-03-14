@@ -3,6 +3,8 @@ import { Container, Form, Button, Row, Col } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import CircularProgress from "@mui/material/CircularProgress";
+import Backdrop from "@mui/material/Backdrop";
 
 export default function DetailCourse({ Id }) {
   const { id: paramId } = useParams();
@@ -15,6 +17,7 @@ export default function DetailCourse({ Id }) {
     semester_term: "",
     semester_year: "",
   });
+  const [loading, setLoading] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -36,6 +39,8 @@ export default function DetailCourse({ Id }) {
       console.log("Data fetched:", response.data);
     } catch (err) {
       console.error("Failed to fetch course details:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +64,17 @@ export default function DetailCourse({ Id }) {
       console.error("Failed to update course:", err);
     }
   };
+
+  if (loading) {
+    return (
+      <Backdrop
+        sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
+        open={loading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+    );
+  }
 
   return (
     <Container className="mt-3 mx-3 text-start" style={{ width: "1000px" }}>

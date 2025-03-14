@@ -13,6 +13,7 @@ import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { formatDateTime } from "../../../utils/FormatDateTime";
 import { sortAssessments } from "../../../utils/SortAssessment";
 import CircularProgress from "@mui/material/CircularProgress";
+import Backdrop from "@mui/material/Backdrop";
 export default function GetDetailCourse() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -88,9 +89,12 @@ export default function GetDetailCourse() {
 
   if (loading) {
     return (
-      <div className="text-center mt-5 spinner">
+      <Backdrop
+        sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
+        open={loading}
+      >
         <CircularProgress color="inherit" />
-      </div>
+      </Backdrop>
     );
   }
 

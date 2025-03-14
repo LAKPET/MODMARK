@@ -4,7 +4,9 @@ import Navber from "../../components/Profressor/Dashboard/Navbar";
 import Getdetailcourse from "../../components/Profressor/Dashboard/Getdetailcourse";
 import { Container } from "react-bootstrap";
 import { useParams } from "react-router-dom";
+
 import "../../styles/Main.css";
+
 export default function Dashboardpage() {
   // Access the section_id from the route parameter
   const { id } = useParams(); // This gets the :id from the route

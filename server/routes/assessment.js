@@ -16,100 +16,104 @@ const {
 const router = express.Router();
 
 // Create a new assessment with rubric
-router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
-  const {
-    course_id,
-    section_id,
-    assessment_name,
-    assessment_description,
-    assignment_type,
-    teamgrading_type,
-    publish_date,
-    due_date,
-    rubric_id, // ID of the selected rubric
-    graders, // Array of graders with their weights
-  } = req.body;
-
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // ตรวจสอบว่ามี section นั้นหรือไม่
-    const section = await Section.findById(section_id);
-    if (!section) {
-      return res.status(404).json({ message: "Section not found" });
-    }
-
-    // ตรวจสอบว่าชื่อ assessment ซ้ำหรือไม่
-    const existingAssessment = await Assessment.findOne({
-      assessment_name,
+router.post(
+  "/create",
+  verifyToken,
+  checkAdminOrProfessorOrTeacherAssistant,
+  async (req, res) => {
+    const {
+      course_id,
       section_id,
-    });
-    if (existingAssessment) {
-      return res
-        .status(400)
-        .json({ message: "Assessment name already exists in this section." });
-    }
-
-    // Find the selected rubric
-    const selectedRubric = await Rubric.findById(rubric_id);
-    if (!selectedRubric) {
-      return res.status(404).json({ message: "Rubric not found" });
-    }
-
-    // ตรวจสอบน้ำหนักรวมของ graders
-    if (graders && graders.length > 0) {
-      const totalWeight = graders.reduce(
-        (sum, grader) => sum + grader.weight,
-        0
-      );
-      if (graders.some((grader) => grader.weight < 0 || grader.weight > 1)) {
-        return res
-          .status(400)
-          .json({ message: "Weight of each grader must be between 0 and 1" });
-      }
-      if (totalWeight > 1) {
-        return res
-          .status(400)
-          .json({ message: "Total weight of graders must not exceed 1" });
-      }
-    }
-
-    const newAssessment = new Assessment({
-      course_id: course_id, // Directly assign course_id
-      section_id: section_id, // Directly assign section_id
-      professor_id: req.user.id,
-      first_name: user.first_name,
-      last_name: user.last_name,
       assessment_name,
       assessment_description,
       assignment_type,
       teamgrading_type,
       publish_date,
       due_date,
-      rubric_id: rubric_id, // เพิ่มฟิลด์ rubric_id
-    });
+      rubric_id, // ID of the selected rubric
+      graders, // Array of graders with their weights
+    } = req.body;
 
-    await newAssessment.save();
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-    // Link rubric to assessment
-    const newAssessmentRubric = new AssessmentRubric({
-      assessment_id: newAssessment._id,
-      rubric_id: selectedRubric._id,
-      is_active: true,
-    });
-    await newAssessmentRubric.save();
+      // ตรวจสอบว่ามี section นั้นหรือไม่
+      const section = await Section.findById(section_id);
+      if (!section) {
+        return res.status(404).json({ message: "Section not found" });
+      }
 
-    // Create group for professors who will grade the assessment
-    const gradingGroup = new Group({
-      assessment_id: newAssessment._id,
-      group_name: `${assessment_name} Grading Group`,
-      group_type: "grading",
-      status: "not-submit",
-    });
-    await gradingGroup.save();
+      // ตรวจสอบว่าชื่อ assessment ซ้ำหรือไม่
+      const existingAssessment = await Assessment.findOne({
+        assessment_name,
+        section_id,
+      });
+      if (existingAssessment) {
+        return res
+          .status(400)
+          .json({ message: "Assessment name already exists in this section." });
+      }
+
+      // Find the selected rubric
+      const selectedRubric = await Rubric.findById(rubric_id);
+      if (!selectedRubric) {
+        return res.status(404).json({ message: "Rubric not found" });
+      }
+
+      // ตรวจสอบน้ำหนักรวมของ graders
+      if (graders && graders.length > 0) {
+        const totalWeight = graders.reduce(
+          (sum, grader) => sum + grader.weight,
+          0
+        );
+        if (graders.some((grader) => grader.weight < 0 || grader.weight > 1)) {
+          return res
+            .status(400)
+            .json({ message: "Weight of each grader must be between 0 and 1" });
+        }
+        if (totalWeight > 1) {
+          return res
+            .status(400)
+            .json({ message: "Total weight of graders must not exceed 1" });
+        }
+      }
+
+      const newAssessment = new Assessment({
+        course_id: course_id, // Directly assign course_id
+        section_id: section_id, // Directly assign section_id
+        professor_id: req.user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        assessment_name,
+        assessment_description,
+        assignment_type,
+        teamgrading_type,
+        publish_date,
+        due_date,
+        rubric_id: rubric_id, // เพิ่มฟิลด์ rubric_id
+      });
+
+      await newAssessment.save();
+
+      // Link rubric to assessment
+      const newAssessmentRubric = new AssessmentRubric({
+        assessment_id: newAssessment._id,
+        rubric_id: selectedRubric._id,
+        is_active: true,
+      });
+      await newAssessmentRubric.save();
+
+      // Create group for professors who will grade the assessment
+      const gradingGroup = new Group({
+        assessment_id: newAssessment._id,
+        group_name: `${assessment_name} Grading Group`,
+        group_type: "grading",
+        status: "not-submit",
+      });
+      await gradingGroup.save();
 
     // Save graders with their weights in GroupMember
     if (graders && graders.length > 0) {
@@ -125,109 +129,120 @@ router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
       }
     }
 
-    res.status(201).json({
-      message: "Assessment and rubric created successfully!",
-      assessment: newAssessment,
-      rubric: selectedRubric,
-    });
-  } catch (error) {
-    console.error("Error creating assessment and rubric:", error);
-    res
-      .status(500)
-      .json({ message: "Error creating assessment and rubric", error });
+      res.status(201).json({
+        message: "Assessment and rubric created successfully!",
+        assessment: newAssessment,
+        rubric: selectedRubric,
+      });
+    } catch (error) {
+      console.error("Error creating assessment and rubric:", error);
+      res
+        .status(500)
+        .json({ message: "Error creating assessment and rubric", error });
+    }
   }
-});
+);
 
 // Get all assessments
-router.get("/", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
-  try {
-    const assessments = await Assessment.find()
-      .populate({
-        path: "course_id",
-        select: "course_name",
-      })
-      .populate({
-        path: "section_id",
-        select: "section_number semester_term semester_year",
-      })
-      .populate({
-        path: "professor_id",
-        select: "first_name last_name email",
-      })
-      .populate({
-        path: "rubric_id",
-        select: "rubric_name description",
-      });
-
-    const assessmentsWithGraders = await Promise.all(
-      assessments.map(async (assessment) => {
-        const graders = await GroupMember.find({
-          assessment_id: assessment._id,
-          role: { $in: ["professor", "TA"] }, // Include both professor and TA
+router.get(
+  "/",
+  verifyToken,
+  checkAdminOrProfessorOrTeacherAssistant,
+  async (req, res) => {
+    try {
+      const assessments = await Assessment.find()
+        .populate({
+          path: "course_id",
+          select: "course_name",
         })
-          .populate("user_id", "first_name last_name email")
-          .select("user_id weight");
+        .populate({
+          path: "section_id",
+          select: "section_number semester_term semester_year",
+        })
+        .populate({
+          path: "professor_id",
+          select: "first_name last_name email",
+        })
+        .populate({
+          path: "rubric_id",
+          select: "rubric_name description",
+        });
 
-        return {
-          ...assessment.toObject(),
-          graders,
-        };
-      })
-    );
+      const assessmentsWithGraders = await Promise.all(
+        assessments.map(async (assessment) => {
+          const graders = await GroupMember.find({
+            assessment_id: assessment._id,
+            role: { $in: ["professor", "TA"] }, // Include both professor and TA
+          })
+            .populate("user_id", "first_name last_name email")
+            .select("user_id weight");
 
-    res.status(200).json(assessmentsWithGraders);
-  } catch (error) {
-    console.error("Error fetching assessments:", error);
-    res.status(500).json({ message: "Error fetching assessments", error });
+          return {
+            ...assessment.toObject(),
+            graders,
+          };
+        })
+      );
+
+      res.status(200).json(assessmentsWithGraders);
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+      res.status(500).json({ message: "Error fetching assessments", error });
+    }
   }
-});
+);
 
 // Get a specific assessment by ID
-router.get("/:id", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
-  const { id } = req.params;
+router.get(
+  "/:id",
+  verifyToken,
+  checkAdminOrProfessorOrTeacherAssistant,
+  async (req, res) => {
+    const { id } = req.params;
 
-  try {
-    const assessment = await Assessment.findById(id)
-      .populate({
-        path: "course_id",
-        select: "course_name",
-      })
-      .populate({
-        path: "section_id",
-        select: "section_number semester_term semester_year",
-      })
-      .populate({
-        path: "professor_id",
-        select: "first_name last_name email",
-      })
-      .populate({
-        path: "rubric_id",
-        select: "rubric_name description",
-      });
+    try {
+      const assessment = await Assessment.findById(id)
+        .populate({
+          path: "course_id",
+          select: "course_name",
+        })
+        .populate({
+          path: "section_id",
+          select: "section_number semester_term semester_year",
+        })
+        .populate({
+          path: "professor_id",
+          select: "first_name last_name email",
+        })
+        .populate({
+          path: "rubric_id",
+          select: "rubric_name description",
+        });
 
-    if (!assessment) {
-      return res.status(404).json({ message: "Assessment not found" });
-    }
+      if (!assessment) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
 
     const graders = await GroupMember.find({
       assessment_id: assessment._id,
-      role: { $in: ["professor", "ta"] }, // Include both professor and TA
+      role: { $in: ["professor", "TA"] }, // Include both professor and TA
     })
-      .populate("user_id", "first_name last_name role email")
+      .populate("user_id", "first_name last_name email")
       .select("user_id weight");
 
-    res.status(200).json({ ...assessment.toObject(), graders });
-  } catch (error) {
-    console.error("Error fetching assessment:", error);
-    res.status(500).json({ message: "Error fetching assessment", error });
+      res.status(200).json({ ...assessment.toObject(), graders });
+    } catch (error) {
+      console.error("Error fetching assessment:", error);
+      res.status(500).json({ message: "Error fetching assessment", error });
+    }
   }
-});
+);
 
 // Get all assessments in a section with graders (accessible by both professors and students)
 router.get(
   "/section/:section_id",
   verifyToken,
-  checkAdminOrProfessorOrStudent,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { section_id } = req.params;
 
@@ -397,7 +412,10 @@ router.delete(
       }
 
       await Group.deleteMany({ assessment_id: id });
-      await GroupMember.deleteMany({ assessment_id: id, role: { $in: ["professor", "TA"] } }); // Include both professor and TA
+      await GroupMember.deleteMany({
+        assessment_id: id,
+        role: { $in: ["professor", "TA"] },
+      }); // Include both professor and TA
       await AssessmentRubric.deleteMany({ assessment_id: id });
 
       await assessment.deleteOne();

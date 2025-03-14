@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import CreateAssessmentModal from "./CreateAssessmentModal";
 import EditAssessmentModal from "./Editassessment";
@@ -12,7 +12,9 @@ import SwapVertIcon from "@mui/icons-material/SwapVert";
 import "../../../assets/Styles/Assessment/Getassessment.css";
 import { formatDateTime } from "../../../utils/FormatDateTime";
 import { sortAssessments } from "../../../utils/SortAssessment";
+import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
+
 export default function Getassessment() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,8 +40,9 @@ export default function Getassessment() {
 
   const sortedAssessments = sortAssessments(assessments, sortColumn, sortOrder);
 
-  const refreshAssessments = async () => {
+  const refreshAssessments = async (showLoading = true) => {
     try {
+      if (showLoading) setLoading(true);
       const token = localStorage.getItem("authToken");
       const assessmentResponse = await axios.get(
         `${apiUrl}/assessment/section/${id}`,
@@ -50,6 +53,8 @@ export default function Getassessment() {
       setAssessments(assessmentResponse.data);
     } catch (err) {
       setError("Error loading data.");
+    } finally {
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -86,9 +91,12 @@ export default function Getassessment() {
 
   if (loading) {
     return (
-      <div className="text-center mt-5 spinner">
+      <Backdrop
+        sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
+        open={loading}
+      >
         <CircularProgress color="inherit" />
-      </div>
+      </Backdrop>
     );
   }
   if (error) return <div className="text-center mt-5 text-danger">{error}</div>;
@@ -136,15 +144,19 @@ export default function Getassessment() {
             <th>Action</th>
           </tr>
         </MDBTableHead>
+
         <MDBTableBody>
           {sortedAssessments.length > 0 ? (
             sortedAssessments.map((assessment, index) => (
               <tr key={assessment._id || index}>
                 <td>
                   <div className="align-status">
-                    <span className="assessment-name">
+                    <Link
+                      to={`/assessment/${assessment._id}/allassessmentuser/`}
+                      className="assessment-name"
+                    >
                       {assessment.assessment_name}
-                    </span>
+                    </Link>
                     <span className="assignment_type-status">
                       {assessment.assignment_type}
                     </span>

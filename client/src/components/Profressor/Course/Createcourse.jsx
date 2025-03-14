@@ -10,7 +10,7 @@ import Select from "@mui/material/Select";
 import ModalComponent from "../../../controls/modal"; // Import ModalComponent
 import "../../../assets/Styles/Course/Createcourse.css";
 
-export default function Createcourse({ show, handleClose }) {
+export default function Createcourse({ show, handleClose, role }) {
   const [courseNumber, setCourseNumber] = useState("");
   const [courseName, setCourseName] = useState("");
   const [courseDescription, setCourseDescription] = useState("");
@@ -43,6 +43,7 @@ export default function Createcourse({ show, handleClose }) {
       section_number: section,
       section_term: term,
       section_year: year,
+      role: role, // Include the role in the course data
     };
 
     try {

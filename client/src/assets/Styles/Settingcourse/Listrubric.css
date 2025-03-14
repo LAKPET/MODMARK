@@ -14,7 +14,7 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    cursor: pointer;
+  
 }
 
 .rubric-info {
@@ -44,6 +44,7 @@
     width: 40px;
     height: 40px;
     transition: transform 0.3s ease-in-out;
+    cursor: pointer;
 }
 
 .rubric-icon.open {
@@ -75,4 +76,10 @@
 
 .rubric-table__header {
     background-color: #f4f4f4;
+}
+
+.edit-delete-icon {
+    display: flex;
+    gap: 5px; 
+    cursor: pointer; 
 }

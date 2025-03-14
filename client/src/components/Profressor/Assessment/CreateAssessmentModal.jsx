@@ -13,7 +13,8 @@ import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/modal"; // Import ModalComponent
-
+import CircularProgress from "@mui/material/CircularProgress";
+import Backdrop from "@mui/material/Backdrop";
 export default function CreateAssessmentModal({
   show,
   handleClose,
@@ -58,7 +59,6 @@ export default function CreateAssessmentModal({
     const requestData = {
       course_id: courseDetails.course_id,
       section_id: courseDetails.section_id,
-      // professor_id: rows.p_id,
       assessment_name: assessmentName,
       assessment_description: assessmentDescription,
       assignment_type: assessmentType,
@@ -66,10 +66,15 @@ export default function CreateAssessmentModal({
       publish_date: publishDate,
       due_date: dueDate,
       rubric_id: rubrics[0]._id,
-      graders: Object.entries(weights).map(([user_id, weight]) => ({
-        user_id,
-        weight: weight / 100,
-      })),
+      graders: rows
+        .filter(
+          (row) => weights[row.p_id] !== undefined && weights[row.p_id] !== null
+        )
+        .map((row) => ({
+          user_id: row.p_id,
+          role: row.role,
+          weight: weights[row.p_id] / 100,
+        })),
     };
 
     console.log("Sending data:", requestData);
@@ -108,6 +113,7 @@ export default function CreateAssessmentModal({
     { field: "firstName", headerName: "First name", width: 130 },
     { field: "lastName", headerName: "Last name", width: 130 },
     { field: "email", headerName: "Email", width: 180 },
+    { field: "role", headerName: "Role", width: 100 },
     {
       field: "weight",
       headerName: "Weight (%)",
@@ -144,6 +150,7 @@ export default function CreateAssessmentModal({
           firstName: user.first_name || "N/A",
           lastName: user.last_name || "N/A",
           email: user.email || "N/A",
+          role: user.role, // Add role field
         }));
 
         setRows(formattedData);
