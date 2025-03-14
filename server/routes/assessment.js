@@ -225,9 +225,9 @@ router.get(
 
     const graders = await GroupMember.find({
       assessment_id: assessment._id,
-      role: { $in: ["professor", "TA"] }, // Include both professor and TA
+      role: { $in: ["professor", "ta"] }, // Include both professor and TA
     })
-      .populate("user_id", "first_name last_name email")
+      .populate("user_id", "first_name last_name role email")
       .select("user_id weight");
 
       res.status(200).json({ ...assessment.toObject(), graders });
@@ -269,9 +269,9 @@ router.get(
         assessments.map(async (assessment) => {
           const graders = await GroupMember.find({
             assessment_id: assessment._id,
-            role: { $in: ["professor", "TA"] }, // Include both professor and TA
+            role: { $in: ["professor", "ta"] }, // Include both professor and TA
           })
-            .populate("user_id", "first_name last_name email")
+            .populate("user_id", "first_name last_name role email")
             .select("user_id weight");
 
           return {
