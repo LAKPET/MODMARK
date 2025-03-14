@@ -118,7 +118,7 @@ router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
           group_id: gradingGroup._id,
           assessment_id: newAssessment._id,
           user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
-          role: grader.role, // Allow role to be professor or TA
+          role: grader.role, // Ensure role is assigned
           weight: grader.weight,
         });
         await newGroupMember.save();
@@ -211,9 +211,9 @@ router.get("/:id", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (
 
     const graders = await GroupMember.find({
       assessment_id: assessment._id,
-      role: { $in: ["professor", "TA"] }, // Include both professor and TA
+      role: { $in: ["professor", "ta"] }, // Include both professor and TA
     })
-      .populate("user_id", "first_name last_name email")
+      .populate("user_id", "first_name last_name role email")
       .select("user_id weight");
 
     res.status(200).json({ ...assessment.toObject(), graders });

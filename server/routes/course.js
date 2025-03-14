@@ -84,6 +84,7 @@ router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
         section_id: newSection._id,
         professor_id: req.user.id, // ตรวจสอบว่า req.user.id ถูกตั้งค่าอย่างถูกต้อง
         personal_num: req.user.personal_num, // ID ของอาจารย์ที่สร้าง Section
+        role: req.user.role,
         email: req.user.email,
         first_name: req.user.first_name,
         last_name: req.user.last_name,
@@ -189,7 +190,7 @@ router.get("/details/:id", verifyToken, async (req, res) => {
     // ดึงข้อมูลทีมผู้สอนของ Section นี้
     const instructors = await CourseInstructor.find({
       section_id: id,
-    }).populate("professor_id", "first_name last_name");
+    }).populate("professor_id", "first_name last_name role");
 
     // ส่งข้อมูลในรูปแบบที่กำหนด
     res.status(200).json({
@@ -206,6 +207,7 @@ router.get("/details/:id", verifyToken, async (req, res) => {
         professor_id: instructor.professor_id._id,
         first_name: instructor.professor_id.first_name,
         last_name: instructor.professor_id.last_name,
+        role: instructor.professor_id.role,
       })),
     });
   } catch (error) {
