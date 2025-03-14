@@ -14,6 +14,7 @@ import { formatDateTime } from "../../../utils/FormatDateTime";
 import { sortAssessments } from "../../../utils/SortAssessment";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
+
 export default function GetDetailCourse() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -127,15 +128,34 @@ export default function GetDetailCourse() {
         </Col>
         <Col md={6}>
           <h5 className="pb-3 mb-4 short-border fw-semibold">Team</h5>
-          <div className="text-muted">
-            {courseDetails.professors && courseDetails.professors.length > 0
-              ? courseDetails.professors.map((professor, index) => (
-                  <div key={index}>
-                    Prof. {professor.first_name} {professor.last_name}
-                  </div>
-                ))
-              : "No professor assigned"}
-          </div>
+          <Row>
+            <Col md={6}>
+              <div className="text-muted">
+                {courseDetails.professors && courseDetails.professors.length > 0
+                  ? courseDetails.professors
+                      .filter((professor) => professor.role === "professor")
+                      .map((professor, index) => (
+                        <div key={index}>
+                          Prof. {professor.first_name} {professor.last_name}
+                        </div>
+                      ))
+                  : "No professor assigned"}
+              </div>
+            </Col>
+            <Col md={6}>
+              <div className="text-muted">
+                {courseDetails.professors && courseDetails.professors.length > 0
+                  ? courseDetails.professors
+                      .filter((professor) => professor.role === "ta")
+                      .map((professor, index) => (
+                        <div key={index}>
+                          TA. {professor.first_name} {professor.last_name}
+                        </div>
+                      ))
+                  : "No TA assigned"}
+              </div>
+            </Col>
+          </Row>
         </Col>
       </Row>
 
