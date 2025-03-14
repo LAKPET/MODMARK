@@ -13,6 +13,8 @@ import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import CircularProgress from "@mui/material/CircularProgress";
+import Backdrop from "@mui/material/Backdrop";
 
 export default function EditAssessmentModal({
   show,
@@ -34,6 +36,7 @@ export default function EditAssessmentModal({
   const [rubrics, setRubrics] = useState([]);
   const [rubric, setRubric] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+  const [loading, setLoading] = useState(true); // State for loading
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const formatDateTimeLocal = (isoString) => {
@@ -71,9 +74,12 @@ export default function EditAssessmentModal({
               return acc;
             }, {})
           );
+          console.log("Graders:", data.graders);
           setRubric(data.rubric_id || "");
         } catch (error) {
           console.error("Error fetching assessment details:", error);
+        } finally {
+          setLoading(false); // Set loading to false after data is fetched
         }
       };
 
@@ -111,10 +117,15 @@ export default function EditAssessmentModal({
       publish_date: publishDate,
       due_date: dueDate,
       rubric_id: rubric,
-      graders: Object.entries(weights).map(([user_id, weight]) => ({
-        user_id,
-        weight: weight / 100,
-      })),
+      graders: rows
+        .filter(
+          (row) => weights[row.p_id] !== undefined && weights[row.p_id] !== null
+        )
+        .map((row) => ({
+          user_id: row.p_id,
+          role: row.role,
+          weight: weights[row.p_id] / 100,
+        })),
     };
 
     axios
@@ -152,6 +163,7 @@ export default function EditAssessmentModal({
     { field: "firstName", headerName: "First name", width: 130 },
     { field: "lastName", headerName: "Last name", width: 130 },
     { field: "email", headerName: "Email", width: 180 },
+    { field: "role", headerName: "Role", width: 100 },
     {
       field: "weight",
       headerName: "Weight (%)",
@@ -193,6 +205,7 @@ export default function EditAssessmentModal({
           id: user.personal_num || index + 1,
           firstName: user.first_name || "N/A",
           lastName: user.last_name || "N/A",
+          role: user.role || "N/A",
           email: user.email || "N/A",
         }));
 
@@ -222,6 +235,17 @@ export default function EditAssessmentModal({
       fetchRubrics();
     }
   }, [id, apiUrl, courseDetails?.section_id]);
+
+  // if (loading) {
+  //   return (
+  //     <Backdrop
+  //       sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
+  //       open={loading}
+  //     >
+  //       <CircularProgress color="inherit" />
+  //     </Backdrop>
+  //   );
+  // }
 
   return (
     <>
@@ -319,7 +343,7 @@ export default function EditAssessmentModal({
                       rows={rows}
                       columns={columns}
                       pageSize={5}
-                      checkboxSelection
+                      // checkboxSelection
                       sx={{ border: 0 }}
                     />
                   </Paper>

@@ -8,13 +8,13 @@ const bcrypt = require("bcryptjs");
 const {
   verifyToken,
   checkAdmin,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
 } = require("./middleware");
 
 const router = express.Router();
 
 // ฟังก์ชันสำหรับลงทะเบียนนักเรียนใน Section
-router.post("/enroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { section_id, students } = req.body;
 
   if (!section_id || !Array.isArray(students) || students.length === 0) {
@@ -97,7 +97,7 @@ router.post("/enroll", verifyToken, checkAdminOrProfessor, async (req, res) => {
 router.post(
   "/unenroll",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { section_id, personal_id } = req.body;
 

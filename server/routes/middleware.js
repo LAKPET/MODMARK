@@ -7,6 +7,13 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRATION = 8 * 60 * 60; // 8 ชั่วโมง (วินาที)
 
 const redisClient = redis.createClient();
+// const redisClient = redis.createClient({
+//   socket: {
+//     host: process.env.REDIS_HOST || "127.0.0.1",
+//     port: process.env.REDIS_PORT || 6379
+//   }
+// });
+
 
 redisClient.connect()
   .then(() => console.log("Redis connected successfully"))
@@ -97,6 +104,18 @@ const checkAdminOrProfessorOrStudent = async (req, res, next) => {
   }
 };
 
+const checkAdminOrProfessorOrTeacherAssistant = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || (user.role !== "admin" && user.role !== "professor" && user.role !== "ta")) {
+      return res.status(403).json({ message: "Access Denied" });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
 const checkAdminOrStudent = (req, res, next) => {
   if (!req.user || (req.user.role !== "admin" && req.user.role !== "student")) {
     return res.status(403).json({
@@ -113,5 +132,6 @@ module.exports = {
   checkAdmin, 
   checkAdminOrProfessor, 
   checkAdminOrProfessorOrStudent, 
+  checkAdminOrProfessorOrTeacherAssistant,
   checkAdminOrStudent 
 };

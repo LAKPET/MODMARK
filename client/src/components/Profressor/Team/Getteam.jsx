@@ -11,6 +11,7 @@ import AddUserCourse from "../../Admin/course/Addusercourse"; // Import AddUserC
 import DeleteUser from "../../Profressor/Team/DeleteUser";
 import "../../../assets/Styles/Team/Getteam.css";
 import CircularProgress from "@mui/material/CircularProgress";
+import Backdrop from "@mui/material/Backdrop";
 
 export default function Getteam() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function Getteam() {
   const [courseDetails, setCourseDetails] = useState(null);
   const [students, setStudents] = useState([]);
   const [professors, setProfessors] = useState([]);
+  const [tas, setTas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [courseError, setCourseError] = useState(null);
   const [studentsError, setStudentsError] = useState(null);
@@ -29,6 +31,7 @@ export default function Getteam() {
   const [selectedMemberId, setSelectedMemberId] = useState(null);
   const [showStudentsTable, setShowStudentsTable] = useState(false);
   const [showProfessorsTable, setShowProfessorsTable] = useState(false);
+  const [showTasTable, setShowTasTable] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
   const [sortColumn, setSortColumn] = useState(null);
@@ -73,7 +76,15 @@ export default function Getteam() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setProfessors(professorsResponse.data);
+      console.log(professorsResponse.data);
+      const professorsData = professorsResponse.data.filter(
+        (member) => member.role === "professor"
+      );
+      const tasData = professorsResponse.data.filter(
+        (member) => member.role === "ta"
+      );
+      setProfessors(professorsData);
+      setTas(tasData);
       setProfessorsError(null);
     } catch (err) {
       setProfessorsError("Error loading professors data.");
@@ -114,9 +125,12 @@ export default function Getteam() {
 
   if (loading) {
     return (
-      <div className="text-center mt-5 spinner">
+      <Backdrop
+        sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
+        open={loading}
+      >
         <CircularProgress color="inherit" />
-      </div>
+      </Backdrop>
     );
   }
   if (courseError)
@@ -277,6 +291,74 @@ export default function Getteam() {
               <tr>
                 <td colSpan="5" className="text-center">
                   No professors found
+                </td>
+              </tr>
+            )}
+          </MDBTableBody>
+        </MDBTable>
+      )}
+
+      <h5
+        className="mt-5 pb-3 mb-4 short-border fw-semibold d-flex justify-content-between align-items-center"
+        onClick={() => setShowTasTable(!showTasTable)}
+        style={{ cursor: "pointer" }}
+      >
+        TAs <KeyboardArrowDownIcon />
+      </h5>
+      {showTasTable && (
+        <MDBTable>
+          <MDBTableHead>
+            <tr className="fw-bold">
+              <th
+                onClick={() => handleSort("personal_num", setTas)}
+                className="sortable"
+              >
+                Personal Number <SwapVertIcon />
+              </th>
+              <th
+                onClick={() => handleSort("first_name", setTas)}
+                className="sortable"
+              >
+                First Name <SwapVertIcon />
+              </th>
+              <th
+                onClick={() => handleSort("last_name", setTas)}
+                className="sortable"
+              >
+                Last Name <SwapVertIcon />
+              </th>
+              <th
+                onClick={() => handleSort("email", setTas)}
+                className="sortable"
+              >
+                Email <SwapVertIcon />
+              </th>
+              <th>Action</th>
+            </tr>
+          </MDBTableHead>
+          <MDBTableBody>
+            {tas.length > 0 ? (
+              tas.map((ta, index) => (
+                <tr key={ta.professor_id || index}>
+                  <td>{ta.personal_num}</td>
+                  <td>{ta.first_name}</td>
+                  <td>{ta.last_name}</td>
+                  <td>{ta.email}</td>
+                  <td>
+                    <DeleteIcon
+                      className="icon-style"
+                      onClick={() => {
+                        setSelectedMemberId(ta.professor_id);
+                        setShowDeleteModal(true);
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="text-center">
+                  No TAs found
                 </td>
               </tr>
             )}

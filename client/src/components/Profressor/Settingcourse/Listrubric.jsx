@@ -4,13 +4,23 @@ import axios from "axios";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import RubricMain from "./Rubriccourse";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CircularProgress from "@mui/material/CircularProgress";
+import Backdrop from "@mui/material/Backdrop";
 import "../../../assets/Styles/Settingcourse/Listrubric.css";
+import EditRubric from "./EditRubric"; // Import the EditRubric component
+import DeleteRubric from "./Deleterubric"; // Import the DeleteRubric component
 
 export default function Listrubric() {
   const { id } = useParams();
   const [rubrics, setRubrics] = useState([]);
-  const [expandedRubric, setExpandedRubric] = useState(null);
+  const [expandedRubrics, setExpandedRubrics] = useState([]);
   const [showRubricMain, setShowRubricMain] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedRubricId, setSelectedRubricId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -26,11 +36,59 @@ export default function Listrubric() {
         console.log("rubric", response.data);
       } catch (err) {
         console.error("Error fetching rubrics:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchRubrics();
   }, [id]);
+
+  const handleEditClick = (rubricId) => {
+    setSelectedRubricId(rubricId);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteClick = (rubricId) => {
+    setSelectedRubricId(rubricId);
+    setShowDeleteModal(true);
+  };
+
+  const handleUpdate = () => {
+    const token = localStorage.getItem("authToken");
+
+    const fetchRubrics = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/rubric/section/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setRubrics(response.data);
+      } catch (err) {
+        console.error("Error fetching rubrics:", err);
+      }
+    };
+
+    fetchRubrics();
+  };
+
+  const handleExpandClick = (rubricId) => {
+    setExpandedRubrics((prevExpandedRubrics) =>
+      prevExpandedRubrics.includes(rubricId)
+        ? prevExpandedRubrics.filter((id) => id !== rubricId)
+        : [...prevExpandedRubrics, rubricId]
+    );
+  };
+
+  if (loading) {
+    return (
+      <Backdrop
+        sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
+        open={loading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+    );
+  }
 
   if (showRubricMain) {
     return <RubricMain />;
@@ -60,19 +118,20 @@ export default function Listrubric() {
             <div>
               {rubrics.map((rubric) => (
                 <div key={rubric._id} className="rubric-card">
-                  <div
-                    className="rubric-content"
-                    onClick={() =>
-                      setExpandedRubric(
-                        expandedRubric === rubric._id ? null : rubric._id
-                      )
-                    }
-                  >
+                  <div className="rubric-content">
                     <div className="rubric-info">
                       <div className="rubric-row">
                         <div className="rubric-title">Name:</div>
                         <span className="rubric-value">
                           {rubric.rubric_name}
+                        </span>
+                        <span className="edit-delete-icon">
+                          <EditIcon
+                            onClick={() => handleEditClick(rubric._id)}
+                          />
+                          <DeleteIcon
+                            onClick={() => handleDeleteClick(rubric._id)}
+                          />
                         </span>
                       </div>
                       <div className="rubric-row">
@@ -87,14 +146,15 @@ export default function Listrubric() {
                       </div>
                     </div>
                     <div
-                      className={`rubric-icon ${expandedRubric === rubric._id ? "open" : ""}`}
+                      className={`rubric-icon ${expandedRubrics.includes(rubric._id) ? "open" : ""}`}
+                      onClick={() => handleExpandClick(rubric._id)}
                     >
                       <ArrowDropDownIcon />
                     </div>
                   </div>
 
                   {/* แสดง table เฉพาะ rubric ที่ถูกเลือก */}
-                  {expandedRubric === rubric._id && rubric.criteria && (
+                  {expandedRubrics.includes(rubric._id) && rubric.criteria && (
                     <div className="rubric-container">
                       <table className="rubric-table">
                         <thead>
@@ -139,6 +199,20 @@ export default function Listrubric() {
           )}
         </Col>
       </Row>
+
+      <EditRubric
+        show={showEditModal}
+        handleClose={() => setShowEditModal(false)}
+        rubricId={selectedRubricId}
+        onUpdate={handleUpdate}
+      />
+
+      <DeleteRubric
+        show={showDeleteModal}
+        handleClose={() => setShowDeleteModal(false)}
+        rubricId={selectedRubricId}
+        onDelete={handleUpdate}
+      />
     </Container>
   );
 }

@@ -26,7 +26,7 @@ function AppRoutes() {
           <Route
             path="/professor/course"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <ProfessorCoursepage />
               </ProtectedRoute>
             }
@@ -34,7 +34,7 @@ function AppRoutes() {
           <Route
             path="/dashboard/:id"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Dashboardpage />
               </ProtectedRoute>
             }
@@ -42,7 +42,7 @@ function AppRoutes() {
           <Route
             path="/setting/:id"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Settingcoursepage />
               </ProtectedRoute>
             }
@@ -50,7 +50,7 @@ function AppRoutes() {
           <Route
             path="/assessment/:id"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Assessmentpage />
               </ProtectedRoute>
             }
@@ -58,7 +58,7 @@ function AppRoutes() {
           <Route
             path="/assessment/:id/allassessmentuser"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Alluserassessmentpage />
               </ProtectedRoute>
             }
@@ -66,7 +66,7 @@ function AppRoutes() {
           <Route
             path="/team/:id"
             element={
-              <ProtectedRoute requiredRole="professor">
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Teampage />
               </ProtectedRoute>
             }

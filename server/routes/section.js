@@ -8,7 +8,7 @@ const Assessment = require("../models/Assessment");
 const {
   verifyToken,
   checkAdmin,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
 } = require("./middleware");
 
 const router = express.Router();
@@ -50,7 +50,7 @@ router.post("/all", verifyToken, checkAdmin, async (req, res) => {
 router.put(
   "/update/:id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { id } = req.params;
     const { section_number, semester_term, semester_year, course_number, course_name, course_description } = req.body;
@@ -130,7 +130,7 @@ router.put(
 router.delete(
   "/delete/:id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { id } = req.params;
 
@@ -168,7 +168,7 @@ router.delete(
 router.get(
   "/students/:section_id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { section_id } = req.params;
 
@@ -212,14 +212,14 @@ router.get(
 router.get(
   "/professors/:section_id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { section_id } = req.params;
 
     try {
       const instructors = await CourseInstructor.find({ section_id }).populate(
         "professor_id",
-        "personal_num first_name last_name email"
+        "personal_num role first_name last_name email"
       );
 
       if (!instructors.length) {
@@ -236,6 +236,7 @@ router.get(
         return {
           professor_id: professor._id,
           personal_num: professor.personal_num,
+          role: professor.role,
           first_name: professor.first_name,
           last_name: professor.last_name,
           email: professor.email,

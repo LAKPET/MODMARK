@@ -1,7 +1,7 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
 import Logo from "../../../assets/Picture/Logo.png";
-import { useLocation } from "react-router-dom"; // Import useLocation hook
+import { NavLink, useLocation } from "react-router-dom"; // Import useLocation hook
 import SchoolIcon from "@mui/icons-material/School";
 import HelpIcon from "@mui/icons-material/Help";
 import "../../../assets/Styles/Sidebar.css";
@@ -27,7 +27,9 @@ function Sidebar() {
     >
       {/* Logo */}
       <div className="mb-4 mt-2 text-center">
-        <img src={Logo} alt="Logo" width="140" height="100" />
+        <NavLink to="/professor/course">
+          <img src={Logo} alt="Logo" width="140" height="100" />
+        </NavLink>
         <h5 className="mt-4 text-white fw-bold">
           <span style={{ color: "#F49427" }}>Mod</span>mark
         </h5>
@@ -37,9 +39,9 @@ function Sidebar() {
       {/* Sidebar Links */}
       <Nav className="flex-column mt-4">
         <Nav.Link
-          href="/course"
+          href="/professor/course"
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/course") ? "active" : ""
+            isActive("/professor/course") ? "active" : ""
           }`}
         >
           <SchoolIcon className="me-2" />

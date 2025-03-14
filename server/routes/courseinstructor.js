@@ -3,12 +3,12 @@ const CourseInstructor = require("../models/CourseInstructor");
 const Section = require("../models/Section");
 const User = require("../models/User"); // Import User model
 const bcrypt = require("bcryptjs");
-const { verifyToken, checkAdminOrProfessor } = require("./middleware");
+const { verifyToken, checkAdminOrProfessorOrTeacherAssistant } = require("./middleware");
 
 const router = express.Router();
 
 // ลงทะเบียนอาจารย์ใน Section
-router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   const { section_id, professors } = req.body;
 
   // ตรวจสอบว่ามีการส่งค่า section_id และ professors มาหรือไม่
@@ -28,7 +28,7 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
     for (const professor of professors) {
       const { personal_num, email } = professor; // เปลี่ยนเป็น personal_num และ email
 
-      // ตรวจสอบว่า User ที่เป็น Professor มีอยู่หรือไม่
+      // ตรวจสอบว่า User ที่เป็น Professor หรือ TA มีอยู่หรือไม่
       const userByPersonalNum = await User.findOne({ personal_num }); // เปลี่ยนเป็น personal_num
       const userByEmail = await User.findOne({ email });
 
@@ -42,18 +42,18 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
 
       const user = userByPersonalNum;
 
-      if (user.role !== "professor") {
-        return res.status(400).json({ message: `User with personal_num ${personal_num} is not a professor` }); // เปลี่ยนเป็น personal_num
+      if (user.role !== "professor" && user.role !== "ta") {
+        return res.status(400).json({ message: `User with personal_num ${personal_num} is not a professor or teaching assistant` });
       }
 
-      // ตรวจสอบว่า Professor ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
+      // ตรวจสอบว่า Professor หรือ TA ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
       const existingInstructor = await CourseInstructor.findOne({
         section_id: section._id,
         personal_num: user.personal_num, // เปลี่ยนเป็น personal_num
       });
 
       if (existingInstructor) {
-        continue; // ข้ามการลงทะเบียนถ้าอาจารย์ได้ลงทะเบียนแล้ว
+        continue; // ข้ามการลงทะเบียนถ้าอาจารย์หรือ TA ได้ลงทะเบียนแล้ว
       }
 
       // สร้าง CourseInstructor ใหม่
@@ -61,6 +61,7 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
         section_id: section._id,
         professor_id: user._id,
         personal_num: user.personal_num,
+        role: user.role,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -75,7 +76,7 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessor, async (r
     }
 
     res.status(200).json({
-      message: "Professors successfully registered for the section",
+      message: "Professors and teaching assistants successfully registered for the section",
       registeredInstructors,
     });
   } catch (error) {

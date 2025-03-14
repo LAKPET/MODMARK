@@ -1,14 +1,47 @@
-import React from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import React, { useContext, useEffect, useState } from "react";
+import { NavLink, useNavigate, useLocation, useParams } from "react-router-dom"; // Import useLocation and useParams for getting the current path and id
 import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
 import axios from "axios"; // Import axios for making HTTP requests
 import "../../../assets/Styles/Navbar.css";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
+import Link from "@mui/material/Link";
+import Typography from "@mui/material/Typography";
 
 function Navber() {
   const username = localStorage.getItem("Username");
   const navigate = useNavigate(); // Use navigate for redirection
+  const location = useLocation(); // Get the current path
+  const { id } = useParams(); // Get the id from the URL
+  const [courseDetails, setCourseDetails] = useState(null);
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/course/details/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setCourseDetails(response.data); // Set course details in state
+      } catch (error) {
+        console.error("Error loading course details:", error);
+      }
+    };
+
+    fetchCourseDetails();
+  }, [id, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -34,24 +67,56 @@ function Navber() {
     }
   };
 
+  const handleClick = (event) => {
+    event.preventDefault();
+    console.info("You clicked a breadcrumb.");
+  };
+
+  // Determine the current page based on the path
+  const getCurrentPage = () => {
+    if (location.pathname.includes("/dashboard")) {
+      return "Dashboard";
+    } else if (location.pathname.includes("/assessment")) {
+      return "Assessment";
+    } else if (location.pathname.includes("/team")) {
+      return "Team";
+    } else if (location.pathname.includes("/setting")) {
+      return "Setting Course";
+    } else {
+      return "My Dashboard";
+    }
+  };
+
   return (
     <Navbar className="custom-navbar">
       <Container>
         <Navbar.Toggle />
         <Navbar.Collapse className="justify-content-start">
           {/* Breadcrumb Navigation */}
-          <nav
-            style={{
-              "--bs-breadcrumb-divider": `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='currentColor'/%3E%3C/svg%3E")`,
-            }}
-            aria-label="breadcrumb"
-          >
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a href="/professor/course">My Course</a>
-              </li>
-            </ol>
-          </nav>
+          <div role="presentation" onClick={handleClick}>
+            <Breadcrumbs aria-label="breadcrumb">
+              <Link
+                component={NavLink}
+                to="/professor/course"
+                underline="hover"
+                color="inherit"
+              >
+                My Course
+              </Link>
+              {courseDetails && (
+                <>
+                  <Typography sx={{ color: "inherit" }}>
+                    {courseDetails.course_number}-{courseDetails.section_number}
+                  </Typography>
+                </>
+              )}
+              {courseDetails && (
+                <Typography sx={{ color: "text.primary" }}>
+                  {getCurrentPage()}
+                </Typography>
+              )}
+            </Breadcrumbs>
+          </div>
         </Navbar.Collapse>
         <Navbar.Collapse className="justify-content-end">
           <Navbar.Text>

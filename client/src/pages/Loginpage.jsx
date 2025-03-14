@@ -13,6 +13,8 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
 import { useAuth } from "../routes/AuthContext";
+import CircularProgress from "@mui/material/CircularProgress";
+import Backdrop from "@mui/material/Backdrop";
 
 function Loginpage() {
   const [email, setEmail] = useState("");
@@ -35,11 +37,12 @@ function Loginpage() {
         const { token, user } = result.data;
         localStorage.setItem("authToken", token);
         localStorage.setItem("Username", user.username);
+        localStorage.setItem("UserRole", user.role);
         setUser(user);
 
         if (user.role === "admin") {
           navigate("/dashboard/admin/users");
-        } else if (user.role === "professor") {
+        } else if (user.role === "professor" || user.role === "ta") {
           navigate("/professor/course");
         } else if (user.role === "student") {
           navigate("/student/course");
@@ -51,6 +54,17 @@ function Loginpage() {
         console.error(err);
       });
   };
+
+  if (loading) {
+    return (
+      <Backdrop
+        sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
+        open={loading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+    );
+  }
 
   return (
     <MDBContainer className="my-5">

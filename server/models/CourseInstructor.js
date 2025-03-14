@@ -6,6 +6,7 @@ const courseInstructorSchema = new mongoose.Schema({
     section_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Section', required: true },
     professor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // เพิ่ม professor_id
     personal_num: { type: Number, required: true },
+    role: { type: String, enum: ['professor', 'ta'], required: true },
     email: { type: String, required: true },
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
