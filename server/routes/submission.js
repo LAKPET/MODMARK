@@ -15,12 +15,35 @@ const router = express.Router();
 router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), async (req, res) => {
   const {
     assessment_id,
+    section_id,
     group_name,
     members, // Array of group members
     file_type
   } = req.body;
 
   try {
+    // ตรวจสอบว่ามี assessment_id หรือไม่
+    if (!assessment_id) {
+      return res.status(400).json({ message: "Assessment ID is required" });
+    }
+
+    // ตรวจสอบว่ามี section_id หรือไม่
+    if (!section_id) {
+      return res.status(400).json({ message: "Section ID is required" });
+    }
+
+    // ตรวจสอบว่า assessment_id และ section_id มีอยู่ในระบบหรือไม่
+    const assessmentExists = await mongoose.model('Assessment').exists({ _id: assessment_id });
+    const sectionExists = await mongoose.model('Section').exists({ _id: section_id });
+
+    if (!assessmentExists) {
+      return res.status(404).json({ message: "Assessment not found" });
+    }
+
+    if (!sectionExists) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
     // ตรวจสอบว่ามีไฟล์ถูกอัปโหลดหรือไม่
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -28,6 +51,23 @@ router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), 
 
     // ใช้ uploadFile() เพื่อรองรับ Local และ Cloud
     const file_url = await uploadFile(req.file);
+
+    const membersArray = typeof members === "string" ? JSON.parse(members) : members;
+
+    // Validate all members before creating the group and submission
+    for (const member of membersArray) {
+      const existingUser = await User.findById(member.user_id);
+
+      if (!existingUser) {
+        return res.status(404).json({ message: `User with ID ${member.user_id} not found.` });
+      }
+
+      const isEnrolled = await mongoose.model('Enrollment').exists({ section_id, student_id: existingUser._id });
+
+      if (!isEnrolled) {
+        return res.status(400).json({ message: `User with ID ${member.user_id} is not enrolled in section ${section_id}.` });
+      }
+    }
 
     // Create a new group
     const newGroup = new Group({
@@ -39,15 +79,9 @@ router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), 
 
     await newGroup.save();
 
-    const membersArray = typeof members === "string" ? JSON.parse(members) : members;
     // Add group members
     for (const member of membersArray) {
       const existingUser = await User.findById(member.user_id);
-
-      if (!existingUser) {
-        console.error(`User with ID ${member.user_id} not found.`);
-        continue; // ข้าม iteration นี้ถ้าไม่มี user จริง
-      }
 
       const newGroupMember = new GroupMember({
         group_id: newGroup._id,
@@ -62,6 +96,7 @@ router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), 
     // Create a new submission
     const newSubmission = new Submission({
       assessment_id: new mongoose.Types.ObjectId(assessment_id), // แปลง assessment_id เป็น ObjectId
+      section_id: new mongoose.Types.ObjectId(section_id), // แปลง section_id เป็น ObjectId
       group_id: newGroup._id,
       student_id: req.user.id,
       file_url, // เก็บ URL ของไฟล์ที่อัปโหลด
@@ -73,9 +108,26 @@ router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), 
 
     res.status(201).json({ message: "Submission created successfully!", submission: newSubmission });
   } catch (error) {
+    if (error instanceof SyntaxError && error.message.includes("JSON")) {
+      return res.status(400).json({ message: "Invalid JSON format in members field" });
+    }
     console.error("Error creating submission:", error);
     res.status(500).json({ message: "Error creating submission", error });
   }
+});
+
+// Serve PDF files
+router.get("/pdf/:filename", verifyToken, async (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(__dirname, "../../server/uploads", filename);
+
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    res.sendFile(filePath);
+  });
 });
 
 // Read (Get all submissions in this assessment)
@@ -124,6 +176,27 @@ router.get("/:id", verifyToken, async (req, res) => {
   } catch (error) {
     console.error("Error fetching submission:", error);
     res.status(500).json({ message: "Error fetching submission", error });
+  }
+});
+
+// Get list of submissions for all groups with specified fields
+router.get("/list/all", verifyToken, checkAdminOrStudent, async (req, res) => {
+  try {
+    const submissions = await Submission.find()
+      .populate("group_id", "group_name")
+      .select("group_id status submitted_at grading_status");
+
+    const submissionList = submissions.map(submission => ({
+      group_name: submission.group_id.group_name,
+      status: submission.status,
+      submitted_at: submission.submitted_at,
+      grading_status: submission.grading_status
+    }));
+
+    res.status(200).json(submissionList);
+  } catch (error) {
+    console.error("Error fetching submission list:", error);
+    res.status(500).json({ message: "Error fetching submission list", error });
   }
 });
 
@@ -176,7 +249,7 @@ router.delete("/delete/:id", verifyToken, checkAdminOrStudent, async (req, res) 
     }
 
     // Delete file from local storage if using local storage
-    if (submission.file_url.startsWith("/uploads/")) {
+    if (submission.file_url.startsWith("/server/uploads/")) {
       const filePath = path.join(__dirname, "../../", submission.file_url);
       fs.unlink(filePath, (err) => {
         if (err) {
@@ -185,9 +258,16 @@ router.delete("/delete/:id", verifyToken, checkAdminOrStudent, async (req, res) 
       });
     }
 
+    // Delete related group members
+    await GroupMember.deleteMany({ group_id: submission.group_id });
+
+    // Delete related group
+    await Group.findByIdAndDelete(submission.group_id);
+
+    // Delete the submission
     await submission.deleteOne();
 
-    res.status(200).json({ message: "Submission deleted successfully!" });
+    res.status(200).json({ message: "Submission and related data deleted successfully!" });
   } catch (error) {
     console.error("Error deleting submission:", error);
     res.status(500).json({ message: "Error deleting submission", error });
