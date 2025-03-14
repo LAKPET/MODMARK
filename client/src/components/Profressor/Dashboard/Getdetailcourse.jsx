@@ -51,7 +51,7 @@ export default function GetDetailCourse() {
         });
 
         setCourseDetails(response.data);
-        console.log(response.data);
+        console.log("co", response.data);
       } catch (error) {
         setError("Error loading course details.");
       } finally {
@@ -121,22 +121,21 @@ export default function GetDetailCourse() {
       </Row>
 
       <Row className="mb-4 text-dark">
-        <Col md={8}>
+        <Col md={6}>
           <h5 className="pb-3 mb-4 short-border fw-semibold">Description</h5>
           <p>{courseDetails.course_description}</p>
         </Col>
-        <Col md={4}>
+        <Col md={6}>
           <h5 className="pb-3 mb-4 short-border fw-semibold">Team</h5>
-          <p className="text-muted">
+          <div className="text-muted">
             {courseDetails.professors && courseDetails.professors.length > 0
               ? courseDetails.professors.map((professor, index) => (
-                  <span key={index}>
-                    {index > 0 && ", "}
+                  <div key={index}>
                     Prof. {professor.first_name} {professor.last_name}
-                  </span>
+                  </div>
                 ))
               : "No professor assigned"}
-          </p>
+          </div>
         </Col>
       </Row>
 
