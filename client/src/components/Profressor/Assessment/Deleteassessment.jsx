@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
-
+import { MDBBtn } from "mdb-react-ui-kit";
 function DeleteAssessment({
   show,
   handleClose,
@@ -38,9 +38,19 @@ function DeleteAssessment({
       </Modal.Header>
       <Modal.Body>Are you sure you want to delete this assessment?</Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
+        {/* <Button variant="secondary" onClick={handleClose}>
           Cancel
-        </Button>
+        </Button> */}
+        <MDBBtn
+          outline
+          onClick={handleClose}
+          style={{
+            color: "#CDC9C9",
+            borderColor: "#CDC9C9",
+          }}
+        >
+          Cancel
+        </MDBBtn>
         <Button variant="danger" onClick={handleDelete}>
           Delete
         </Button>

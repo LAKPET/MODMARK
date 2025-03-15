@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
-
+import { MDBBtn } from "mdb-react-ui-kit";
 function DeleteCourse({ show, handleClose, Id, refreshCourses }) {
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -28,9 +28,16 @@ function DeleteCourse({ show, handleClose, Id, refreshCourses }) {
       </Modal.Header>
       <Modal.Body>Are you sure you want to delete this course?</Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
+        <MDBBtn
+          outline
+          onClick={handleClose}
+          style={{
+            color: "#CDC9C9",
+            borderColor: "#CDC9C9",
+          }}
+        >
           Cancel
-        </Button>
+        </MDBBtn>
         <Button variant="danger" onClick={handleDelete}>
           Delete
         </Button>

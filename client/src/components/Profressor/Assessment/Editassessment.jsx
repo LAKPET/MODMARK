@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
-import { MDBInput } from "mdb-react-ui-kit";
+import { MDBInput, MDBBtn } from "mdb-react-ui-kit";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -453,13 +453,17 @@ export default function EditAssessmentModal({
 
           <div className="d-flex justify-content-end">
             {activeTab === "createRubric" && (
-              <Button
-                variant="secondary"
+              <MDBBtn
+                outline
                 className="me-2"
                 onClick={handlePreviousTab}
+                style={{
+                  color: "#CDC9C9",
+                  borderColor: "#CDC9C9",
+                }}
               >
                 Back
-              </Button>
+              </MDBBtn>
             )}
             {activeTab === "assessmentDetail" && (
               <Button className="custom-btn me-2" onClick={handleNextTab}>

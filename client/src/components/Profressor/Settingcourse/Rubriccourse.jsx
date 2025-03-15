@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import { TextField, IconButton } from "@mui/material";
@@ -6,7 +6,9 @@ import ListRubric from "./Listrubric";
 import AddIcon from "@mui/icons-material/Add";
 import ClearIcon from "@mui/icons-material/Clear";
 import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import InputFileUpload from "../../components/InputFileUpload"; // Import InputFileUpload component
 import "../../../assets/Styles/Settingcourse/Rubrictable.css";
+import * as XLSX from "xlsx"; // Import xlsx library
 
 const RubricMain = () => {
   const id = useParams();
@@ -16,6 +18,7 @@ const RubricMain = () => {
 
   const [showListRubric, setShowListRubric] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+  const fileInputRef = useRef(null); // Reference for file input
 
   const handleListRubric = () => {
     setShowListRubric(true);
@@ -29,7 +32,12 @@ const RubricMain = () => {
 
   const [columns, setColumns] = useState([{ score: "", level: 1 }]);
   const [rows, setRows] = useState([
-    { score: "", criteria: "", details: [""] },
+    {
+      score: "",
+      criteria: "",
+      criteria_weight: "",
+      details: [{ description: "", score: "" }],
+    },
   ]);
 
   const handleChange = (e) => {
@@ -39,26 +47,19 @@ const RubricMain = () => {
   const addColumn = () => {
     setColumns((prev) => {
       const newLevel = prev.length + 1;
-      return [{ score: "", level: newLevel }, ...prev]; // เพิ่มที่ index 0
+      return [...prev, { score: "", level: newLevel }];
     });
 
     setRows((prev) =>
       prev.map((row) => ({
         ...row,
-        details: ["", ...row.details], // เพิ่มค่าที่ตำแหน่งแรกของ array
+        details: [...row.details, { description: "", score: "" }],
       }))
     );
   };
 
   const removeColumn = (colIndex) => {
-    setColumns((prev) =>
-      prev
-        .filter((_, idx) => idx !== colIndex)
-        .map((col, index) => ({
-          ...col,
-          level: prev.length - index - 1, // อัปเดต level ใหม่
-        }))
-    );
+    setColumns((prev) => prev.filter((_, idx) => idx !== colIndex));
 
     setRows((prev) =>
       prev.map((row) => ({
@@ -71,7 +72,11 @@ const RubricMain = () => {
   const addRow = () => {
     setRows((prev) => [
       ...prev,
-      { criteria: "", details: Array(columns.length).fill("") },
+      {
+        criteria: "",
+        criteria_weight: "",
+        details: Array(columns.length).fill({ description: "", score: "" }),
+      },
     ]);
   };
 
@@ -98,7 +103,21 @@ const RubricMain = () => {
   const updateCell = (rowIndex, colIndex, value) => {
     setRows((prev) => {
       const updated = [...prev];
-      updated[rowIndex].details[colIndex] = value;
+      updated[rowIndex].details[colIndex] = {
+        ...updated[rowIndex].details[colIndex],
+        description: value,
+      };
+      return updated;
+    });
+  };
+
+  const updateCellScore = (rowIndex, colIndex, value) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      updated[rowIndex].details[colIndex] = {
+        ...updated[rowIndex].details[colIndex],
+        score: value,
+      };
       return updated;
     });
   };
@@ -111,6 +130,70 @@ const RubricMain = () => {
     });
   };
 
+  const updateCriteriaWeight = (rowIndex, value) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      updated[rowIndex].criteria_weight = value;
+      return updated;
+    });
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const data = new Uint8Array(event.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+        header: 1,
+      });
+
+      // Parse the worksheet data
+      const [header, ...rowsData] = worksheet;
+      const parsedColumns = [];
+      const parsedRows = [];
+
+      rowsData.forEach((row) => {
+        const [
+          rubricTitle,
+          description,
+          totalScore,
+          criterionWeight,
+          criterionName,
+          ...levels
+        ] = row;
+        const details = [];
+        for (let i = 0; i < levels.length; i += 2) {
+          details.push({ description: levels[i + 1], score: levels[i] });
+        }
+        details.sort((a, b) => b.score - a.score); // Sort details by score in descending order
+        parsedRows.push({
+          criteria: criterionName,
+          criteria_weight: criterionWeight,
+          score: totalScore,
+          details,
+        });
+      });
+
+      for (let i = 0; i < parsedRows[0].details.length; i++) {
+        parsedColumns.push({
+          score: "",
+          level: parsedRows[0].details.length - i,
+        });
+      }
+
+      setRubric({
+        name: rowsData[0][0],
+        description: rowsData[0][1],
+        score: rowsData[0][2],
+      });
+      setColumns(parsedColumns);
+      setRows(parsedRows);
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const handleSubmit = async () => {
     const formattedRubric = {
       title: rubric.name,
@@ -118,11 +201,11 @@ const RubricMain = () => {
       score: Number(rubric.score),
       criteria: rows.map((row) => ({
         name: row.criteria,
-        weight: Number(row.score) || 0,
-        levels: columns.map((col, colIndex) => ({
-          level: col.level,
-          description: row.details?.[colIndex] || "",
-          score: Number(col.score) || 0,
+        weight: Number(row.criteria_weight) || 0,
+        levels: row.details.map((detail, index) => ({
+          level: index + 1,
+          description: detail.description,
+          score: Number(detail.score) || 0,
         })),
       })),
       section_id: id.id,
@@ -150,6 +233,27 @@ const RubricMain = () => {
       const data = await response.json();
       console.log("Success:", data);
       setShowSuccessModal(true); // Show success modal
+
+      // Clear all fields
+      setRubric({
+        name: "",
+        description: "",
+        score: "",
+      });
+      setColumns([{ score: "", level: 1 }]);
+      setRows([
+        {
+          score: "",
+          criteria: "",
+          criteria_weight: "",
+          details: [{ description: "", score: "" }],
+        },
+      ]);
+
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       console.error("Error:", error);
     }
@@ -222,6 +326,10 @@ const RubricMain = () => {
       </Row>
 
       {/* 🟢 Rubric Table */}
+
+      <div className="text-end">
+        <InputFileUpload onChange={handleFileUpload} />
+      </div>
       <div className="rubric-container">
         <table className="rubric-table">
           <thead>
@@ -254,7 +362,10 @@ const RubricMain = () => {
                   <div className="score-container">
                     <TextField
                       variant="standard"
-                      onChange={(e) => updateRowScore(rowIndex, e.target.value)}
+                      value={row.criteria_weight}
+                      onChange={(e) =>
+                        updateCriteriaWeight(rowIndex, e.target.value)
+                      }
                       size="small"
                       inputProps={{ style: { textAlign: "center" } }}
                     />
@@ -273,8 +384,9 @@ const RubricMain = () => {
                     <div className="score-container">
                       <TextField
                         variant="standard"
+                        value={cell.score}
                         onChange={(e) =>
-                          updateColumnScore(colIndex, e.target.value)
+                          updateCellScore(rowIndex, colIndex, e.target.value)
                         }
                         size="small"
                         inputProps={{ style: { textAlign: "center" } }}
@@ -283,7 +395,7 @@ const RubricMain = () => {
                     </div>
                     <textarea
                       rows={3}
-                      value={cell}
+                      value={cell.description}
                       placeholder="Description"
                       onChange={(e) =>
                         updateCell(rowIndex, colIndex, e.target.value)

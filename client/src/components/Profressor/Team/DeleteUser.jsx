@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, Button } from "react-bootstrap";
 import axios from "axios";
-
+import { MDBBtn } from "mdb-react-ui-kit";
 export default function DeleteUser({
   show,
   handleClose,
@@ -42,9 +42,16 @@ export default function DeleteUser({
       </Modal.Header>
       <Modal.Body>Are you sure you want to delete this user?</Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
+        <MDBBtn
+          outline
+          onClick={handleClose}
+          style={{
+            color: "#CDC9C9",
+            borderColor: "#CDC9C9",
+          }}
+        >
           Cancel
-        </Button>
+        </MDBBtn>
         <Button variant="danger" onClick={handleDelete}>
           Delete
         </Button>
