@@ -160,11 +160,17 @@ export default function Listrubric() {
                         <thead>
                           <tr>
                             <th className="rubric-table__header">Criteria</th>
-                            {rubric.criteria[0]?.levels.map((level, index) => (
-                              <th key={index} className="rubric-table__header">
-                                Level {level.level}
-                              </th>
-                            ))}
+                            {rubric.criteria[0]?.levels
+                              .slice()
+                              .sort((a, b) => b.level - a.level)
+                              .map((level, index) => (
+                                <th
+                                  key={index}
+                                  className="rubric-table__header"
+                                >
+                                  Level {level.level}
+                                </th>
+                              ))}
                           </tr>
                         </thead>
                         <tbody>
@@ -176,17 +182,20 @@ export default function Listrubric() {
                                 <br />
                                 {criterion.name}
                               </td>
-                              {criterion.levels.map((level, levelIndex) => (
-                                <td
-                                  key={levelIndex}
-                                  className="rubric-table__cell"
-                                >
-                                  {level.score}{" "}
-                                  <span className="pts-label"> pts</span>
-                                  <br />
-                                  {level.description}
-                                </td>
-                              ))}
+                              {criterion.levels
+                                .slice()
+                                .sort((a, b) => b.level - a.level)
+                                .map((level, levelIndex) => (
+                                  <td
+                                    key={levelIndex}
+                                    className="rubric-table__cell"
+                                  >
+                                    {level.score}{" "}
+                                    <span className="pts-label"> pts</span>
+                                    <br />
+                                    {level.description}
+                                  </td>
+                                ))}
                             </tr>
                           ))}
                         </tbody>

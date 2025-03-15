@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Form, Row, Col } from "react-bootstrap";
+import { Modal, Button, Form } from "react-bootstrap";
 import { TextField, IconButton } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -13,7 +13,12 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
   });
   const [columns, setColumns] = useState([{ score: "", level: 1 }]);
   const [rows, setRows] = useState([
-    { score: "", criteria: "", details: [""] },
+    {
+      score: "",
+      criteria: "",
+      criteria_weight: "",
+      details: [{ description: "", score: "" }],
+    },
   ]);
 
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -34,16 +39,26 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
             score: data.score,
           });
           setColumns(
-            data.criteria[0]?.levels.map((level, index) => ({
-              score: level.score,
-              level: index + 1,
-            })) || [{ score: "", level: 1 }]
+            data.criteria[0]?.levels
+              .slice()
+              .sort((a, b) => b.level - a.level)
+              .map((level, index) => ({
+                score: level.score,
+                level: level.level,
+              })) || [{ score: "", level: 1 }]
           );
           setRows(
             data.criteria.map((criterion) => ({
               score: criterion.weight,
               criteria: criterion.name,
-              details: criterion.levels.map((level) => level.description),
+              criteria_weight: criterion.weight,
+              details: criterion.levels
+                .slice()
+                .sort((a, b) => b.level - a.level)
+                .map((level) => ({
+                  description: level.description,
+                  score: level.score,
+                })),
             }))
           );
         } catch (err) {
@@ -63,13 +78,13 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
   const addColumn = () => {
     setColumns((prev) => {
       const newLevel = prev.length + 1;
-      return [...prev, { score: "", level: newLevel }];
+      return [{ score: "", level: newLevel }, ...prev];
     });
 
     setRows((prev) =>
       prev.map((row) => ({
         ...row,
-        details: [...row.details, ""],
+        details: [{ description: "", score: "" }, ...row.details],
       }))
     );
   };
@@ -88,7 +103,11 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
   const addRow = () => {
     setRows((prev) => [
       ...prev,
-      { criteria: "", details: Array(columns.length).fill("") },
+      {
+        criteria: "",
+        criteria_weight: "",
+        details: Array(columns.length).fill({ description: "", score: "" }),
+      },
     ]);
   };
 
@@ -115,7 +134,21 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
   const updateCell = (rowIndex, colIndex, value) => {
     setRows((prev) => {
       const updated = [...prev];
-      updated[rowIndex].details[colIndex] = value;
+      updated[rowIndex].details[colIndex] = {
+        ...updated[rowIndex].details[colIndex],
+        description: value,
+      };
+      return updated;
+    });
+  };
+
+  const updateCellScore = (rowIndex, colIndex, value) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      updated[rowIndex].details[colIndex] = {
+        ...updated[rowIndex].details[colIndex],
+        score: value,
+      };
       return updated;
     });
   };
@@ -128,6 +161,14 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
     });
   };
 
+  const updateCriteriaWeight = (rowIndex, value) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      updated[rowIndex].criteria_weight = value;
+      return updated;
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formattedRubric = {
@@ -136,12 +177,14 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
       score: Number(rubric.score),
       criteria: rows.map((row) => ({
         name: row.criteria,
-        weight: Number(row.score) || 0,
-        levels: columns.map((col, colIndex) => ({
-          level: col.level,
-          description: row.details?.[colIndex] || "",
-          score: Number(col.score) || 0,
-        })),
+        weight: Number(row.criteria_weight) || 0,
+        levels: row.details
+          .map((detail, index) => ({
+            level: row.details.length - index,
+            description: detail.description,
+            score: Number(detail.score) || 0,
+          }))
+          .reverse(),
       })),
     };
 
@@ -158,7 +201,7 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
   };
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg">
+    <Modal show={show} onHide={handleClose} size="xl">
       <Modal.Header closeButton>
         <Modal.Title>Edit Rubric</Modal.Title>
       </Modal.Header>
@@ -211,15 +254,6 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
                         </IconButton>
                       )}
                       <div className="level-label">Level {col.level}</div>
-                      {/* <TextField
-                        variant="standard"
-                        value={col.score}
-                        onChange={(e) =>
-                          updateColumnScore(colIndex, e.target.value)
-                        }
-                        size="small"
-                        inputProps={{ style: { textAlign: "center" } }}
-                      /> */}
                     </th>
                   ))}
                   <th>
@@ -236,12 +270,14 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
                       <div className="score-container">
                         <TextField
                           variant="standard"
-                          value={row.score}
+                          value={row.criteria_weight}
                           onChange={(e) =>
-                            updateRowScore(rowIndex, e.target.value)
+                            updateCriteriaWeight(rowIndex, e.target.value)
                           }
                           size="small"
-                          inputProps={{ style: { textAlign: "center" } }}
+                          inputProps={{
+                            style: { textAlign: "center", width: "100px" },
+                          }}
                         />
                         <span className="pts-label"> pts</span>
                       </div>
@@ -257,18 +293,27 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
                     </td>
                     {row.details.map((cell, colIndex) => (
                       <td key={colIndex} className="rubric-cell">
-                        <TextField
-                          variant="standard"
-                          onChange={(e) =>
-                            updateRowScore(colIndex, e.target.value)
-                          }
-                          size="small"
-                          inputProps={{ style: { textAlign: "center" } }}
-                        />
-                        <span className="pts-label"> pts</span>
+                        <div className="score-container">
+                          <TextField
+                            variant="standard"
+                            value={cell.score}
+                            onChange={(e) =>
+                              updateCellScore(
+                                rowIndex,
+                                colIndex,
+                                e.target.value
+                              )
+                            }
+                            size="small"
+                            inputProps={{
+                              style: { textAlign: "center", width: "100px" },
+                            }}
+                          />
+                          <span className="pts-label"> pts</span>
+                        </div>
                         <textarea
                           rows={3}
-                          value={cell}
+                          value={cell.description}
                           placeholder="Description"
                           onChange={(e) =>
                             updateCell(rowIndex, colIndex, e.target.value)
@@ -298,9 +343,11 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
             </table>
           </div>
 
-          <Button variant="primary" type="submit">
-            Save Changes
-          </Button>
+          <div className="d-flex justify-content-end">
+            <Button className="custom-btn" type="submit">
+              Save Changes
+            </Button>
+          </div>
         </Form>
       </Modal.Body>
     </Modal>

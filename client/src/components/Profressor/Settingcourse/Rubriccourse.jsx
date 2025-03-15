@@ -6,7 +6,7 @@ import ListRubric from "./Listrubric";
 import AddIcon from "@mui/icons-material/Add";
 import ClearIcon from "@mui/icons-material/Clear";
 import ModalComponent from "../../../controls/modal"; // Import ModalComponent
-import InputFileUpload from "../../components/InputFileUpload"; // Import InputFileUpload component
+import InputFileUpload from "../../../controls/InputFileUpload"; // Import InputFileUpload component
 import "../../../assets/Styles/Settingcourse/Rubrictable.css";
 import * as XLSX from "xlsx"; // Import xlsx library
 
@@ -202,11 +202,13 @@ const RubricMain = () => {
       criteria: rows.map((row) => ({
         name: row.criteria,
         weight: Number(row.criteria_weight) || 0,
-        levels: row.details.map((detail, index) => ({
-          level: index + 1,
-          description: detail.description,
-          score: Number(detail.score) || 0,
-        })),
+        levels: row.details
+          .map((detail, index) => ({
+            level: row.details.length - index,
+            description: detail.description,
+            score: Number(detail.score) || 0,
+          }))
+          .reverse(),
       })),
       section_id: id.id,
     };
