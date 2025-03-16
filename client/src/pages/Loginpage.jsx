@@ -38,6 +38,7 @@ function Loginpage() {
         localStorage.setItem("authToken", token);
         localStorage.setItem("Username", user.username);
         localStorage.setItem("UserRole", user.role);
+        localStorage.setItem("UserId", user.id);
         setUser(user);
 
         if (user.role === "admin") {

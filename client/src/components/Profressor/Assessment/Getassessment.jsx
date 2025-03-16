@@ -126,7 +126,7 @@ export default function Getassessment() {
           </Button>
         </Col>
       </Row>
-      <MDBTable>
+      <MDBTable className="table-hover">
         <MDBTableHead>
           <tr className="fw-bold">
             <th
@@ -152,7 +152,7 @@ export default function Getassessment() {
                 <td>
                   <div className="align-status">
                     <Link
-                      to={`/assessment/${assessment._id}/allassessmentuser/`}
+                      to={`/assessment/${id}/allassessmentuser/${assessment._id}`}
                       className="assessment-name"
                     >
                       {assessment.assessment_name}

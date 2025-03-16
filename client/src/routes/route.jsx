@@ -56,7 +56,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/assessment/:id/allassessmentuser"
+            path="/assessment/:id/allassessmentuser/:assessmentId"
             element={
               <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Alluserassessmentpage />

@@ -115,19 +115,19 @@ router.post(
       });
       await gradingGroup.save();
 
-    // Save graders with their weights in GroupMember
-    if (graders && graders.length > 0) {
-      for (const grader of graders) {
-        const newGroupMember = new GroupMember({
-          group_id: gradingGroup._id,
-          assessment_id: newAssessment._id,
-          user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
-          role: grader.role, // Ensure role is assigned
-          weight: grader.weight,
-        });
-        await newGroupMember.save();
+      // Save graders with their weights in GroupMember
+      if (graders && graders.length > 0) {
+        for (const grader of graders) {
+          const newGroupMember = new GroupMember({
+            group_id: gradingGroup._id,
+            assessment_id: newAssessment._id,
+            user_id: new mongoose.Types.ObjectId(grader.user_id), // ใช้ new ในการสร้าง ObjectId
+            role: grader.role, // Ensure role is assigned
+            weight: grader.weight,
+          });
+          await newGroupMember.save();
+        }
       }
-    }
 
       res.status(201).json({
         message: "Assessment and rubric created successfully!",
@@ -223,12 +223,12 @@ router.get(
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-    const graders = await GroupMember.find({
-      assessment_id: assessment._id,
-      role: { $in: ["professor", "ta"] }, // Include both professor and TA
-    })
-      .populate("user_id", "first_name last_name role email")
-      .select("user_id weight");
+      const graders = await GroupMember.find({
+        assessment_id: assessment._id,
+        role: { $in: ["professor", "ta"] }, // Include both professor and TA
+      })
+        .populate("user_id", "first_name last_name role email")
+        .select("user_id weight");
 
       res.status(200).json({ ...assessment.toObject(), graders });
     } catch (error) {
@@ -242,7 +242,7 @@ router.get(
 router.get(
   "/section/:section_id",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+  checkAdminOrProfessorOrStudent,
   async (req, res) => {
     const { section_id } = req.params;
 

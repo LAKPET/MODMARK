@@ -2,21 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Row, Col, Container } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import Button from "@mui/material/Button";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { styled } from "@mui/material/styles";
-
-const VisuallyHiddenInput = styled("input")({
-  clip: "rect(0 0 0 0)",
-  clipPath: "inset(50%)",
-  height: 1,
-  overflow: "hidden",
-  position: "absolute",
-  bottom: 0,
-  left: 0,
-  whiteSpace: "nowrap",
-  width: 1,
-});
+import InputFileUpload from "../../../controls/InputFileUpload"; // Import InputFileUpload component
 
 export default function GetDetailCourse() {
   const { id } = useParams();
@@ -74,6 +60,41 @@ export default function GetDetailCourse() {
     fetchData();
   }, [id, navigate]);
 
+  const handleFileUpload = async (event, assessmentId) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const token = localStorage.getItem("authToken");
+    const userId = localStorage.getItem("UserId"); // Retrieve user ID from local storage
+    const formdata = new FormData();
+    formdata.append("file", file);
+    formdata.append("assessment_id", assessmentId);
+    formdata.append("group_name", "Group1");
+    formdata.append("members", JSON.stringify([{ user_id: userId }]));
+    formdata.append("file_type", "pdf"); // Use the correct file type value
+    formdata.append("section_id", id); // Add section ID to the form data
+
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formdata,
+      redirect: "follow",
+    };
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/submission/submit`,
+        requestOptions
+      );
+      const result = await response.text();
+      console.log(result);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
+  };
+
   if (loading) return <div className="text-center mt-5">Loading...</div>;
   if (error) return <div className="text-center mt-5 text-danger">{error}</div>;
 
@@ -90,24 +111,9 @@ export default function GetDetailCourse() {
             assessments.map((assessment) => (
               <div key={assessment._id}>
                 {assessment.assessment_name}
-                <Button
-                  component="label"
-                  role={undefined}
-                  variant="contained"
-                  tabIndex={-1}
-                  startIcon={<CloudUploadIcon />}
-                  style={{
-                    marginLeft: "10px",
-                    backgroundColor: "green",
-                  }}
-                >
-                  Upload files
-                  <VisuallyHiddenInput
-                    type="file"
-                    onChange={(event) => console.log(event.target.files)}
-                    multiple
-                  />
-                </Button>
+                <InputFileUpload
+                  onChange={(event) => handleFileUpload(event, assessment._id)}
+                />
               </div>
             ))
           ) : (

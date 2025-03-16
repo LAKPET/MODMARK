@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate, useLocation, useParams } from "react-router-dom"; // Import useLocation and useParams for getting the current path and id
 import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
@@ -13,8 +13,9 @@ function Navber() {
   const username = localStorage.getItem("Username");
   const navigate = useNavigate(); // Use navigate for redirection
   const location = useLocation(); // Get the current path
-  const { id } = useParams(); // Get the id from the URL
+  const { id, assessmentId } = useParams(); // Get the id and assessmentId from the URL
   const [courseDetails, setCourseDetails] = useState(null);
+  const [assessmentDetails, setAssessmentDetails] = useState(null);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -40,8 +41,34 @@ function Navber() {
       }
     };
 
+    const fetchAssessmentDetails = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/assessment/${assessmentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setAssessmentDetails(response.data); // Set assessment details in state
+      } catch (error) {
+        console.error("Error loading assessment details:", error);
+      }
+    };
+
     fetchCourseDetails();
-  }, [id, navigate]);
+    if (assessmentId) {
+      fetchAssessmentDetails();
+    }
+  }, [id, assessmentId, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -105,16 +132,32 @@ function Navber() {
               </Link>
               {courseDetails && (
                 <>
-                  <Typography sx={{ color: "inherit" }}>
+                  <Link
+                    component={NavLink}
+                    to={`/dashboard/${id}`}
+                    underline="hover"
+                    color="inherit"
+                  >
                     {courseDetails.course_number}-{courseDetails.section_number}
-                  </Typography>
+                  </Link>
                 </>
               )}
               {courseDetails && (
-                <Typography sx={{ color: "text.primary" }}>
+                <Link
+                  component={NavLink}
+                  to={`/assessment/${id}`}
+                  underline="hover"
+                  color="inherit"
+                >
                   {getCurrentPage()}
-                </Typography>
+                </Link>
               )}
+              {location.pathname.includes("/allassessmentuser") &&
+                assessmentDetails && (
+                  <Typography sx={{ color: "text.primary" }}>
+                    {assessmentDetails.assessment_name}
+                  </Typography>
+                )}
             </Breadcrumbs>
           </div>
         </Navbar.Collapse>

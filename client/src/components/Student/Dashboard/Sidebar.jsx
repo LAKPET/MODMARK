@@ -1,16 +1,15 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
 import Logo from "../../../assets/Picture/Logo.png";
-import { useLocation, useNavigate } from "react-router-dom"; // Import useLocation and useNavigate hooks
+import { NavLink, useLocation, useParams } from "react-router-dom"; // Import NavLink, useLocation, and useParams
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
-
 import "../../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
   const location = useLocation(); // Get the current route
-  const navigate = useNavigate(); // Use navigate for redirection
+  const { id } = useParams(); // Get the id from the URL
 
   // Helper function to determine if a link is active
   const isActive = (path) => location.pathname === path;
@@ -30,7 +29,9 @@ function Sidebar() {
     >
       {/* Logo */}
       <div className="mb-4 mt-2 text-center">
-        <img src={Logo} alt="Logo" width="140" height="100" />
+        <NavLink to="/student/course">
+          <img src={Logo} alt="Logo" width="140" height="100" />
+        </NavLink>
         <h5 className="mt-4 text-white fw-bold">
           <span style={{ color: "#F49427" }}>Mod</span>mark
         </h5>
@@ -38,29 +39,32 @@ function Sidebar() {
       </div>
 
       {/* Sidebar Links */}
-      <Nav className="flex-column">
+      <Nav className="flex-column mt-4">
         <Nav.Link
-          href="/dashboard"
+          as={NavLink}
+          to={`/student/dashboard/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/dashboard") ? "active" : ""
+            isActive(`/student/dashboard/${id}`) ? "active" : ""
           }`}
         >
           <DashboardIcon className="me-2" />
           <span>Dashboard</span>
         </Nav.Link>
         <Nav.Link
-          href="/assessment"
+          as={NavLink}
+          to={`/assessment/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/assessment") ? "active" : ""
+            isActive(`/assessment/${id}`) ? "active" : ""
           }`}
         >
           <AssessmentIcon className="me-2" />
           <span>Assessment</span>
         </Nav.Link>
         <Nav.Link
-          href="/score&feedback"
+          as={NavLink}
+          to={`/score&feedback/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/score&feedback") ? "active" : ""
+            isActive(`/score&feedback/${id}`) ? "active" : ""
           }`}
         >
           <CreditScoreIcon className="me-2" />
