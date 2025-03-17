@@ -14,6 +14,7 @@ import Assessmentpage from "../pages/Profressor/Assessmentpage";
 import Alluserassessmentpage from "../pages/Profressor/Alluserassessmentpage";
 import Teampage from "../pages/Profressor/Teampage";
 import Dashboardpage_stu from "../pages/Student/Dashboardpage_stu";
+import Viewassessmentpage from "../pages/Profressor/Viewassessmentpage";
 
 function AppRoutes() {
   return (
@@ -60,6 +61,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute requiredRole={["professor", "ta"]}>
                 <Alluserassessmentpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/professor/viewassessment/:id/:fileUrl"
+            element={
+              <ProtectedRoute requiredRole={["professor", "ta"]}>
+                <Viewassessmentpage />
               </ProtectedRoute>
             }
           />

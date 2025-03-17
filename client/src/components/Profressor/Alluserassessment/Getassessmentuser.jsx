@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Container, Row, Col, Modal } from "react-bootstrap";
+import { Container, Row, Col } from "react-bootstrap";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
-import { Worker, Viewer } from "@react-pdf-viewer/core";
-import "@react-pdf-viewer/core/lib/styles/index.css";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
+import { formatDateTime } from "../../../utils/FormatDateTime";
 
 export default function Getassessmentuser() {
   const { id, assessmentId } = useParams();
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -40,8 +38,7 @@ export default function Getassessmentuser() {
   }, [assessmentId]);
 
   const handleViewPdf = (fileUrl) => {
-    setPdfUrl(`${apiUrl}/submission/pdf/${fileUrl.replace("/uploads/", "")}`);
-    setShowModal(true);
+    navigate(`/professor/viewassessment/${id}/${fileUrl}`);
   };
 
   if (loading) {
@@ -72,8 +69,11 @@ export default function Getassessmentuser() {
         <MDBTableHead>
           <tr className="fw-bold">
             <th>User ID</th>
+            <th>First Name</th>
+            <th>Last Name</th>
             <th>Username</th>
             <th>Submission Date</th>
+            <th>Grading Status</th>
             <th>File</th>
           </tr>
         </MDBTableHead>
@@ -81,9 +81,12 @@ export default function Getassessmentuser() {
           {submissions.length > 0 ? (
             submissions.map((submission) => (
               <tr key={submission._id}>
-                <td>{submission.user_id}</td>
-                <td>{submission.username}</td>
-                <td>{new Date(submission.submission_date).toLocaleString()}</td>
+                <td>{submission.student_id._id}</td>
+                <td>{submission.student_id.first_name}</td>
+                <td>{submission.student_id.last_name}</td>
+                <td>{submission.student_id.email}</td>
+                <td>{formatDateTime(submission.submitted_at)}</td>
+                <td>{submission.grading_status}</td>
                 <td>
                   <button
                     onClick={() => handleViewPdf(submission.file_url)}
@@ -96,28 +99,13 @@ export default function Getassessmentuser() {
             ))
           ) : (
             <tr>
-              <td colSpan="4" className="text-center">
+              <td colSpan="7" className="text-center">
                 No submissions found
               </td>
             </tr>
           )}
         </MDBTableBody>
       </MDBTable>
-
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>View PDF</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {pdfUrl && (
-            <Worker
-              workerUrl={`https://unpkg.com/pdfjs-dist@2.6.347/build/pdf.worker.min.js`}
-            >
-              <Viewer fileUrl={pdfUrl} />
-            </Worker>
-          )}
-        </Modal.Body>
-      </Modal>
     </Container>
   );
 }

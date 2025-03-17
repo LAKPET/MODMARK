@@ -1,0 +1,33 @@
+.container-flex {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.thumbnails-container {
+    width: 200px;
+    overflow-y: auto;
+    background-color: #cdcccc;
+    position: sticky;
+    top: 53px;
+    left: 0;
+}
+
+.pdf-viewer-container {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+}
+
+.pdf-highlighter-container {
+    width: 100%;
+    height: 100%;
+}
+
+.comments-section {
+    width: 300px;
+    margin-left: 20px;
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+}

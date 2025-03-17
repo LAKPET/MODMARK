@@ -119,7 +119,7 @@ router.post(
         section_id: new mongoose.Types.ObjectId(section_id), // แปลง section_id เป็น ObjectId
         group_id: newGroup._id,
         student_id: req.user.id,
-        file_url, // เก็บ URL ของไฟล์ที่อัปโหลด
+        file_url: req.file.filename, // เก็บเฉพาะชื่อไฟล์
         file_type,
         status: "submit",
       });
@@ -143,18 +143,23 @@ router.post(
 );
 
 // Serve PDF files
-router.get("/pdf/:filename", verifyToken, async (req, res) => {
-  const { filename } = req.params;
-  const filePath = path.join(__dirname, "../../server/uploads", filename);
+router.get(
+  "/pdf/:filename",
+  verifyToken,
+  checkAdminOrProfessorOrStudent,
+  async (req, res) => {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, "../../server/uploads", filename);
 
-  fs.access(filePath, fs.constants.F_OK, (err) => {
-    if (err) {
-      return res.status(404).json({ message: "File not found" });
-    }
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+      if (err) {
+        return res.status(404).json({ message: "File not found" });
+      }
 
-    res.sendFile(filePath);
-  });
-});
+      res.sendFile(filePath);
+    });
+  }
+);
 
 // Read (Get all submissions in this assessment)
 router.get(
@@ -259,7 +264,7 @@ router.put(
       // Update file if a new file is uploaded
       if (req.file) {
         const file_url = await uploadFile(req.file);
-        submission.file_url = file_url;
+        submission.file_url = req.file.filename; // เก็บเฉพาะชื่อไฟล์
       }
 
       submission.file_type = file_type || submission.file_type;

@@ -1,0 +1,24 @@
+.custom-navbar-feedback {
+  position: fixed;
+  height: 100px;
+  top: 0;
+  left: 0; /* Set to 0 to span the full width */
+  right: 0;
+  z-index: 1; /* Navbar is below Sidebar */
+  background-color: #f5e9d3; /* สีพื้นหลัง */
+  padding: 10px 20px; /* เพิ่ม Padding */
+}
+
+.custom-navbar-feedback .navbar-brand {
+  margin-left: 0; /* Adjust the margin to move the logo to the left */
+}
+
+.custom-navbar-feedback .navbar-logo {
+  margin-left: -20px; /* Adjust the margin to move the logo further to the left */
+}
+
+.icon-line {
+  transform: rotate(90deg); /* Rotate 90 degrees */
+  transform-origin: center; /* Ensure rotation is centered */
+  display: inline-block; /* Ensures proper display */
+}
