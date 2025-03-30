@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '.env.backend' });
+require("dotenv").config({ path: ".env.backend" });
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -13,6 +13,7 @@ const assessmentRoutes = require("./routes/assessment");
 const sectionRoutes = require("./routes/section");
 const rubricRoutes = require("./routes/rubric"); // Import rubric routes
 const submissionRoutes = require("./routes/submission"); // Import submission routes
+const annotationRoutes = require("./routes/annotation"); // Import annotation routes
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use("/assessment", assessmentRoutes);
 app.use("/section", sectionRoutes);
 app.use("/rubric", rubricRoutes); // Use rubric routes
 app.use("/submission", submissionRoutes); // Use submission routes
+app.use("/api/annotation", annotationRoutes); // Use annotation routes
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () =>

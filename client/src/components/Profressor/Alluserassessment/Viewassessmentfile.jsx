@@ -1,16 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Container } from "react-bootstrap";
-import { Worker, Viewer } from "@react-pdf-viewer/core";
 import axios from "axios";
-import { pdfjs } from "react-pdf";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
-
-import "@react-pdf-viewer/core/lib/styles/index.css";
-
-// ตั้งค่า worker URL ให้ตรงกับเวอร์ชัน pdfjs-dist
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+import PDFReviewer from "./PDFReviewer";
 
 export default function ViewAssessmentFile() {
   const { id, fileUrl } = useParams();
@@ -68,12 +62,8 @@ export default function ViewAssessmentFile() {
   }
 
   return (
-    <Container fluid className="mt-4 text-start">
-      <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
-        <div style={{ width: "100%", height: "90vh" }}>
-          <Viewer fileUrl={pdfUrl} />
-        </div>
-      </Worker>
+    <Container fluid className="mt-4">
+      <PDFReviewer fileUrl={pdfUrl} submissionId={id} />
     </Container>
   );
 }

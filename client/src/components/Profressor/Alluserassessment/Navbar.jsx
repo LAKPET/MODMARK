@@ -14,11 +14,13 @@ function Navber() {
   const username = localStorage.getItem("Username");
   const navigate = useNavigate(); // Use navigate for redirection
   const location = useLocation(); // Get the current path
-  const { id, assessmentId, fileUrl } = useParams(); // Get the id, assessmentId, and fileUrl from the URL
+  const { id, assessmentId, fileUrl, submissionId } = useParams(); // Get the id, assessmentId, fileUrl, and submissionId from the URL
   const [courseDetails, setCourseDetails] = useState(null);
   const [assessmentDetails, setAssessmentDetails] = useState(null);
+  const [submissionDetails, setSubmissionDetails] = useState(null);
 
   useEffect(() => {
+    console.log("Current params:", { id, assessmentId, fileUrl, submissionId });
     const fetchCourseDetails = async () => {
       try {
         const token = localStorage.getItem("authToken");
@@ -65,11 +67,37 @@ function Navber() {
       }
     };
 
+    const fetchSubmissionDetails = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/submission/${submissionId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setSubmissionDetails(response.data);
+      } catch (error) {
+        console.error("Error loading submission details:", error);
+      }
+    };
+
     fetchCourseDetails();
     if (assessmentId) {
       fetchAssessmentDetails();
     }
-  }, [id, assessmentId, navigate]);
+    if (submissionId) {
+      fetchSubmissionDetails();
+    }
+  }, [id, assessmentId, submissionId, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -172,12 +200,9 @@ function Navber() {
                     {assessmentDetails.assessment_name}
                   </Typography>
                 )}
-              {location.pathname.includes("/viewassessment") &&
-                assessmentDetails && (
-                  <Typography sx={{ color: "text.primary" }}>
-                    {assessmentDetails.assessment_name}
-                  </Typography>
-                )}
+              {location.pathname.includes("/viewassessment") && (
+                <Typography sx={{ color: "text.primary" }}>{id}</Typography>
+              )}
             </Breadcrumbs>
           </div>
         </Navbar.Collapse>
