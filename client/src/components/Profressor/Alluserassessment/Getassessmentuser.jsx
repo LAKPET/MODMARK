@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Container, Row, Col } from "react-bootstrap";
+import { Container, Row, Col, Button } from "react-bootstrap";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { formatDateTime } from "../../../utils/FormatDateTime";
-
+import { getStatusColor } from "../../../utils/StatusColor";
 export default function Getassessmentuser() {
   const { id, assessmentId } = useParams();
   const navigate = useNavigate();
@@ -74,7 +74,7 @@ export default function Getassessmentuser() {
             <th>Username</th>
             <th>Submission Date</th>
             <th>Grading Status</th>
-            <th>File</th>
+            <th></th>
           </tr>
         </MDBTableHead>
         <MDBTableBody>
@@ -86,14 +86,18 @@ export default function Getassessmentuser() {
                 <td>{submission.student_id.last_name}</td>
                 <td>{submission.student_id.email}</td>
                 <td>{formatDateTime(submission.submitted_at)}</td>
-                <td>{submission.grading_status}</td>
+                <td
+                  style={{ color: getStatusColor(submission.grading_status) }}
+                >
+                  {submission.grading_status}
+                </td>
                 <td>
-                  <button
+                  <Button
                     onClick={() => handleViewPdf(submission.file_url)}
-                    className="btn btn-link"
+                    className="custom-btn"
                   >
                     View PDF
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))

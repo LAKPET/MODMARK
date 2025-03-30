@@ -4,10 +4,13 @@
   box-sizing: border-box;
 }
 
+
 .main-content {
-  height: calc(100vh); /* Adjust the height as needed */
-  overflow-y: auto;
+  height: calc(100vh - 100px); /* ปรับขนาดให้เหมาะสม */
+  overflow-y: auto; /* เปิดการ scroll แนวตั้ง */
   padding: 16px;
+  scrollbar-width: thin; /* ปรับขนาด scrollbar (สำหรับ Firefox) */
+  scrollbar-color: #888 #f1f1f1; /* สีของ scrollbar */
 }
 
 .main-content-feedback {

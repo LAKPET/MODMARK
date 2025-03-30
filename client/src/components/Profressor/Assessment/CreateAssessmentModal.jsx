@@ -203,7 +203,7 @@ export default function CreateAssessmentModal({
               onClick={() => setActiveTab("createRubric")}
             >
               <img src={picturetab2} alt="Create Rubric" className="tab-icon" />
-              Create Rubric
+              Select Rubric
             </button>
           </div>
 
@@ -270,12 +270,11 @@ export default function CreateAssessmentModal({
 
               {gradingType && (
                 <div className="mb-4">
-                  <Paper sx={{ height: 400, width: "100%" }}>
+                  <Paper sx={{ height: 350, width: "100%" }}>
                     <DataGrid
                       rows={rows}
                       columns={columns}
                       pageSize={5}
-                      checkboxSelection
                       sx={{ border: 0 }}
                     />
                   </Paper>
