@@ -16,6 +16,7 @@ const annotationSchema = new mongoose.Schema({
     required: true,
   },
   comment: { type: String },
+  highlight_color: { type: String, default: "#ffeb3b" },
   created_at: { type: Date, default: Date.now },
 });
 

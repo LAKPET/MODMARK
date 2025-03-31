@@ -14,14 +14,21 @@
 }
 
 .main-content-feedback {
-  height: 100vh; /* Adjust the height as needed */
-  overflow-y: auto;
+  height: 100vh;
+  overflow: hidden;
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 16px;
-  margin-top: 4rem;
-  padding-left: 0; /* Ensure content starts from the left */
+  padding: 0;
+  margin: 0;
+  width: 100vw;
+}
+
+.main-content-feedback .container-fluid {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
 }

@@ -21,22 +21,28 @@ import {
   Menu,
   MenuItem,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
-import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import CommentIcon from "@mui/icons-material/Comment";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import HomeIcon from "@mui/icons-material/Home";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
 
-const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
+const PDFReviewer = ({
+  fileUrl,
+  submissionId,
+  onNext,
+  onPrevious,
+  assessmentId,
+}) => {
   const [highlights, setHighlights] = useState([]);
   const [selectedText, setSelectedText] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,11 +54,24 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [commentIcons, setCommentIcons] = useState([]);
   const [pageHeight, setPageHeight] = useState(0);
+  const [selectedColor, setSelectedColor] = useState("#ffeb3b");
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
+  const highlightColors = [
+    { name: "Yellow", value: "#ffeb3b" },
+    { name: "Green", value: "#a5d6a7" },
+    { name: "Blue", value: "#90caf9" },
+    { name: "Red", value: "#ef9a9a" },
+    { name: "Purple", value: "#ce93d8" },
+  ];
+
   // Extract filename from fileUrl
   const fileName = fileUrl.split("/").pop().split(".")[0];
+
+  const handleHome = () => {
+    navigate(`/assessment/${submissionId}/allassessmentuser/${assessmentId}`);
+  };
 
   const handleContextMenu = (event) => {
     event.preventDefault();
@@ -90,6 +109,7 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
           height: rect.height,
         },
         professor_id: professorId,
+        highlight_color: selectedColor,
       };
 
       console.log("Creating annotation:", annotation);
@@ -126,6 +146,9 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
         setCommentIcons(
           commentIcons.filter((icon) => icon.id !== highlight.id)
         );
+        if (selectedHighlight?.id === highlight.id) {
+          setSelectedHighlight(null);
+        }
       } catch (error) {
         console.error("Error deleting annotation:", error);
       }
@@ -133,7 +156,7 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
     renderHighlightContent: (props) => (
       <div
         style={{
-          background: "#ffeb3b",
+          background: props.highlight.highlight_color || "#ffeb3b",
           padding: "2px 4px",
           borderRadius: "2px",
           position: "relative",
@@ -196,7 +219,6 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
 
         console.log("Annotations response:", response.data);
 
-        // Show all annotations, not just those with comments
         const formattedHighlights = response.data.map((annotation) => ({
           id: annotation._id,
           content: {
@@ -205,17 +227,17 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
           },
           pageIndex: annotation.page_number - 1,
           comment: annotation.comment,
+          highlight_color: annotation.highlight_color || "#ffeb3b",
         }));
 
-        // Set highlights
         setHighlights(formattedHighlights);
 
-        // Set comment icons for all annotations
         const formattedCommentIcons = response.data.map((annotation) => ({
           id: annotation._id,
           pageIndex: annotation.page_number - 1,
           position: annotation.bounding_box,
           comment: annotation.comment || annotation.highlight_text,
+          highlight_color: annotation.highlight_color || "#ffeb3b",
         }));
         setCommentIcons(formattedCommentIcons);
       } catch (error) {
@@ -301,6 +323,7 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
         },
         professor_id: professorId,
         comment: comment.trim(),
+        highlight_color: selectedColor,
       };
 
       console.log("Creating annotation:", annotation);
@@ -324,6 +347,7 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
           y: relativeY,
         },
         comment: comment.trim(),
+        highlight_color: selectedColor,
       };
       setCommentIcons([...commentIcons, newCommentIcon]);
 
@@ -341,6 +365,7 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
         },
         pageIndex: currentPage - 1,
         comment: comment.trim(),
+        highlight_color: selectedColor,
       };
       setHighlights([...highlights, newHighlight]);
 
@@ -362,8 +387,14 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
       await axios.delete(`${apiUrl}/api/annotation/${highlight.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // Remove highlight from highlights array
       setHighlights(highlights.filter((h) => h.id !== highlight.id));
+
+      // Remove comment icon from commentIcons array
       setCommentIcons(commentIcons.filter((icon) => icon.id !== highlight.id));
+
+      // Clear selected highlight if it's the one being deleted
       if (selectedHighlight?.id === highlight.id) {
         setSelectedHighlight(null);
       }
@@ -378,35 +409,12 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
       .map((icon) => {
         const pdfPage = document.querySelector(".rpv-core__page-layer");
         const pdfPageRect = pdfPage?.getBoundingClientRect();
-        const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0; // Position icon 50px from right edge
+        const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
         const iconY = icon.position.y;
+        const highlight = highlights.find((h) => h.id === icon.id);
 
         return (
           <React.Fragment key={icon.id}>
-            {/* Connecting line */}
-            <svg
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                width: "100%",
-                height: "100%",
-                pointerEvents: "none",
-                zIndex: 999,
-              }}
-            >
-              <line
-                x1={icon.position.x}
-                y1={icon.position.y}
-                x2={iconX}
-                y2={iconY}
-                stroke="#1976d2"
-                strokeWidth="2"
-                strokeDasharray="5,5"
-              />
-            </svg>
-
-            {/* Comment icon */}
             <Tooltip key={icon.id} title={icon.comment} placement="left" arrow>
               <IconButton
                 size="small"
@@ -420,7 +428,7 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
                     backgroundColor: "#f5f5f5",
                   },
                   zIndex: 1000,
-                  transform: "translate(0, -50%)", // Center vertically only
+                  transform: "translate(0, -50%)",
                 }}
                 onClick={() => {
                   setSelectedHighlight({
@@ -431,7 +439,9 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
                   });
                 }}
               >
-                <CommentIcon sx={{ color: "#1976d2" }} />
+                <CommentIcon
+                  sx={{ color: highlight?.highlight_color || "#1976d2" }}
+                />
               </IconButton>
             </Tooltip>
           </React.Fragment>
@@ -440,20 +450,47 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
   };
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box
+      sx={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        m: 0,
+        p: 0,
+      }}
+    >
       {/* Navigation Bar */}
       <Paper
         elevation={3}
         sx={{
-          p: 2,
+          py: 1,
+          px: 2,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#f5f5f5",
+          backgroundColor: "#8B5F34",
           borderRadius: 0,
+          minHeight: "48px",
         }}
       >
-        {/* Center - Page info and controls */}
+        {/* Left side - Home button */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <IconButton
+            onClick={handleHome}
+            size="small"
+            sx={{
+              color: "#fff",
+              p: 0.5,
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+              },
+            }}
+          >
+            <HomeIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        {/* Center - Page info */}
         <Box
           sx={{
             display: "flex",
@@ -462,90 +499,93 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
             margin: "0 auto",
           }}
         >
-          <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: "bold", color: "#fff" }}
+          >
             Page {currentPage}
           </Typography>
           {selectedText && (
             <Typography
-              variant="body2"
-              color="text.secondary"
+              variant="caption"
               sx={{
-                backgroundColor: "#fff",
-                padding: "4px 8px",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                color: "#fff",
+                padding: "2px 6px",
                 borderRadius: "4px",
               }}
             >
               Selected: {selectedText}
             </Typography>
           )}
-          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-            <IconButton onClick={handleZoomOut} size="small">
-              <ZoomOutIcon />
-            </IconButton>
-            <Typography
-              variant="body2"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                minWidth: "60px",
-                justifyContent: "center",
-              }}
-            >
-              {Math.round(scale * 100)}%
-            </Typography>
-            <IconButton onClick={handleZoomIn} size="small">
-              <ZoomInIcon />
-            </IconButton>
-          </Box>
         </Box>
 
         {/* Right side - Navigation arrows */}
         <Box sx={{ display: "flex", gap: 1 }}>
           <IconButton
             onClick={onPrevious}
+            size="small"
             sx={{
-              backgroundColor: "#fff",
+              color: "#fff",
+              p: 0.5,
               "&:hover": {
-                backgroundColor: "#f0f0f0",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
               },
             }}
           >
-            <ArrowBackIosIcon />
+            <ArrowBackIosIcon fontSize="small" />
           </IconButton>
           <IconButton
             onClick={onNext}
+            size="small"
             sx={{
-              backgroundColor: "#fff",
+              color: "#fff",
+              p: 0.5,
               "&:hover": {
-                backgroundColor: "#f0f0f0",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
               },
             }}
           >
-            <ArrowForwardIosIcon />
+            <ArrowForwardIosIcon fontSize="small" />
           </IconButton>
         </Box>
       </Paper>
 
       {/* Main Content */}
-      <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* PDF Viewer */}
+      <Box
+        sx={{ flex: 1, display: "flex", overflow: "hidden", m: 0, p: 0, pl: 0 }}
+      >
+        {/* PDF Viewer - Left Side */}
         <Paper
           elevation={3}
           sx={{
-            flex: "0 0 75%",
+            flex: 1,
             overflow: "hidden",
             backgroundColor: "#fff",
             position: "relative",
             borderRadius: 0,
+            m: 0,
+            p: 0,
+            pl: 0,
+            width: "70%",
           }}
           onContextMenu={handleContextMenu}
         >
-          <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+          <Box
+            sx={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              m: 0,
+              p: 0,
+              pl: 0,
+            }}
+          >
             <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
               <Viewer
                 fileUrl={fileUrl}
                 plugins={[highlightPluginInstance, selectionModePluginInstance]}
-                onPageChange={(e) => setCurrentPage(e.currentPage)}
+                onPageChange={(e) => setCurrentPage(e.currentPage + 1)}
                 defaultScale={scale}
                 theme={{
                   theme: "light",
@@ -564,81 +604,98 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
                   }
                 }}
                 scrollMode={1}
+                layoutMode={1}
+                renderLoader={(percentages) => (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CircularProgress />
+                  </div>
+                )}
               />
             </Worker>
             {renderCommentIcons()}
           </Box>
         </Paper>
 
-        {/* Comments Panel */}
+        {/* Comments Panel - Right Side */}
         <Paper
           elevation={3}
           sx={{
-            flex: "0 0 25%",
-            display: "flex",
-            flexDirection: "column",
+            width: "30%",
             backgroundColor: "#fff",
             borderRadius: 0,
+            m: 0,
+            p: 2,
+            overflow: "auto",
             borderLeft: "1px solid #e0e0e0",
           }}
         >
-          <Box sx={{ p: 2, borderBottom: "1px solid #e0e0e0" }}>
-            <Typography variant="h6">Comments</Typography>
-          </Box>
-          <List sx={{ flex: 1, overflow: "auto", p: 2 }}>
-            {highlights.length === 0 ? (
-              <ListItem>
-                <ListItemText
-                  primary="No comments yet"
-                  secondary="Select text in the PDF to add a comment"
-                />
-              </ListItem>
-            ) : (
-              highlights.map((highlight) => (
+          <Typography variant="h6" sx={{ mb: 2, color: "#8B5F34" }}>
+            Comments
+          </Typography>
+          <List>
+            {highlights
+              .filter(
+                (highlight) =>
+                  highlight.pageIndex === currentPage - 1 && highlight.comment
+              )
+              .map((highlight) => (
                 <React.Fragment key={highlight.id}>
                   <ListItem
-                    button
-                    selected={selectedHighlight?.id === highlight.id}
-                    onClick={() => setSelectedHighlight(highlight)}
-                    secondaryAction={
-                      <IconButton
-                        edge="end"
-                        aria-label="delete"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteHighlight(highlight);
-                        }}
-                        sx={{
-                          color: "error.main",
-                          "&:hover": {
-                            backgroundColor: "error.light",
-                            color: "error.contrastText",
-                          },
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    }
+                    sx={{
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      mb: 2,
+                      backgroundColor: "#f5f5f5",
+                      borderRadius: 1,
+                      p: 2,
+                      position: "relative",
+                    }}
                   >
-                    <ListItemText
-                      primary={highlight.content.text}
-                      secondary={
-                        highlight.comment ? (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mt: 1 }}
-                          >
-                            {highlight.comment}
-                          </Typography>
-                        ) : null
-                      }
-                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteHighlight(highlight)}
+                      sx={{
+                        position: "absolute",
+                        right: 8,
+                        top: 8,
+                        color: "#666",
+                        "&:hover": {
+                          color: "#d32f2f",
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Page {highlight.pageIndex + 1}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        backgroundColor: highlight.highlight_color || "#ffeb3b",
+                        p: 1,
+                        borderRadius: 1,
+                        mb: 1,
+                        width: "100%",
+                      }}
+                    >
+                      {highlight.content.text}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#666" }}>
+                      {highlight.comment}
+                    </Typography>
                   </ListItem>
                   <Divider />
                 </React.Fragment>
-              ))
-            )}
+              ))}
           </List>
         </Paper>
       </Box>
@@ -672,7 +729,7 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
           <Typography
             variant="body2"
             sx={{
-              backgroundColor: "#f5f5f5",
+              backgroundColor: selectedColor,
               p: 1,
               borderRadius: 1,
               mb: 2,
@@ -680,6 +737,31 @@ const PDFReviewer = ({ fileUrl, submissionId, onNext, onPrevious }) => {
           >
             {selectedText}
           </Typography>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Highlight Color:
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {highlightColors.map((color) => (
+                <IconButton
+                  key={color.value}
+                  onClick={() => setSelectedColor(color.value)}
+                  sx={{
+                    backgroundColor: color.value,
+                    border:
+                      selectedColor === color.value
+                        ? "2px solid #8B5F34"
+                        : "none",
+                    "&:hover": {
+                      backgroundColor: color.value,
+                    },
+                  }}
+                >
+                  <div style={{ width: 24, height: 24 }} />
+                </IconButton>
+              ))}
+            </Box>
+          </Box>
           <TextField
             autoFocus
             margin="dense"

@@ -7,7 +7,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import PDFReviewer from "./PDFReviewer";
 
 export default function ViewAssessmentFile() {
-  const { id, fileUrl } = useParams();
+  const { id, fileUrl, assessmentId } = useParams();
   const apiUrl = import.meta.env.VITE_API_URL;
   const [pdfUrl, setPdfUrl] = useState(null);
   const [error, setError] = useState(null);
@@ -62,8 +62,12 @@ export default function ViewAssessmentFile() {
   }
 
   return (
-    <Container fluid className="mt-4">
-      <PDFReviewer fileUrl={pdfUrl} submissionId={id} />
+    <Container fluid className="p-0 " style={{ height: "100vh" }}>
+      <PDFReviewer
+        fileUrl={pdfUrl}
+        submissionId={id}
+        assessmentId={assessmentId}
+      />
     </Container>
   );
 }

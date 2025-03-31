@@ -38,7 +38,7 @@ export default function Getassessmentuser() {
   }, [assessmentId]);
 
   const handleViewPdf = (fileUrl) => {
-    navigate(`/professor/viewassessment/${id}/${fileUrl}`);
+    navigate(`/professor/viewassessment/${id}/${fileUrl}/${assessmentId}`);
   };
 
   if (loading) {

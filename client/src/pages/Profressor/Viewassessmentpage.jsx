@@ -6,17 +6,13 @@ import "../../styles/Main.css";
 
 export default function Viewassessmentpage() {
   return (
-    <div>
-      <Navber />
+    <>
+      {/* <Navber /> */}
       <div className="main-content-feedback">
-        <Container
-          fluid
-          className="mt-2"
-          style={{ paddingLeft: 0, height: "100%" }}
-        >
+        <Container fluid className="p-0 m-0" style={{ height: "100%" }}>
           <Viewassessmentfile />
         </Container>
       </div>
-    </div>
+    </>
   );
 }
