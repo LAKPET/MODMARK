@@ -25,13 +25,18 @@ import {
 } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import ReplyIcon from "@mui/icons-material/Reply";
+import SendIcon from "@mui/icons-material/Send";
 import CommentIcon from "@mui/icons-material/Comment";
 import DeleteIcon from "@mui/icons-material/Delete";
+import TurnRightIcon from "@mui/icons-material/TurnRight";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import HomeIcon from "@mui/icons-material/Home";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Avatar from "@mui/material/Avatar";
+import { stringAvatar } from "../../../controls/Avatar";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
@@ -54,7 +59,9 @@ const PDFReviewer = ({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [commentIcons, setCommentIcons] = useState([]);
   const [pageHeight, setPageHeight] = useState(0);
-  const [selectedColor, setSelectedColor] = useState("#ffeb3b");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [replyInputs, setReplyInputs] = useState({});
+  const [replyTexts, setReplyTexts] = useState({});
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -68,7 +75,17 @@ const PDFReviewer = ({
 
   // Extract filename from fileUrl
   const fileName = fileUrl.split("/").pop().split(".")[0];
-
+  const mockupHighlight = {
+    id: "1",
+    content: { text: "This is a highlighted text" },
+    comment: "This is a comment",
+    highlight_color: "#ffeb3b",
+    professor: { username: "John Doe" },
+    replies: [
+      { username: "Jane Smith", text: "This is a reply" },
+      { username: "Alice Johnson", text: "Another reply" },
+    ],
+  };
   const handleHome = () => {
     navigate(`/assessment/${submissionId}/allassessmentuser/${assessmentId}`);
   };
@@ -228,6 +245,9 @@ const PDFReviewer = ({
           pageIndex: annotation.page_number - 1,
           comment: annotation.comment,
           highlight_color: annotation.highlight_color || "#ffeb3b",
+          professor: {
+            username: annotation.professor_id?.username, // เพิ่ม username
+          },
         }));
 
         setHighlights(formattedHighlights);
@@ -297,6 +317,7 @@ const PDFReviewer = ({
     try {
       const token = localStorage.getItem("authToken");
       const professorId = localStorage.getItem("UserId");
+      const professorUsername = localStorage.getItem("Username"); // ดึง username จาก localStorage
 
       // Get the selection position relative to the PDF viewer
       const selection = window.getSelection();
@@ -338,7 +359,7 @@ const PDFReviewer = ({
 
       console.log("Annotation created:", response.data);
 
-      // Add comment icon to the list with the original selection position
+      // Add new comment icon to the list
       const newCommentIcon = {
         id: response.data._id,
         pageIndex: currentPage - 1,
@@ -351,7 +372,7 @@ const PDFReviewer = ({
       };
       setCommentIcons([...commentIcons, newCommentIcon]);
 
-      // Add to highlights list
+      // Add new highlight to the list
       const newHighlight = {
         id: response.data._id,
         content: {
@@ -366,9 +387,13 @@ const PDFReviewer = ({
         pageIndex: currentPage - 1,
         comment: comment.trim(),
         highlight_color: selectedColor,
+        professor: {
+          username: professorUsername || "Unknown", // ใช้ username จาก localStorage
+        },
       };
       setHighlights([...highlights, newHighlight]);
 
+      // Reset states
       setComment("");
       setShowCommentDialog(false);
       setSelectedText("");
@@ -411,7 +436,6 @@ const PDFReviewer = ({
         const pdfPageRect = pdfPage?.getBoundingClientRect();
         const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
         const iconY = icon.position.y;
-        const highlight = highlights.find((h) => h.id === icon.id);
 
         return (
           <React.Fragment key={icon.id}>
@@ -440,13 +464,46 @@ const PDFReviewer = ({
                 }}
               >
                 <CommentIcon
-                  sx={{ color: highlight?.highlight_color || "#1976d2" }}
+                  sx={{
+                    color: icon.highlight_color || "#1976d2", // ใช้สีของ highlight_color
+                  }}
                 />
               </IconButton>
             </Tooltip>
           </React.Fragment>
         );
       });
+  };
+
+  const toggleReplyInput = (highlightId) => {
+    setReplyInputs((prev) => ({
+      ...prev,
+      [highlightId]: !prev[highlightId],
+    }));
+  };
+
+  const handleReplyTextChange = (highlightId, text) => {
+    setReplyTexts((prev) => ({
+      ...prev,
+      [highlightId]: text,
+    }));
+  };
+
+  const handleSendReply = (highlightId) => {
+    const replyText = replyTexts[highlightId];
+    if (replyText && replyText.trim()) {
+      console.log(`Sending reply for highlight ${highlightId}: ${replyText}`);
+      // Add your logic to send the reply here
+      // Reset the reply input
+      setReplyTexts((prev) => ({
+        ...prev,
+        [highlightId]: "",
+      }));
+      setReplyInputs((prev) => ({
+        ...prev,
+        [highlightId]: false,
+      }));
+    }
   };
 
   return (
@@ -659,6 +716,18 @@ const PDFReviewer = ({
                       position: "relative",
                     }}
                   >
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: "5px",
+                        backgroundColor: highlight.highlight_color || "#ffeb3b",
+                        borderTopLeftRadius: "4px",
+                        borderBottomLeftRadius: "4px",
+                      }}
+                    />
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteHighlight(highlight)}
@@ -674,9 +743,47 @@ const PDFReviewer = ({
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      Page {highlight.pageIndex + 1}
-                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => toggleReplyInput(highlight.id)} // เรียกฟังก์ชัน toggleReplyInput
+                      sx={{
+                        position: "absolute",
+                        right: 40,
+                        top: 8,
+                        color: "#666",
+                        "&:hover": {
+                          color: "#1976d2",
+                        },
+                      }}
+                    >
+                      <ReplyIcon fontSize="small" />
+                    </IconButton>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        width: "100%",
+                        mb: 1,
+                      }}
+                    >
+                      <Avatar
+                        {...stringAvatar(
+                          highlight.professor?.username || "Unknown"
+                        )}
+                      />
+                      <Box sx={{ ml: 2, flex: 1 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            width: "100%",
+                          }}
+                        >
+                          <span>{highlight.professor?.username}</span>
+                        </Typography>
+                      </Box>
+                    </Box>
                     <Typography
                       variant="body2"
                       sx={{
@@ -689,9 +796,94 @@ const PDFReviewer = ({
                     >
                       {highlight.content.text}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#666" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        backgroundColor: "#ffffff",
+                        p: 1,
+                        borderRadius: 1,
+                        color: "#666",
+                        width: "100%",
+                      }}
+                    >
                       {highlight.comment}
                     </Typography>
+
+                    {/* Mockup Data สำหรับ Reply */}
+                    {replyInputs[highlight.id] && (
+                      <>
+                        {mockupHighlight.replies.map((reply, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              mt: 1,
+                              pl: 2, // เพิ่ม padding ซ้ายเพื่อให้ Reply อยู่ลึกกว่า Comment หลัก
+                              borderLeft: "2px solid #ddd", // เส้นคั่นระหว่าง Reply
+                            }}
+                          >
+                            <TurnRightIcon
+                              sx={{
+                                fontSize: 16,
+                                color: "#666",
+                                mr: 1,
+                                transform: "scaleY(-1)", // หมุนกลับด้านซ้ายขวา
+                              }}
+                            />
+                            <Box>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{
+                                  fontWeight: "bold",
+                                  color: "#666",
+                                }}
+                              >
+                                {reply.username}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: "#666",
+                                }}
+                              >
+                                {reply.text}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ))}
+
+                        {/* Input สำหรับ Reply */}
+                        <Box sx={{ mt: 2, width: "100%" }}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            placeholder="Reply"
+                            value={replyTexts[highlight.id] || ""}
+                            onChange={(e) =>
+                              handleReplyTextChange(
+                                highlight.id,
+                                e.target.value
+                              )
+                            }
+                            sx={{ mb: 1 }}
+                            InputProps={{
+                              endAdornment: (
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleSendReply(highlight.id)}
+                                  sx={{
+                                    color: "#666", // สีของไอคอน
+                                  }}
+                                >
+                                  <SendIcon />
+                                </IconButton>
+                              ),
+                            }}
+                          />
+                        </Box>
+                      </>
+                    )}
                   </ListItem>
                   <Divider />
                 </React.Fragment>
@@ -720,6 +912,8 @@ const PDFReviewer = ({
       <Dialog
         open={showCommentDialog}
         onClose={() => setShowCommentDialog(false)}
+        maxWidth="sm" // ปรับขนาดความกว้าง เช่น "sm", "md", "lg", "xl"
+        fullWidth
       >
         <DialogTitle>Add Comment</DialogTitle>
         <DialogContent>
@@ -748,13 +942,16 @@ const PDFReviewer = ({
                   onClick={() => setSelectedColor(color.value)}
                   sx={{
                     backgroundColor: color.value,
+                    borderRadius: "50%", // ทำให้ IconButton เป็นทรงกลม
                     border:
                       selectedColor === color.value
-                        ? "2px solid #8B5F34"
+                        ? "2px solid rgb(116, 115, 115)"
                         : "none",
                     "&:hover": {
                       backgroundColor: color.value,
                     },
+                    width: 36, // กำหนดขนาดความกว้าง
+                    height: 36, // กำหนดขนาดความสูง
                   }}
                 >
                   <div style={{ width: 24, height: 24 }} />
@@ -779,7 +976,8 @@ const PDFReviewer = ({
             onClick={handleAddComment}
             variant="contained"
             disabled={!comment.trim()}
-            sx={{ backgroundColor: "#8B5F34" }}
+            // sx={{ backgroundColor: "#8B5F34" }}
+            className="custom-btn"
           >
             Add Comment
           </Button>

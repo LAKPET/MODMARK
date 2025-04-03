@@ -25,7 +25,7 @@ router.get("/submission/:submissionId", verifyToken, async (req, res) => {
     );
     const annotations = await Annotation.find({
       submission_id: req.params.submissionId,
-    }).populate("professor_id", "first_name last_name email");
+    }).populate("professor_id", "username first_name last_name email"); // เพิ่ม username
     console.log("Found annotations:", annotations);
     res.json(annotations);
   } catch (error) {
