@@ -34,28 +34,6 @@ router.get("/submission/:submissionId", verifyToken, async (req, res) => {
   }
 });
 
-// Add a comment to an annotation
-router.post(
-  "/:id/comment",
-  verifyToken,
-  checkAdminOrProfessor,
-  async (req, res) => {
-    try {
-      console.log("Adding comment to annotation:", req.params.id);
-      const annotation = await Annotation.findById(req.params.id);
-      if (!annotation) {
-        return res.status(404).json({ message: "Annotation not found" });
-      }
-      annotation.comment = req.body.comment;
-      await annotation.save();
-      res.json(annotation);
-    } catch (error) {
-      console.error("Error adding comment:", error);
-      res.status(500).json({ message: error.message });
-    }
-  }
-);
-
 // Delete an annotation
 router.delete("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   try {

@@ -16,12 +16,7 @@ const path = require("path");
 const router = express.Router();
 
 // Create a new group and submit work
-router.post(
-  "/submit",
-  verifyToken,
-  checkAdminOrStudent,
-  upload.single("file"),
-  async (req, res) => {
+router.post("/submit",verifyToken,checkAdminOrStudent,upload.single("file"),async (req, res) => {
     const {
       assessment_id,
       section_id,
@@ -143,11 +138,7 @@ router.post(
 );
 
 // Serve PDF files
-router.get(
-  "/pdf/:filename",
-  verifyToken,
-  checkAdminOrProfessorOrStudent,
-  async (req, res) => {
+router.get("/pdf/:filename",verifyToken,checkAdminOrProfessorOrStudent,async (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(__dirname, "../../server/uploads", filename);
 
@@ -158,6 +149,78 @@ router.get(
 
       res.sendFile(filePath);
     });
+  }
+);
+
+// Fetch PDF and related information
+router.post(
+  "/fetch-pdf-info",
+  verifyToken,
+  checkAdminOrProfessorOrStudent,
+  async (req, res) => {
+    const { assessment_id, submission_id, group_id, student_id, file_url } = req.body;
+
+    try {
+      // Validate input
+      if (!assessment_id || !submission_id || !group_id || !student_id || !file_url) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Fetch submission
+      const submission = await Submission.findById(submission_id)
+        .populate("assessment_id", "assessment_name")
+        .populate("group_id", "group_name")
+        .populate("student_id", "personal_num first_name last_name");
+
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+
+      // Fetch group members
+      const groupMembers = await GroupMember.find({ group_id }).populate(
+        "user_id",
+        "personal_num first_name last_name"
+      );
+
+      // Fetch rubric for the assessment
+      const rubric = await mongoose
+        .model("Rubric")
+        .findOne({ section_id: submission.section_id, assessment_id });
+
+      // Construct response data
+      const responseData = {
+        assessment_id: submission.assessment_id._id,
+        assessment_name: submission.assessment_id.assessment_name,
+        group_id: submission.group_id._id,
+        group_name: submission.group_id.group_name,
+        group_members: groupMembers.map((member) => ({
+          user_id: member.user_id._id,
+          personal_num: member.user_id.personal_num,
+          first_name: member.user_id.first_name,
+          last_name: member.user_id.last_name,
+        })),
+        student_id: submission.student_id._id,
+        personal_num: submission.student_id.personal_num,
+        first_name: submission.student_id.first_name,
+        last_name: submission.student_id.last_name,
+        rubric,
+      };
+
+      // Serve the PDF file
+      const filePath = path.join(__dirname, "../../server/uploads", file_url);
+      fs.access(filePath, fs.constants.F_OK, (err) => {
+        if (err) {
+          return res.status(404).json({ message: "File not found" });
+        }
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename="${file_url}"`);
+        res.status(200).json({ file: filePath, ...responseData });
+      });
+    } catch (error) {
+      console.error("Error fetching PDF info:", error);
+      res.status(500).json({ message: "Error fetching PDF info", error });
+    }
   }
 );
 
@@ -175,7 +238,7 @@ router.get(
       })
         .populate("assessment_id", "assessment_name")
         .populate("group_id", "group_name")
-        .populate("student_id", "first_name last_name email");
+        .populate("student_id","personal_num first_name last_name email");
       res.status(200).json(submissions);
     } catch (error) {
       console.error("Error fetching submissions:", error);
