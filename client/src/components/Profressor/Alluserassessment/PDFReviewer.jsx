@@ -132,7 +132,7 @@ const PDFReviewer = ({
       console.log("Creating annotation:", annotation);
 
       const response = await axios.post(
-        `${apiUrl}/api/annotation/create`,
+        `${apiUrl}/annotation/create`,
         annotation,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -156,7 +156,7 @@ const PDFReviewer = ({
     onHighlightDelete: async (highlight) => {
       try {
         const token = localStorage.getItem("authToken");
-        await axios.delete(`${apiUrl}/api/annotation/${highlight.id}`, {
+        await axios.delete(`${apiUrl}/annotation/${highlight.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHighlights(highlights.filter((h) => h.id !== highlight.id));
@@ -228,7 +228,7 @@ const PDFReviewer = ({
         }
 
         const response = await axios.get(
-          `${apiUrl}/api/annotation/submission/${submissionId}`,
+          `${apiUrl}/annotation/submission/${submissionId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -350,7 +350,7 @@ const PDFReviewer = ({
       console.log("Creating annotation:", annotation);
 
       const response = await axios.post(
-        `${apiUrl}/api/annotation/create`,
+        `${apiUrl}/annotation/create`,
         annotation,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -409,7 +409,7 @@ const PDFReviewer = ({
   const handleDeleteHighlight = async (highlight) => {
     try {
       const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/api/annotation/${highlight.id}`, {
+      await axios.delete(`${apiUrl}/annotation/${highlight.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
