@@ -15,6 +15,7 @@ const rubricRoutes = require("./routes/rubric"); // Import rubric routes
 const submissionRoutes = require("./routes/submission"); // Import submission routes
 const annotationRoutes = require("./routes/annotation"); // Import annotation routes
 const commentRoutes = require("./routes/comment"); // Import comment routes
+const scoreRoutes = require("./routes/score"); // Import score routes
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use("/rubric", rubricRoutes); // Use rubric routes
 app.use("/submission", submissionRoutes); // Use submission routes
 app.use("/annotation", annotationRoutes); // Use annotation routes
 app.use("/comment", commentRoutes); // Use comment routes
+app.use("/score", scoreRoutes); // Use score routes
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () =>

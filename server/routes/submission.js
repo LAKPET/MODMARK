@@ -12,6 +12,7 @@ const {
 const { upload, uploadFile } = require("../services/storageService");
 const fs = require("fs");
 const path = require("path");
+const scoreRoutes = require("./score");
 
 const router = express.Router();
 
@@ -314,5 +315,7 @@ router.delete(
     }
   }
 );
+
+router.use("/score", scoreRoutes);
 
 module.exports = router;
