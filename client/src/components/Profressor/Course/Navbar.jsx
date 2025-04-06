@@ -8,6 +8,8 @@ import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
+import Avatar from "@mui/material/Avatar";
+import { stringAvatar } from "../../../controls/Avatar";
 
 function Navber() {
   const username = localStorage.getItem("Username");
@@ -62,8 +64,9 @@ function Navber() {
           </div>
         </Navbar.Collapse>
         <Navbar.Collapse className="justify-content-end">
-          <Navbar.Text>
-            Signed in as: <a href="#profile">{username || "Guest"}</a>
+          <Navbar.Text className="d-flex align-items-center">
+            <span>Signed in as: </span>
+            <Avatar {...stringAvatar(username || "Guest")} className="ms-2" />
             <HorizontalRuleIcon className="icon-line" />
           </Navbar.Text>
           <Navbar.Text>

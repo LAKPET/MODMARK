@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "../pages/Loginpage";
-import Register from "../pages/Registerpage";
+import Login from "../pages/Auth/Loginpage";
+import Register from "../pages/Auth/Registerpage";
 import ProfessorCoursepage from "../pages/Profressor/Coursepage";
 import StudentCoursepage from "../pages/Student/Coursepage";
 import Dashboardpage from "../pages/Profressor/Dashboardpage_Pro";

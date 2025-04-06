@@ -1,7 +1,7 @@
 import React from "react";
 import { Container } from "react-bootstrap";
-import Viewassessmentfile from "../../components/Profressor/Alluserassessment/Viewassessmentfile";
-import Navber from "../../components/Profressor/Alluserassessment/Navbar";
+import Viewassessmentfile from "../../components/Profressor/ScoreAndFeedback/Viewassessmentfile";
+import Navber from "../../components/Profressor/ScoreAndFeedback/Navbar";
 import "../../styles/Main.css";
 
 export default function Viewassessmentpage() {

@@ -4,6 +4,8 @@ import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
 import "../../../assets/Styles/Navbar.css";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
+import Avatar from "@mui/material/Avatar";
+import { stringAvatar } from "../../../controls/Avatar";
 
 function Navber() {
   const username = localStorage.getItem("Username");
@@ -38,8 +40,9 @@ function Navber() {
           </nav>
         </Navbar.Collapse>
         <Navbar.Collapse className="justify-content-end">
-          <Navbar.Text>
-            Signed in as: <a href="#profile">{username || "Guest"}</a>
+          <Navbar.Text className="d-flex align-items-center">
+            <span>Signed in as: </span>
+            <Avatar {...stringAvatar(username || "Guest")} className="ms-2" />
             <HorizontalRuleIcon className="icon-line" />
           </Navbar.Text>
           <Navbar.Text>

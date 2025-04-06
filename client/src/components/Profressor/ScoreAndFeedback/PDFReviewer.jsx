@@ -23,20 +23,16 @@ import {
   Tooltip,
   CircularProgress,
 } from "@mui/material";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import ReplyIcon from "@mui/icons-material/Reply";
-import SendIcon from "@mui/icons-material/Send";
+
 import CommentIcon from "@mui/icons-material/Comment";
 import DeleteIcon from "@mui/icons-material/Delete";
-import TurnRightIcon from "@mui/icons-material/TurnRight";
-import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import HomeIcon from "@mui/icons-material/Home";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Avatar from "@mui/material/Avatar";
-import { stringAvatar } from "../../../controls/Avatar";
+import NavigationBar from "./components/NavigationBar";
+import PDFViewer from "./components/PDFViewer";
+import CommentsPanel from "./components/CommentsPanel";
+import ScorePanel from "./components/ScorePanel";
+import CommentDialog from "./components/CommentDialog";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
@@ -47,6 +43,7 @@ const PDFReviewer = ({
   onNext,
   onPrevious,
   assessmentId,
+  submissionInfo,
 }) => {
   const [highlights, setHighlights] = useState([]);
   const [selectedText, setSelectedText] = useState("");
@@ -62,6 +59,11 @@ const PDFReviewer = ({
   const [selectedColor, setSelectedColor] = useState("");
   const [replyInputs, setReplyInputs] = useState({});
   const [replyTexts, setReplyTexts] = useState({});
+  const [activePanel, setActivePanel] = useState("scores");
+  const [rubric, setRubric] = useState(null);
+  const [scores, setScores] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -85,9 +87,6 @@ const PDFReviewer = ({
       { username: "Jane Smith", text: "This is a reply" },
       { username: "Alice Johnson", text: "Another reply" },
     ],
-  };
-  const handleHome = () => {
-    navigate(`/assessment/${submissionId}/allassessmentuser/${assessmentId}`);
   };
 
   const handleContextMenu = (event) => {
@@ -275,6 +274,54 @@ const PDFReviewer = ({
       fetchAnnotations();
     }
   }, [submissionId]);
+
+  useEffect(() => {
+    const fetchRubricData = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+
+        // First, get the assessment data to get the rubric_id
+        const assessmentResponse = await axios.get(
+          `${apiUrl}/submission/assessment/${assessmentId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const submission = assessmentResponse.data.find(
+          (sub) => sub._id === submissionId
+        );
+
+        if (!submission || !submission.assessment_id.rubric_id) {
+          throw new Error("Rubric not found for this assessment");
+        }
+
+        // Then fetch the rubric data
+        const rubricResponse = await axios.get(
+          `${apiUrl}/rubric/${submission.assessment_id.rubric_id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        setRubric(rubricResponse.data);
+
+        // Initialize scores object with empty values
+        const initialScores = {};
+        rubricResponse.data.criteria.forEach((criterion) => {
+          initialScores[criterion._id] = "";
+        });
+        setScores(initialScores);
+      } catch (err) {
+        console.error("Error fetching rubric:", err);
+        setError("Error loading rubric data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRubricData();
+  }, [submissionId, assessmentId, apiUrl]);
 
   const calculatePageHeight = () => {
     const pdfPage = document.querySelector(".rpv-core__page-layer");
@@ -506,6 +553,35 @@ const PDFReviewer = ({
     }
   };
 
+  const handleScoreChange = (criterionId, score) => {
+    setScores((prev) => ({
+      ...prev,
+      [criterionId]: score,
+    }));
+  };
+
+  const handleSubmitScores = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await axios.post(
+        `${apiUrl}/submission/score/${submissionId}`,
+        {
+          scores: Object.entries(scores).map(([criterionId, score]) => ({
+            criterion_id: criterionId,
+            score: parseFloat(score),
+          })),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      // Handle success (e.g., show success message, redirect)
+    } catch (err) {
+      console.error("Error submitting scores:", err);
+      // Handle error (e.g., show success message)
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -516,383 +592,61 @@ const PDFReviewer = ({
         p: 0,
       }}
     >
-      {/* Navigation Bar */}
-      <Paper
-        elevation={3}
-        sx={{
-          py: 1,
-          px: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          backgroundColor: "#8B5F34",
-          borderRadius: 0,
-          minHeight: "48px",
-        }}
-      >
-        {/* Left side - Home button */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <IconButton
-            onClick={handleHome}
-            size="small"
-            sx={{
-              color: "#fff",
-              p: 0.5,
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-              },
-            }}
-          >
-            <HomeIcon fontSize="small" />
-          </IconButton>
-        </Box>
+      <NavigationBar
+        currentPage={currentPage}
+        selectedText={selectedText}
+        onNext={onNext}
+        onPrevious={onPrevious}
+        submissionId={submissionId}
+        assessmentId={assessmentId}
+      />
 
-        {/* Center - Page info */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            margin: "0 auto",
-          }}
-        >
-          <Typography
-            variant="subtitle2"
-            sx={{ fontWeight: "bold", color: "#fff" }}
-          >
-            Page {currentPage}
-          </Typography>
-          {selectedText && (
-            <Typography
-              variant="caption"
-              sx={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                color: "#fff",
-                padding: "2px 6px",
-                borderRadius: "4px",
-              }}
-            >
-              Selected: {selectedText}
-            </Typography>
-          )}
-        </Box>
-
-        {/* Right side - Navigation arrows */}
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton
-            onClick={onPrevious}
-            size="small"
-            sx={{
-              color: "#fff",
-              p: 0.5,
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-              },
-            }}
-          >
-            <ArrowBackIosIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            onClick={onNext}
-            size="small"
-            sx={{
-              color: "#fff",
-              p: 0.5,
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-              },
-            }}
-          >
-            <ArrowForwardIosIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </Paper>
-
-      {/* Main Content */}
       <Box
         sx={{ flex: 1, display: "flex", overflow: "hidden", m: 0, p: 0, pl: 0 }}
       >
-        {/* PDF Viewer - Left Side */}
-        <Paper
-          elevation={3}
-          sx={{
-            flex: 1,
-            overflow: "hidden",
-            backgroundColor: "#fff",
-            position: "relative",
-            borderRadius: 0,
-            m: 0,
-            p: 0,
-            pl: 0,
-            width: "70%",
-          }}
+        <PDFViewer
+          fileUrl={fileUrl}
+          currentPage={currentPage}
+          scale={scale}
+          onPageChange={setCurrentPage}
+          onHighlightClick={setSelectedHighlight}
+          onHighlightDelete={handleDeleteHighlight}
+          commentIcons={commentIcons}
+          onCommentIconClick={setSelectedHighlight}
+          onDeleteHighlight={handleDeleteHighlight}
           onContextMenu={handleContextMenu}
-        >
-          <Box
-            sx={{
-              position: "relative",
-              width: "100%",
-              height: "100%",
-              m: 0,
-              p: 0,
-              pl: 0,
-            }}
-          >
-            <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
-              <Viewer
-                fileUrl={fileUrl}
-                plugins={[highlightPluginInstance, selectionModePluginInstance]}
-                onPageChange={(e) => setCurrentPage(e.currentPage + 1)}
-                defaultScale={scale}
-                theme={{
-                  theme: "light",
-                }}
-                onDocumentLoad={(e) => {
-                  if (e.doc) {
-                    e.doc.getPage(1).then((page) => {
-                      const textLayer = document.querySelector(
-                        ".rpv-core__text-layer"
-                      );
-                      if (textLayer) {
-                        textLayer.style.opacity = "1";
-                      }
-                      calculatePageHeight();
-                    });
-                  }
-                }}
-                scrollMode={1}
-                layoutMode={1}
-                renderLoader={(percentages) => (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <CircularProgress />
-                  </div>
-                )}
-              />
-            </Worker>
-            {renderCommentIcons()}
-          </Box>
-        </Paper>
+          onPanelChange={setActivePanel}
+          showHoverIcons={true}
+          activePanel={activePanel}
+        />
 
-        {/* Comments Panel - Right Side */}
-        <Paper
-          elevation={3}
-          sx={{
-            width: "30%",
-            backgroundColor: "#fff",
-            borderRadius: 0,
-            m: 0,
-            p: 2,
-            overflow: "auto",
-            borderLeft: "1px solid #e0e0e0",
-          }}
-        >
-          <Typography variant="h6" sx={{ mb: 2, color: "#8B5F34" }}>
-            Comments
-          </Typography>
-          <List>
-            {highlights
-              .filter(
-                (highlight) =>
-                  highlight.pageIndex === currentPage - 1 && highlight.comment
-              )
-              .map((highlight) => (
-                <React.Fragment key={highlight.id}>
-                  <ListItem
-                    sx={{
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      mb: 2,
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: 1,
-                      p: 2,
-                      position: "relative",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: "5px",
-                        backgroundColor: highlight.highlight_color || "#ffeb3b",
-                        borderTopLeftRadius: "4px",
-                        borderBottomLeftRadius: "4px",
-                      }}
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteHighlight(highlight)}
-                      sx={{
-                        position: "absolute",
-                        right: 8,
-                        top: 8,
-                        color: "#666",
-                        "&:hover": {
-                          color: "#d32f2f",
-                        },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => toggleReplyInput(highlight.id)} // เรียกฟังก์ชัน toggleReplyInput
-                      sx={{
-                        position: "absolute",
-                        right: 40,
-                        top: 8,
-                        color: "#666",
-                        "&:hover": {
-                          color: "#1976d2",
-                        },
-                      }}
-                    >
-                      <ReplyIcon fontSize="small" />
-                    </IconButton>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        width: "100%",
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
-                        {...stringAvatar(
-                          highlight.professor?.username || "Unknown"
-                        )}
-                      />
-                      <Box sx={{ ml: 2, flex: 1 }}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            width: "100%",
-                          }}
-                        >
-                          <span>{highlight.professor?.username}</span>
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        backgroundColor: highlight.highlight_color || "#ffeb3b",
-                        p: 1,
-                        borderRadius: 1,
-                        mb: 1,
-                        width: "100%",
-                      }}
-                    >
-                      {highlight.content.text}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        backgroundColor: "#ffffff",
-                        p: 1,
-                        borderRadius: 1,
-                        color: "#666",
-                        width: "100%",
-                      }}
-                    >
-                      {highlight.comment}
-                    </Typography>
-
-                    {/* Mockup Data สำหรับ Reply */}
-                    {replyInputs[highlight.id] && (
-                      <>
-                        {mockupHighlight.replies.map((reply, index) => (
-                          <Box
-                            key={index}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              mt: 1,
-                              pl: 2, // เพิ่ม padding ซ้ายเพื่อให้ Reply อยู่ลึกกว่า Comment หลัก
-                              borderLeft: "2px solid #ddd", // เส้นคั่นระหว่าง Reply
-                            }}
-                          >
-                            <TurnRightIcon
-                              sx={{
-                                fontSize: 16,
-                                color: "#666",
-                                mr: 1,
-                                transform: "scaleY(-1)", // หมุนกลับด้านซ้ายขวา
-                              }}
-                            />
-                            <Box>
-                              <Typography
-                                variant="subtitle2"
-                                sx={{
-                                  fontWeight: "bold",
-                                  color: "#666",
-                                }}
-                              >
-                                {reply.username}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  color: "#666",
-                                }}
-                              >
-                                {reply.text}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        ))}
-
-                        {/* Input สำหรับ Reply */}
-                        <Box sx={{ mt: 2, width: "100%" }}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            placeholder="Reply"
-                            value={replyTexts[highlight.id] || ""}
-                            onChange={(e) =>
-                              handleReplyTextChange(
-                                highlight.id,
-                                e.target.value
-                              )
-                            }
-                            sx={{ mb: 1 }}
-                            InputProps={{
-                              endAdornment: (
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleSendReply(highlight.id)}
-                                  sx={{
-                                    color: "#666", // สีของไอคอน
-                                  }}
-                                >
-                                  <SendIcon />
-                                </IconButton>
-                              ),
-                            }}
-                          />
-                        </Box>
-                      </>
-                    )}
-                  </ListItem>
-                  <Divider />
-                </React.Fragment>
-              ))}
-          </List>
-        </Paper>
+        <Box sx={{ width: "30%" }}>
+          {activePanel === "scores" ? (
+            <ScorePanel
+              submissionId={submissionId}
+              assessmentId={assessmentId}
+              rubric={rubric}
+              scores={scores}
+              onScoreChange={handleScoreChange}
+              onSubmitScores={handleSubmitScores}
+              apiUrl={apiUrl}
+            />
+          ) : (
+            <CommentsPanel
+              highlights={highlights}
+              currentPage={currentPage}
+              onDeleteHighlight={handleDeleteHighlight}
+              replyInputs={replyInputs}
+              replyTexts={replyTexts}
+              onReplyTextChange={handleReplyTextChange}
+              onSendReply={handleSendReply}
+              onToggleReplyInput={toggleReplyInput}
+              selectedHighlight={selectedHighlight}
+            />
+          )}
+        </Box>
       </Box>
 
-      {/* Menus and Dialogs */}
       <Menu
         open={contextMenu}
         onClose={handleCloseContextMenu}
@@ -909,80 +663,17 @@ const PDFReviewer = ({
         </MenuItem>
       </Menu>
 
-      <Dialog
+      <CommentDialog
         open={showCommentDialog}
         onClose={() => setShowCommentDialog(false)}
-        maxWidth="sm" // ปรับขนาดความกว้าง เช่น "sm", "md", "lg", "xl"
-        fullWidth
-      >
-        <DialogTitle>Add Comment</DialogTitle>
-        <DialogContent>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Selected Text:
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              backgroundColor: selectedColor,
-              p: 1,
-              borderRadius: 1,
-              mb: 2,
-            }}
-          >
-            {selectedText}
-          </Typography>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Highlight Color:
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              {highlightColors.map((color) => (
-                <IconButton
-                  key={color.value}
-                  onClick={() => setSelectedColor(color.value)}
-                  sx={{
-                    backgroundColor: color.value,
-                    borderRadius: "50%", // ทำให้ IconButton เป็นทรงกลม
-                    border:
-                      selectedColor === color.value
-                        ? "2px solid rgb(116, 115, 115)"
-                        : "none",
-                    "&:hover": {
-                      backgroundColor: color.value,
-                    },
-                    width: 36, // กำหนดขนาดความกว้าง
-                    height: 36, // กำหนดขนาดความสูง
-                  }}
-                >
-                  <div style={{ width: 24, height: 24 }} />
-                </IconButton>
-              ))}
-            </Box>
-          </Box>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Comment"
-            fullWidth
-            multiline
-            rows={3}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowCommentDialog(false)}>Cancel</Button>
-          <Button
-            onClick={handleAddComment}
-            variant="contained"
-            disabled={!comment.trim()}
-            // sx={{ backgroundColor: "#8B5F34" }}
-            className="custom-btn"
-          >
-            Add Comment
-          </Button>
-        </DialogActions>
-      </Dialog>
+        selectedText={selectedText}
+        comment={comment}
+        onCommentChange={setComment}
+        onAddComment={handleAddComment}
+        highlightColors={highlightColors}
+        selectedColor={selectedColor}
+        onColorSelect={setSelectedColor}
+      />
     </Box>
   );
 };

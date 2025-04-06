@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Logo from "../assets/Picture/Logo.png";
+import Logo from "../../assets/Picture/Logo.png";
 import {
   MDBBtn,
   MDBContainer,
@@ -12,7 +12,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
-import { useAuth } from "../routes/AuthContext";
+import { useAuth } from "../../routes/AuthContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 

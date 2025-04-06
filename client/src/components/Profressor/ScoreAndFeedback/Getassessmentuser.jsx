@@ -81,7 +81,7 @@ export default function Getassessmentuser() {
           {submissions.length > 0 ? (
             submissions.map((submission) => (
               <tr key={submission._id}>
-                <td>{submission.student_id._id}</td>
+                <td>{submission.student_id.personal_num}</td>
                 <td>{submission.student_id.first_name}</td>
                 <td>{submission.student_id.last_name}</td>
                 <td>{submission.student_id.email}</td>
