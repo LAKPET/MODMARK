@@ -630,6 +630,7 @@ const PDFReviewer = ({
               onScoreChange={handleScoreChange}
               onSubmitScores={handleSubmitScores}
               apiUrl={apiUrl}
+              submissionInfo={submissionInfo}
             />
           ) : (
             <CommentsPanel
