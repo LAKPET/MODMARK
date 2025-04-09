@@ -1,5 +1,3 @@
-// routes/score.js
-
 const express = require("express");
 const mongoose = require("mongoose");
 const RawScore = require("../models/RawScore");
@@ -96,7 +94,10 @@ router.post(
       // 7. รวมคะแนนตาม criteria
       const criteriaScores = {};
       rawScores.forEach((rawScore) => {
-        const weight = weightMap[rawScore.professor_id.toString()] || 1;
+        const professorId = rawScore.professor_id?._id?.toString?.() || rawScore.professor_id?.toString?.();
+        const weight = weightMap[professorId] || 1;
+        
+        console.log("Using professorId:", professorId, "-> weight:", weight);
 
         // แปลง rawScore.score จาก Map เป็น Object
         const scoreObject = Object.fromEntries(rawScore.score);
@@ -116,6 +117,7 @@ router.post(
           if (!criteriaScores[criteriaId]) {
             criteriaScores[criteriaId] = [];
           }
+          console.log(weight);
           criteriaScores[criteriaId].push(score * weight); // คูณ weight ก่อนรวมคะแนน
         });
       });
