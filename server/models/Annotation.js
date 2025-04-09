@@ -10,14 +10,11 @@ const annotationSchema = new mongoose.Schema({
   page_number: { type: Number, required: true },
   highlight_text: { type: String, required: true },
   bounding_box: { type: Object, required: true },
-  professor_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  comment: { type: String },
+  professor_id: {type: mongoose.Schema.Types.ObjectId,ref: "User",required: true,},
   highlight_color: { type: String, default: "#ffeb3b" },
   created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now }
+
 });
 
 module.exports = mongoose.model("Annotation", annotationSchema);

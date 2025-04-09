@@ -7,7 +7,17 @@ const { verifyToken, checkAdminOrProfessor } = require("./middleware");
 router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
   try {
     console.log("Creating annotation:", req.body);
-    const annotation = new Annotation(req.body);
+    const { submission_id, file_url, page_number, highlight_text, bounding_box, professor_id } = req.body;
+
+    const annotation = new Annotation({
+      submission_id,
+      file_url,
+      page_number,
+      highlight_text,
+      bounding_box,
+      professor_id,
+    });
+
     await annotation.save();
     res.status(201).json(annotation);
   } catch (error) {
@@ -19,13 +29,12 @@ router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
 // Get all annotations for a submission
 router.get("/submission/:submissionId", verifyToken, async (req, res) => {
   try {
-    console.log(
-      "Fetching annotations for submission:",
-      req.params.submissionId
-    );
+    console.log("Fetching annotations for submission:", req.params.submissionId);
+
     const annotations = await Annotation.find({
       submission_id: req.params.submissionId,
-    }).populate("professor_id", "username first_name last_name email"); // เพิ่ม username
+    }).populate("professor_id", "username first_name last_name email");
+
     console.log("Found annotations:", annotations);
     res.json(annotations);
   } catch (error) {
@@ -35,7 +44,7 @@ router.get("/submission/:submissionId", verifyToken, async (req, res) => {
 });
 
 // Delete an annotation
-router.delete("/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.delete("/delete/:id", verifyToken, checkAdminOrProfessor, async (req, res) => {
   try {
     console.log("Deleting annotation:", req.params.id);
     const annotation = await Annotation.findByIdAndDelete(req.params.id);
