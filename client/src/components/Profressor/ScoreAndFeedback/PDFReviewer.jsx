@@ -235,29 +235,46 @@ const PDFReviewer = ({
 
         console.log("Annotations response:", response.data);
 
-        const formattedHighlights = response.data.map((annotation) => ({
-          id: annotation._id,
-          content: {
-            text: annotation.highlight_text,
-            boundingBox: annotation.bounding_box,
-          },
-          pageIndex: annotation.page_number - 1,
-          comment: annotation.comment,
-          highlight_color: annotation.highlight_color || "#ffeb3b",
-          professor: {
-            username: annotation.professor_id?.username, // เพิ่ม username
-          },
-        }));
+        const formattedHighlights = response.data.map((annotation) => {
+          // Get the first comment if it exists
+          const firstComment =
+            annotation.comments && annotation.comments.length > 0
+              ? annotation.comments[0].comment_text
+              : "";
+
+          return {
+            id: annotation._id,
+            content: {
+              text: annotation.highlight_text,
+              boundingBox: annotation.bounding_box,
+            },
+            pageIndex: annotation.page_number - 1,
+            comment: firstComment, // ใช้ comment แรกถ้ามี
+            highlight_color: annotation.highlight_color || "#ffeb3b",
+            professor: {
+              username: annotation.professor_id?.username, // เพิ่ม username
+            },
+            comments: annotation.comments || [], // เก็บ comments ทั้งหมด
+          };
+        });
 
         setHighlights(formattedHighlights);
 
-        const formattedCommentIcons = response.data.map((annotation) => ({
-          id: annotation._id,
-          pageIndex: annotation.page_number - 1,
-          position: annotation.bounding_box,
-          comment: annotation.comment || annotation.highlight_text,
-          highlight_color: annotation.highlight_color || "#ffeb3b",
-        }));
+        const formattedCommentIcons = response.data.map((annotation) => {
+          // Get the first comment if it exists
+          const firstComment =
+            annotation.comments && annotation.comments.length > 0
+              ? annotation.comments[0].comment_text
+              : annotation.highlight_text;
+
+          return {
+            id: annotation._id,
+            pageIndex: annotation.page_number - 1,
+            position: annotation.bounding_box,
+            comment: firstComment,
+            highlight_color: annotation.highlight_color || "#ffeb3b",
+          };
+        });
         setCommentIcons(formattedCommentIcons);
       } catch (error) {
         console.error("Error fetching annotations:", error);
@@ -390,11 +407,11 @@ const PDFReviewer = ({
           height: rect.height,
         },
         professor_id: professorId,
-        comment: comment.trim(),
         highlight_color: selectedColor,
+        comment_text: comment.trim(), // ส่ง comment_text แยกต่างหาก
       };
 
-      console.log("Creating annotation:", annotation);
+      console.log("Creating annotation with comment:", annotation);
 
       const response = await axios.post(
         `${apiUrl}/annotation/create`,
@@ -408,7 +425,7 @@ const PDFReviewer = ({
 
       // Add new comment icon to the list
       const newCommentIcon = {
-        id: response.data._id,
+        id: response.data.annotation._id,
         pageIndex: currentPage - 1,
         position: {
           x: relativeX,
@@ -421,7 +438,7 @@ const PDFReviewer = ({
 
       // Add new highlight to the list
       const newHighlight = {
-        id: response.data._id,
+        id: response.data.annotation._id,
         content: {
           text: selectedText,
           boundingBox: {
@@ -432,7 +449,7 @@ const PDFReviewer = ({
           },
         },
         pageIndex: currentPage - 1,
-        comment: comment.trim(),
+        comment: comment.trim(), // ยังคงใช้ comment นี้เพื่อแสดงผล
         highlight_color: selectedColor,
         professor: {
           username: professorUsername || "Unknown", // ใช้ username จาก localStorage
@@ -456,7 +473,7 @@ const PDFReviewer = ({
   const handleDeleteHighlight = async (highlight) => {
     try {
       const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/annotation/${highlight.id}`, {
+      await axios.delete(`${apiUrl}/annotation/delete/${highlight.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -536,20 +553,85 @@ const PDFReviewer = ({
     }));
   };
 
-  const handleSendReply = (highlightId) => {
+  const handleSendReply = async (highlightId) => {
     const replyText = replyTexts[highlightId];
     if (replyText && replyText.trim()) {
-      console.log(`Sending reply for highlight ${highlightId}: ${replyText}`);
-      // Add your logic to send the reply here
-      // Reset the reply input
-      setReplyTexts((prev) => ({
-        ...prev,
-        [highlightId]: "",
-      }));
-      setReplyInputs((prev) => ({
-        ...prev,
-        [highlightId]: false,
-      }));
+      try {
+        const token = localStorage.getItem("authToken");
+        const userId = localStorage.getItem("UserId");
+
+        // Find the comment ID for this highlight
+        const highlight = highlights.find((h) => h.id === highlightId);
+        if (
+          !highlight ||
+          !highlight.comments ||
+          highlight.comments.length === 0
+        ) {
+          console.error("No comment found for this highlight");
+          return;
+        }
+
+        const commentId = highlight.comments[0]._id; // Use the first comment as parent
+
+        // Send the reply
+        const response = await axios.post(
+          `${apiUrl}/comment/reply/${commentId}`,
+          {
+            user_id: userId,
+            comment_text: replyText.trim(),
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        console.log("Reply sent:", response.data);
+
+        // Refresh annotations to get the updated comments
+        const annotationsResponse = await axios.get(
+          `${apiUrl}/annotation/submission/${submissionId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        // Update highlights with new comments
+        const updatedHighlights = annotationsResponse.data.map((annotation) => {
+          const firstComment =
+            annotation.comments && annotation.comments.length > 0
+              ? annotation.comments[0].comment_text
+              : "";
+
+          return {
+            id: annotation._id,
+            content: {
+              text: annotation.highlight_text,
+              boundingBox: annotation.bounding_box,
+            },
+            pageIndex: annotation.page_number - 1,
+            comment: firstComment,
+            highlight_color: annotation.highlight_color || "#ffeb3b",
+            professor: {
+              username: annotation.professor_id?.username,
+            },
+            comments: annotation.comments || [],
+          };
+        });
+
+        setHighlights(updatedHighlights);
+
+        // Reset the reply input
+        setReplyTexts((prev) => ({
+          ...prev,
+          [highlightId]: "",
+        }));
+        setReplyInputs((prev) => ({
+          ...prev,
+          [highlightId]: false,
+        }));
+      } catch (error) {
+        console.error("Error sending reply:", error);
+      }
     }
   };
 

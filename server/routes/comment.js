@@ -15,8 +15,15 @@ router.post("/create", verifyToken, async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // ตรวจสอบว่า annotation มีอยู่จริง
+    const annotation = await Annotation.findById(annotation_id);
+    if (!annotation) {
+      return res.status(404).json({ message: "Annotation not found" });
+    }
+
     // สร้าง Comment ใหม่
     const comment = new Comment({
+      annotation_id,
       parent_comment_id: null,
       user_id,
       comment_text,
@@ -25,10 +32,6 @@ router.post("/create", verifyToken, async (req, res) => {
     await comment.save();
 
     // เพิ่ม Comment ลงใน Annotation
-    const annotation = await Annotation.findById(annotation_id);
-    if (!annotation) {
-      return res.status(404).json({ message: "Annotation not found" });
-    }
     annotation.comments.push(comment._id);
     await annotation.save();
 
@@ -52,8 +55,15 @@ router.post("/reply/:commentId", verifyToken, async (req, res) => {
 
     console.log("Replying to comment:", commentId);
 
+    // หา comment หลักเพื่อดึง annotation_id
+    const parentComment = await Comment.findById(commentId);
+    if (!parentComment) {
+      return res.status(404).json({ message: "Parent comment not found" });
+    }
+
     // สร้าง Reply ใหม่
     const reply = new Comment({
+      annotation_id: parentComment.annotation_id,
       parent_comment_id: commentId,
       user_id,
       comment_text,
@@ -62,10 +72,6 @@ router.post("/reply/:commentId", verifyToken, async (req, res) => {
     await reply.save();
 
     // อัปเดต Comment หลักให้มี Reply
-    const parentComment = await Comment.findById(commentId);
-    if (!parentComment) {
-      return res.status(404).json({ message: "Parent comment not found" });
-    }
     parentComment.replies.push(reply._id);
     await parentComment.save();
 
@@ -86,7 +92,10 @@ router.get("/annotation/:annotationId", verifyToken, async (req, res) => {
         path: "comments",
         populate: {
           path: "replies",
-          populate: { path: "user_id", select: "username first_name last_name email" },
+          populate: {
+            path: "user_id",
+            select: "username first_name last_name email",
+          },
         },
       })
       .populate("comments.user_id", "username first_name last_name email");

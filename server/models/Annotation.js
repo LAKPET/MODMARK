@@ -16,7 +16,6 @@ const annotationSchema = new mongoose.Schema({
     required: true,
   },
   highlight_color: { type: String, default: "#ffeb3b" },
-  comment: { type: String, required: false },
   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }], // เก็บรายการ Comment
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
