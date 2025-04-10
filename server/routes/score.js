@@ -176,4 +176,27 @@ router.post(
   }
 );
 
+router.post(
+  "/assessment/finalscore",
+  verifyToken,
+  checkAdminOrProfessorOrTeacherAssistant,
+  async (req, res) => {
+    const { assessment_id, submission_id } = req.body;
+
+    try {
+      // Find the final score based on assessment_id and submission_id
+      const finalScore = await FinalScore.findOne({ assessment_id, submission_id });
+
+      if (!finalScore) {
+        return res.status(404).json({ message: "FinalScore not found" });
+      }
+
+      res.status(200).json({ finalScore });
+    } catch (error) {
+      console.error("Error retrieving final score:", error);
+      res.status(500).json({ message: "Error retrieving final score", error });
+    }
+  }
+);
+
 module.exports = router;
