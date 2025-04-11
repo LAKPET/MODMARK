@@ -4,13 +4,59 @@
   box-sizing: border-box;
 }
 
-
 .main-content {
-  height: calc(100vh - 100px); /* ปรับขนาดให้เหมาะสม */
-  overflow-y: auto; /* เปิดการ scroll แนวตั้ง */
+  height: calc(100vh - 100px);
+  overflow-y: auto;
   padding: 16px;
-  scrollbar-width: thin; /* ปรับขนาด scrollbar (สำหรับ Firefox) */
-  scrollbar-color: #888 #f1f1f1; /* สีของ scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+  margin-left: 230px; /* Match sidebar width */
+  margin-top: 120px; /* Add space for navbar */
+  transition: margin-left 0.3s ease;
+}
+
+.main-content > .container {
+  max-width: 1320px; /* Match Bootstrap's container width */
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* Media query for larger screens */
+@media (min-width: 1400px) {
+  .main-content {
+    margin-left: calc(180px + ((100% - 1320px) / 2)); /* Shift right when screen is wider than 1320px */
+  }
+}
+
+/* Media query for larger screens */
+@media (min-width: 1600px) {
+  .main-content {
+    max-width: 1600px;
+    margin: 120px auto 0; /* Keep top margin for navbar */
+    padding: 24px;
+    margin-left: 230px; /* Match sidebar width */
+  }
+  
+  .main-content > .container {
+    max-width: 1520px; /* Slightly larger for bigger screens */
+  }
+}
+
+/* Media query for extra large screens */
+@media (min-width: 1920px) {
+  .main-content {
+    max-width: 1800px;
+    margin: 120px auto 0; /* Keep top margin for navbar */
+    padding: 32px;
+    margin-left: 230px; /* Match sidebar width */
+  }
+  
+  .main-content > .container {
+    max-width: 1720px; /* Even larger for extra large screens */
+  }
 }
 
 .main-content-feedback {

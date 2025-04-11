@@ -64,6 +64,7 @@ const PDFReviewer = ({
   const [scores, setScores] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [comments, setComments] = useState({});
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -544,6 +545,11 @@ const PDFReviewer = ({
       ...prev,
       [highlightId]: !prev[highlightId],
     }));
+
+    // If opening the reply input and we don't have comments yet, fetch them
+    if (!replyInputs[highlightId] && !comments[highlightId]) {
+      fetchCommentsForHighlight(highlightId);
+    }
   };
 
   const handleReplyTextChange = (highlightId, text) => {
@@ -587,38 +593,8 @@ const PDFReviewer = ({
 
         console.log("Reply sent:", response.data);
 
-        // Refresh annotations to get the updated comments
-        const annotationsResponse = await axios.get(
-          `${apiUrl}/annotation/submission/${submissionId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        // Update highlights with new comments
-        const updatedHighlights = annotationsResponse.data.map((annotation) => {
-          const firstComment =
-            annotation.comments && annotation.comments.length > 0
-              ? annotation.comments[0].comment_text
-              : "";
-
-          return {
-            id: annotation._id,
-            content: {
-              text: annotation.highlight_text,
-              boundingBox: annotation.bounding_box,
-            },
-            pageIndex: annotation.page_number - 1,
-            comment: firstComment,
-            highlight_color: annotation.highlight_color || "#ffeb3b",
-            professor: {
-              username: annotation.professor_id?.username,
-            },
-            comments: annotation.comments || [],
-          };
-        });
-
-        setHighlights(updatedHighlights);
+        // Fetch updated comments for this highlight
+        await fetchCommentsForHighlight(highlightId);
 
         // Reset the reply input
         setReplyTexts((prev) => ({
@@ -632,6 +608,28 @@ const PDFReviewer = ({
       } catch (error) {
         console.error("Error sending reply:", error);
       }
+    }
+  };
+
+  const fetchCommentsForHighlight = async (highlightId) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get(
+        `${apiUrl}/comment/annotation/${highlightId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log("Fetched comments:", response.data);
+
+      // Update the comments state with the fetched data
+      setComments((prev) => ({
+        ...prev,
+        [highlightId]: response.data,
+      }));
+    } catch (error) {
+      console.error("Error fetching comments:", error);
     }
   };
 

@@ -148,15 +148,22 @@ export default function Getassessment() {
         <MDBTableBody>
           {sortedAssessments.length > 0 ? (
             sortedAssessments.map((assessment, index) => (
-              <tr key={assessment._id || index}>
+              <tr
+                key={assessment._id || index}
+                onClick={(e) => {
+                  // Don't navigate if clicking on edit or delete icons
+                  if (e.target.closest(".action-icons")) return;
+                  navigate(
+                    `/assessment/${id}/allassessmentuser/${assessment._id}`
+                  );
+                }}
+                style={{ cursor: "pointer" }}
+              >
                 <td>
                   <div className="align-status">
-                    <Link
-                      to={`/assessment/${id}/allassessmentuser/${assessment._id}`}
-                      className="assessment-name"
-                    >
+                    <span className="assessment-name">
                       {assessment.assessment_name}
-                    </Link>
+                    </span>
                     <span className="assignment_type-status">
                       {assessment.assignment_type}
                     </span>
@@ -165,22 +172,26 @@ export default function Getassessment() {
                 <td>{formatDateTime(assessment.publish_date)}</td>
                 <td>{formatDateTime(assessment.due_date)}</td>
                 <td>
-                  <EditIcon
-                    className="icon-style"
-                    onClick={() => {
-                      console.log("Edit clicked for ID:", assessment._id); // ตรวจสอบค่าที่ส่งเข้าไป
-                      setSelectedAssessmentId(assessment._id);
-                      setShowEditModal(true);
-                    }}
-                  />
-                  <DeleteIcon
-                    className="icon-style"
-                    onClick={() => {
-                      console.log("Delete clicked for ID:", assessment._id); // ตรวจสอบค่าที่ส่งเข้าไป
-                      setSelectedAssessmentId(assessment._id);
-                      setShowDeleteModal(true);
-                    }}
-                  />
+                  <div className="action-icons">
+                    <EditIcon
+                      className="icon-style"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click
+                        console.log("Edit clicked for ID:", assessment._id);
+                        setSelectedAssessmentId(assessment._id);
+                        setShowEditModal(true);
+                      }}
+                    />
+                    <DeleteIcon
+                      className="icon-style"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click
+                        console.log("Delete clicked for ID:", assessment._id);
+                        setSelectedAssessmentId(assessment._id);
+                        setShowDeleteModal(true);
+                      }}
+                    />
+                  </div>
                 </td>
               </tr>
             ))

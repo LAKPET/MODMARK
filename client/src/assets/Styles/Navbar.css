@@ -9,6 +9,53 @@
     padding: 10px 20px; /* เพิ่ม Padding */
   }
   
+  /* Media query for larger screens */
+  @media (min-width: 1400px) {
+    .custom-navbar {
+      left: 230px; /* Keep aligned with sidebar */
+      width: calc(100% - 230px); /* Adjust width to fill remaining space */
+    }
+    
+    .custom-navbar .container {
+      max-width: 1320px; /* Match main content container */
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+  
+  /* Media query for extra large screens */
+  @media (min-width: 1600px) {
+    .custom-navbar {
+      left: 230px; /* Keep aligned with sidebar */
+      width: calc(100% - 230px); /* Adjust width to fill remaining space */
+    }
+    
+    .custom-navbar .container {
+      max-width: 1520px; /* Match main content container */
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+  
+  /* Media query for extra large screens */
+  @media (min-width: 1920px) {
+    .custom-navbar {
+      left: 230px; /* Keep aligned with sidebar */
+      width: calc(100% - 230px); /* Adjust width to fill remaining space */
+    }
+    
+    .custom-navbar .container {
+      max-width: 1720px; /* Match main content container */
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
   
   .icon-line {
     transform: rotate(90deg); /* Rotate 90 degrees */

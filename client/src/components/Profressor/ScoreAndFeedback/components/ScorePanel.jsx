@@ -83,7 +83,7 @@ const ScorePanel = ({
             Scoring
           </Typography>
           <Typography variant="subtitle1" sx={{ color: "#666" }}>
-            {submissionInfo?.assessment_name}
+            Assessment: {submissionInfo?.assessment_name}
           </Typography>
         </Box>
 
@@ -140,7 +140,7 @@ const ScorePanel = ({
         open={showSuccessModal}
         handleClose={handleModalClose}
         title="Success"
-        description="Scores submitted successfully. Click ตกลง to return to assessment list."
+        description="Scores submitted successfully."
       />
     </>
   );

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Paper,
   Typography,
@@ -8,13 +8,17 @@ import {
   IconButton,
   TextField,
   Divider,
+  Tooltip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ReplyIcon from "@mui/icons-material/Reply";
 import SendIcon from "@mui/icons-material/Send";
 import TurnRightIcon from "@mui/icons-material/TurnRight";
+import EditIcon from "@mui/icons-material/Edit";
 import Avatar from "@mui/material/Avatar";
 import { stringAvatar } from "../../../../controls/Avatar";
+import axios from "axios";
+import { formatDateTime } from "../../../../utils/FormatDateTime";
 
 const CommentsPanel = ({
   highlights,
@@ -27,16 +31,105 @@ const CommentsPanel = ({
   onToggleReplyInput,
   selectedHighlight,
 }) => {
-  const mockupHighlight = {
-    id: "1",
-    content: { text: "This is a highlighted text" },
-    comment: "This is a comment",
-    highlight_color: "#ffeb3b",
-    professor: { username: "John Doe" },
-    replies: [
-      { username: "Jane Smith", text: "This is a reply" },
-      { username: "Alice Johnson", text: "Another reply" },
-    ],
+  const [comments, setComments] = useState({});
+  const [editingReply, setEditingReply] = useState(null);
+  const [editReplyText, setEditReplyText] = useState("");
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const currentUserId = localStorage.getItem("UserId");
+
+  // Fetch comments for a highlight when it's selected or when reply icon is clicked
+  useEffect(() => {
+    if (selectedHighlight) {
+      fetchCommentsForHighlight(selectedHighlight.id);
+    }
+  }, [selectedHighlight]);
+
+  // Also fetch comments when reply icon is clicked for any highlight
+  useEffect(() => {
+    const highlightIds = Object.keys(replyInputs).filter(
+      (id) => replyInputs[id]
+    );
+    highlightIds.forEach((id) => {
+      if (!comments[id]) {
+        fetchCommentsForHighlight(id);
+      }
+    });
+  }, [replyInputs]);
+
+  const fetchCommentsForHighlight = async (highlightId) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get(
+        `${apiUrl}/comment/annotation/${highlightId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log("Fetched comments:", response.data);
+
+      // Update the comments state with the fetched data
+      setComments((prev) => ({
+        ...prev,
+        [highlightId]: response.data,
+      }));
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  };
+
+  const handleEditReply = (reply) => {
+    setEditingReply(reply._id);
+    setEditReplyText(reply.comment_text);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReply(null);
+    setEditReplyText("");
+  };
+
+  const handleSaveEdit = async (highlightId, commentId, replyId) => {
+    if (!editReplyText.trim()) return;
+
+    try {
+      const token = localStorage.getItem("authToken");
+      await axios.put(
+        `${apiUrl}/comment/reply/${replyId}`,
+        {
+          comment_text: editReplyText.trim(),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Fetch updated comments
+      await fetchCommentsForHighlight(highlightId);
+
+      // Reset editing state
+      setEditingReply(null);
+      setEditReplyText("");
+    } catch (error) {
+      console.error("Error updating reply:", error);
+    }
+  };
+
+  const handleDeleteReply = async (highlightId, replyId) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await axios.delete(`${apiUrl}/comment/reply/${replyId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Fetch updated comments
+      await fetchCommentsForHighlight(highlightId);
+    } catch (error) {
+      console.error("Error deleting reply:", error);
+    }
+  };
+
+  const isCurrentUserReply = (reply) => {
+    return reply.user_id?._id === currentUserId;
   };
 
   return (
@@ -129,6 +222,14 @@ const CommentsPanel = ({
                     {...stringAvatar(
                       highlight.professor?.username || "Unknown"
                     )}
+                    sx={{
+                      ...stringAvatar(
+                        highlight.professor?.username || "Unknown"
+                      ).sx,
+                      width: 32,
+                      height: 32,
+                      fontSize: "0.875rem",
+                    }}
                   />
                   <Box sx={{ ml: 2, flex: 1 }}>
                     <Typography
@@ -170,46 +271,236 @@ const CommentsPanel = ({
 
                 {replyInputs[highlight.id] && (
                   <>
-                    {mockupHighlight.replies.map((reply, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          mt: 1,
-                          pl: 2,
-                          borderLeft: "2px solid #ddd",
-                        }}
-                      >
-                        <TurnRightIcon
-                          sx={{
-                            fontSize: 16,
-                            color: "#666",
-                            mr: 1,
-                            transform: "scaleY(-1)",
-                          }}
-                        />
-                        <Box>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: "bold",
-                              color: "#666",
-                            }}
-                          >
-                            {reply.username}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "#666",
-                            }}
-                          >
-                            {reply.text}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ))}
+                    {comments[highlight.id] &&
+                      comments[highlight.id].map((comment) => (
+                        <React.Fragment key={comment._id}>
+                          {/* Only display replies, not the parent comment text */}
+                          {comment.replies && comment.replies.length > 0 && (
+                            <Box sx={{ mt: 2, mb: 1 }}>
+                              {comment.replies.map((reply) => (
+                                <Box
+                                  key={reply._id}
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    mt: 1,
+                                    pl: 2,
+                                    borderLeft: "2px solid #ddd",
+                                    opacity: reply.isTemp ? 0.7 : 1,
+                                    position: "relative",
+                                    "&:hover .reply-actions": {
+                                      opacity: 1,
+                                    },
+                                  }}
+                                >
+                                  {reply.isTemp && (
+                                    <Box
+                                      sx={{
+                                        position: "absolute",
+                                        top: -8,
+                                        right: -8,
+                                        backgroundColor: "#f0f0f0",
+                                        borderRadius: "50%",
+                                        width: 16,
+                                        height: 16,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "0.6rem",
+                                        color: "#666",
+                                        border: "1px solid #ddd",
+                                      }}
+                                    >
+                                      P
+                                    </Box>
+                                  )}
+                                  <TurnRightIcon
+                                    sx={{
+                                      fontSize: 16,
+                                      color: "#666",
+                                      mr: 1,
+                                      transform: "scaleY(-1)",
+                                      mt: 0.5,
+                                    }}
+                                  />
+                                  <Box sx={{ width: "100%" }}>
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        mb: 0.5,
+                                      }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "space-between",
+                                          width: "100%",
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                          }}
+                                        >
+                                          <Avatar
+                                            {...stringAvatar(
+                                              reply.user_id?.username ||
+                                                "Unknown"
+                                            )}
+                                            sx={{
+                                              ...stringAvatar(
+                                                reply.user_id?.username ||
+                                                  "Unknown"
+                                              ).sx,
+                                              width: 24,
+                                              height: 24,
+                                              fontSize: "0.75rem",
+                                              mr: 1,
+                                            }}
+                                          />
+                                          <Typography
+                                            variant="subtitle2"
+                                            sx={{
+                                              fontWeight: "bold",
+                                              color: "#666",
+                                              mr: 1,
+                                            }}
+                                          >
+                                            {reply.user_id?.username ||
+                                              "Unknown"}
+                                          </Typography>
+                                        </Box>
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                          }}
+                                        >
+                                          <Typography
+                                            variant="caption"
+                                            sx={{
+                                              color: "#999",
+                                              mr: 1,
+                                            }}
+                                          >
+                                            {formatDateTime(reply.created_at)}
+                                          </Typography>
+
+                                          {/* Edit and Delete icons - only visible for current user's replies */}
+                                          {isCurrentUserReply(reply) && (
+                                            <Box
+                                              className="reply-actions"
+                                              sx={{
+                                                display: "flex",
+                                                opacity: 0,
+                                                transition: "opacity 0.2s",
+                                              }}
+                                            >
+                                              <Tooltip title="Edit reply">
+                                                <IconButton
+                                                  size="small"
+                                                  onClick={() =>
+                                                    handleEditReply(reply)
+                                                  }
+                                                  sx={{
+                                                    color: "#666",
+                                                    p: 0.5,
+                                                    "&:hover": {
+                                                      color: "#1976d2",
+                                                    },
+                                                  }}
+                                                >
+                                                  <EditIcon fontSize="small" />
+                                                </IconButton>
+                                              </Tooltip>
+                                              <Tooltip title="Delete reply">
+                                                <IconButton
+                                                  size="small"
+                                                  onClick={() =>
+                                                    handleDeleteReply(
+                                                      highlight.id,
+                                                      reply._id
+                                                    )
+                                                  }
+                                                  sx={{
+                                                    color: "#666",
+                                                    p: 0.5,
+                                                    "&:hover": {
+                                                      color: "#d32f2f",
+                                                    },
+                                                  }}
+                                                >
+                                                  <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                              </Tooltip>
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      </Box>
+                                    </Box>
+
+                                    {/* Show edit field or reply text */}
+                                    {editingReply === reply._id ? (
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          mb: 1,
+                                        }}
+                                      >
+                                        <TextField
+                                          fullWidth
+                                          size="small"
+                                          value={editReplyText}
+                                          onChange={(e) =>
+                                            setEditReplyText(e.target.value)
+                                          }
+                                          sx={{ mr: 1 }}
+                                          InputProps={{
+                                            endAdornment: (
+                                              <Box sx={{ display: "flex" }}>
+                                                <IconButton
+                                                  size="small"
+                                                  onClick={() =>
+                                                    handleSaveEdit(
+                                                      highlight.id,
+                                                      comment._id,
+                                                      reply._id
+                                                    )
+                                                  }
+                                                  sx={{
+                                                    color: "#1976d2",
+                                                  }}
+                                                >
+                                                  <SendIcon fontSize="small" />
+                                                </IconButton>
+                                              </Box>
+                                            ),
+                                          }}
+                                        />
+                                      </Box>
+                                    ) : (
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          color: "#666",
+                                          mb: 1,
+                                        }}
+                                      >
+                                        {reply.comment_text}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                        </React.Fragment>
+                      ))}
 
                     <Box sx={{ mt: 2, width: "100%" }}>
                       <TextField
