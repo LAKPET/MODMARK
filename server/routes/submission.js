@@ -7,6 +7,7 @@ const User = require("../models/User");
 const {
   verifyToken,
   checkAdminOrStudent,
+  checkAdminOrProfessor,
   checkAdminOrProfessorOrStudent,
 } = require("./middleware");
 const { upload, uploadFile } = require("../services/storageService");
@@ -17,126 +18,101 @@ const scoreRoutes = require("./score");
 const router = express.Router();
 
 // Create a new group and submit work
-router.post("/submit",verifyToken,checkAdminOrStudent,upload.single("file"),async (req, res) => {
-    const {
-      assessment_id,
-      section_id,
-      group_name,
-      members, // Array of group members
-      file_type,
-    } = req.body;
+router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), async (req, res) => {
+  const {
+    assessment_id,
+    section_id,
+    group_name,
+    members, // Array of group members
+    file_type,
+  } = req.body;
 
-    try {
-      // ตรวจสอบว่ามี assessment_id หรือไม่
-      if (!assessment_id) {
-        return res.status(400).json({ message: "Assessment ID is required" });
-      }
-
-      // ตรวจสอบว่ามี section_id หรือไม่
-      if (!section_id) {
-        return res.status(400).json({ message: "Section ID is required" });
-      }
-
-      // ตรวจสอบว่า assessment_id และ section_id มีอยู่ในระบบหรือไม่
-      const assessmentExists = await mongoose
-        .model("Assessment")
-        .exists({ _id: assessment_id });
-      const sectionExists = await mongoose
-        .model("Section")
-        .exists({ _id: section_id });
-
-      if (!assessmentExists) {
-        return res.status(404).json({ message: "Assessment not found" });
-      }
-
-      if (!sectionExists) {
-        return res.status(404).json({ message: "Section not found" });
-      }
-
-      // ตรวจสอบว่ามีไฟล์ถูกอัปโหลดหรือไม่
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      // ใช้ uploadFile() เพื่อรองรับ Local และ Cloud
-      const file_url = await uploadFile(req.file);
-
-      const membersArray =
-        typeof members === "string" ? JSON.parse(members) : members;
-
-      // Validate all members before creating the group and submission
-      for (const member of membersArray) {
-        const existingUser = await User.findById(member.user_id);
-
-        if (!existingUser) {
-          return res
-            .status(404)
-            .json({ message: `User with ID ${member.user_id} not found.` });
-        }
-
-        const isEnrolled = await mongoose
-          .model("Enrollment")
-          .exists({ section_id, student_id: existingUser._id });
-
-        if (!isEnrolled) {
-          return res.status(400).json({
-            message: `User with ID ${member.user_id} is not enrolled in section ${section_id}.`,
-          });
-        }
-      }
-
-      // Create a new group
-      const newGroup = new Group({
-        assessment_id: new mongoose.Types.ObjectId(assessment_id), // แปลง assessment_id เป็น ObjectId
-        group_name,
-        group_type: "study",
-        status: "submit",
-      });
-
-      await newGroup.save();
-
-      // Add group members
-      for (const member of membersArray) {
-        const existingUser = await User.findById(member.user_id);
-
-        const newGroupMember = new GroupMember({
-          group_id: newGroup._id,
-          assessment_id: new mongoose.Types.ObjectId(assessment_id), // แปลง assessment_id เป็น ObjectId
-          user_id: existingUser._id, // ใช้ _id จากฐานข้อมูลที่มีอยู่จริง
-          role: "student",
-          weight: 1,
-        });
-        await newGroupMember.save();
-      }
-
-      // Create a new submission
-      const newSubmission = new Submission({
-        assessment_id: new mongoose.Types.ObjectId(assessment_id), // แปลง assessment_id เป็น ObjectId
-        section_id: new mongoose.Types.ObjectId(section_id), // แปลง section_id เป็น ObjectId
-        group_id: newGroup._id,
-        student_id: req.user.id,
-        file_url: req.file.filename, // เก็บเฉพาะชื่อไฟล์
-        file_type,
-        status: "submit",
-      });
-
-      await newSubmission.save();
-
-      res.status(201).json({
-        message: "Submission created successfully!",
-        submission: newSubmission,
-      });
-    } catch (error) {
-      if (error instanceof SyntaxError && error.message.includes("JSON")) {
-        return res
-          .status(400)
-          .json({ message: "Invalid JSON format in members field" });
-      }
-      console.error("Error creating submission:", error);
-      res.status(500).json({ message: "Error creating submission", error });
+  try {
+    if (!assessment_id || !section_id) {
+      return res.status(400).json({ message: "Assessment ID and Section ID are required" });
     }
+
+    const assessmentExists = await mongoose.model("Assessment").exists({ _id: assessment_id });
+    const sectionExists = await mongoose.model("Section").exists({ _id: section_id });
+
+    if (!assessmentExists || !sectionExists) {
+      return res.status(404).json({ message: "Assessment or Section not found" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const file_url = await uploadFile(req.file);
+    const membersArray = typeof members === "string" ? JSON.parse(members) : members;
+
+    for (const member of membersArray) {
+      const existingUser = await User.findById(member.user_id);
+      if (!existingUser) {
+        return res.status(404).json({ message: `User with ID ${member.user_id} not found.` });
+      }
+
+      const isEnrolled = await mongoose.model("Enrollment").exists({ section_id, student_id: existingUser._id });
+      if (!isEnrolled) {
+        return res.status(400).json({ message: `User with ID ${member.user_id} is not enrolled in section ${section_id}.` });
+      }
+    }
+
+    const newGroup = new Group({
+      assessment_id: new mongoose.Types.ObjectId(assessment_id),
+      group_name,
+      group_type: "study",
+      status: "submit",
+    });
+
+    await newGroup.save();
+
+    for (const member of membersArray) {
+      const newGroupMember = new GroupMember({
+        group_id: newGroup._id,
+        assessment_id: new mongoose.Types.ObjectId(assessment_id),
+        user_id: member.user_id,
+        role: "student",
+        weight: 1,
+      });
+      await newGroupMember.save();
+    }
+
+    // Fetch professors related to the section or assessment
+    const professors = await mongoose.model('GroupMember').find({
+      assessment_id,
+      role: 'professor'
+    });
+
+    // Create grading_status_by array with professors
+    const gradingStatusBy = professors.map((professor) => ({
+      professor_id: professor.user_id,
+      status: 'pending'
+    }));
+
+    // Add grading_status_by to the submission
+    const newSubmission = new Submission({
+      assessment_id: new mongoose.Types.ObjectId(assessment_id),
+      section_id: new mongoose.Types.ObjectId(section_id),
+      group_id: newGroup._id,
+      student_id: req.user.id,
+      file_url: req.file.filename,
+      file_type,
+      status: "submit",
+      grading_status_by: gradingStatusBy
+    });
+
+    await newSubmission.save();
+
+    res.status(201).json({
+      message: "Submission created successfully!",
+      submission: newSubmission,
+    });
+  } catch (error) {
+    console.error("Error creating submission:", error);
+    res.status(500).json({ message: "Error creating submission", error });
   }
-);
+});
 
 // Serve PDF files
 router.get("/pdf/:filename",verifyToken,checkAdminOrProfessorOrStudent,async (req, res) => {
@@ -269,6 +245,56 @@ router.put(
     } catch (error) {
       console.error("Error updating submission:", error);
       res.status(500).json({ message: "Error updating submission", error });
+    }
+  }
+);
+
+// Update grading status for a professor
+router.put(
+  "/grade/:id",
+  verifyToken,
+  checkAdminOrProfessor,
+  async (req, res) => {
+    const { id } = req.params; // Submission ID
+    const { professor_id, status } = req.body; // Professor ID and grading status
+
+    try {
+      const submission = await Submission.findById(id);
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+
+      // Update grading status for the specific professor
+      const professorStatus = submission.grading_status_by.find(
+        (entry) => entry.professor_id.toString() === professor_id
+      );
+
+      if (professorStatus) {
+        professorStatus.status = status;
+      } else {
+        submission.grading_status_by.push({ professor_id, status });
+      }
+
+      // Check if all professors have completed grading
+      const allGraded = submission.grading_status_by.every(
+        (entry) => entry.status === "already"
+      );
+
+      if (allGraded) {
+        submission.grading_status = "already";
+      } else {
+        submission.grading_status = "pending";
+      }
+
+      await submission.save();
+
+      res.status(200).json({
+        message: "Grading status updated successfully!",
+        submission,
+      });
+    } catch (error) {
+      console.error("Error updating grading status:", error);
+      res.status(500).json({ message: "Error updating grading status", error });
     }
   }
 );
