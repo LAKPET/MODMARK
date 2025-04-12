@@ -111,4 +111,127 @@ router.get("/annotation/:annotationId", verifyToken, async (req, res) => {
   }
 });
 
+// Update a comment
+router.put("/update/:commentId", verifyToken, async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { comment_text } = req.body;
+
+    // Validate required fields
+    if (!comment_text) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    console.log("Updating comment:", commentId);
+
+    // Find and update the comment
+    const updatedComment = await Comment.findByIdAndUpdate(
+      commentId,
+      { comment_text, updated_at: Date.now() },
+      { new: true }
+    );
+
+    if (!updatedComment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    res.status(200).json(updatedComment);
+  } catch (error) {
+    console.error("Error updating comment:", error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Update a reply
+router.put("/reply/update/:replyId", verifyToken, async (req, res) => {
+  try {
+    const { replyId } = req.params;
+    const { comment_text } = req.body;
+
+    // Validate required fields
+    if (!comment_text) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    console.log("Updating reply:", replyId);
+
+    // Find and update the reply
+    const updatedReply = await Comment.findByIdAndUpdate(
+      replyId,
+      { comment_text, updated_at: Date.now() },
+      { new: true }
+    );
+
+    if (!updatedReply) {
+      return res.status(404).json({ message: "Reply not found" });
+    }
+
+    res.status(200).json(updatedReply);
+  } catch (error) {
+    console.error("Error updating reply:", error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Delete a comment
+router.delete("/delete/:commentId", verifyToken, async (req, res) => {
+  try {
+    const { commentId } = req.params;
+
+    console.log("Deleting comment:", commentId);
+
+    // Find the comment to delete
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // If the comment has replies, delete them as well
+    if (comment.replies && comment.replies.length > 0) {
+      await Comment.deleteMany({ _id: { $in: comment.replies } });
+    }
+
+    // Remove the comment from the associated annotation
+    await Annotation.findByIdAndUpdate(comment.annotation_id, {
+      $pull: { comments: commentId },
+    });
+
+    // Delete the comment
+    await Comment.findByIdAndDelete(commentId);
+
+    res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete a reply
+router.delete("/reply/delete/:replyId", verifyToken, async (req, res) => {
+  try {
+    const { replyId } = req.params;
+
+    console.log("Deleting reply:", replyId);
+
+    // Find the reply to delete
+    const reply = await Comment.findById(replyId);
+    if (!reply) {
+      return res.status(404).json({ message: "Reply not found" });
+    }
+
+    // Remove the reply from the parent comment
+    await Comment.findByIdAndUpdate(reply.parent_comment_id, {
+      $pull: { replies: replyId },
+    });
+
+    // Delete the reply
+    await Comment.findByIdAndDelete(replyId);
+
+    res.status(200).json({ message: "Reply deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting reply:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
