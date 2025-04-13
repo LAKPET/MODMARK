@@ -7,14 +7,26 @@ import Backdrop from "@mui/material/Backdrop";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { formatDateTime } from "../../../utils/FormatDateTime";
 import { getStatusColor } from "../../../utils/StatusColor";
+import "../../../assets/Styles/Assessment/Getassessment.css";
+
 export default function Getassessmentuser() {
   const { id, assessmentId } = useParams();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    // Get user ID from localStorage
+    const userId = localStorage.getItem("UserId");
+    if (userId) {
+      setCurrentUserId(userId);
+      console.log("Current user ID from localStorage:", userId);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -26,6 +38,7 @@ export default function Getassessmentuser() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+        console.log("Submissions data:", response.data);
         setSubmissions(response.data);
       } catch (err) {
         setError("Error loading submissions.");
@@ -39,6 +52,23 @@ export default function Getassessmentuser() {
 
   const handleViewPdf = (fileUrl) => {
     navigate(`/professor/viewassessment/${id}/${fileUrl}/${assessmentId}`);
+  };
+
+  const getUserGradingStatus = (submission) => {
+    if (!currentUserId || !submission.grading_status_by) return "pending";
+
+    console.log("Checking submission:", submission._id);
+    console.log("Current user ID:", currentUserId);
+    console.log("Grading status by:", submission.grading_status_by);
+
+    // Find the status for the current user
+    const userStatus = submission.grading_status_by.find(
+      (status) => status.professor_id === currentUserId
+    );
+
+    console.log("Found status:", userStatus);
+
+    return userStatus ? userStatus.status : "pending";
   };
 
   if (loading) {
@@ -86,10 +116,25 @@ export default function Getassessmentuser() {
                 <td>{submission.student_id.last_name}</td>
                 <td>{submission.student_id.email}</td>
                 <td>{formatDateTime(submission.submitted_at)}</td>
-                <td
-                  style={{ color: getStatusColor(submission.grading_status) }}
-                >
-                  {submission.grading_status}
+                <td>
+                  <span
+                    className="status-badge"
+                    style={{
+                      backgroundColor: getStatusColor(
+                        getUserGradingStatus(submission)
+                      ),
+                      color: "white",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      display: "inline-block",
+                      textTransform: "capitalize",
+                      marginLeft: " 18px",
+                    }}
+                  >
+                    {getUserGradingStatus(submission)}
+                  </span>
                 </td>
                 <td>
                   <Button

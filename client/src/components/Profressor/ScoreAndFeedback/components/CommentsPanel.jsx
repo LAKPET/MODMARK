@@ -94,7 +94,7 @@ const CommentsPanel = ({
     try {
       const token = localStorage.getItem("authToken");
       await axios.put(
-        `${apiUrl}/comment/reply/${replyId}`,
+        `${apiUrl}/comment/reply/update/${replyId}`,
         {
           comment_text: editReplyText.trim(),
         },
@@ -117,7 +117,7 @@ const CommentsPanel = ({
   const handleDeleteReply = async (highlightId, replyId) => {
     try {
       const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/comment/reply/${replyId}`, {
+      await axios.delete(`${apiUrl}/comment/reply/delete/${replyId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -516,7 +516,11 @@ const CommentsPanel = ({
                           endAdornment: (
                             <IconButton
                               size="small"
-                              onClick={() => onSendReply(highlight.id)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onSendReply(highlight.id);
+                              }}
                               sx={{
                                 color: "#666",
                               }}

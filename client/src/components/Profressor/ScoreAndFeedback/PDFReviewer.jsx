@@ -109,27 +109,36 @@ const PDFReviewer = ({
 
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
+    const pdfPage = document.querySelector(".rpv-core__page-layer");
+    const pdfPageRect = pdfPage.getBoundingClientRect();
+
+    // Calculate position relative to the PDF page
+    const relativeX = rect.x - pdfPageRect.left;
+    const relativeY = rect.y - pdfPageRect.top;
 
     try {
       const token = localStorage.getItem("authToken");
       const professorId = localStorage.getItem("UserId");
+      const professorUsername = localStorage.getItem("Username");
 
+      // Create annotation with both highlight and comment data
       const annotation = {
         submission_id: submissionId,
         file_url: fileUrl,
         page_number: currentPage,
         highlight_text: selection.toString(),
         bounding_box: {
-          x: rect.x,
-          y: rect.y,
+          x: relativeX,
+          y: relativeY,
           width: rect.width,
           height: rect.height,
         },
         professor_id: professorId,
         highlight_color: selectedColor,
+        comment_text: comment.trim(), // Include comment text in the same request
       };
 
-      console.log("Creating annotation:", annotation);
+      console.log("Creating annotation with comment:", annotation);
 
       const response = await axios.post(
         `${apiUrl}/annotation/create`,
@@ -140,11 +149,51 @@ const PDFReviewer = ({
       );
 
       console.log("Annotation created:", response.data);
-      setSelectedText(selection.toString());
-      setShowCommentDialog(true);
+
+      // Add new comment icon to the list
+      const newCommentIcon = {
+        id: response.data.annotation._id,
+        pageIndex: currentPage - 1,
+        position: {
+          x: relativeX,
+          y: relativeY,
+        },
+        comment: comment.trim(),
+        highlight_color: selectedColor,
+      };
+      setCommentIcons([...commentIcons, newCommentIcon]);
+
+      // Add new highlight to the list
+      const newHighlight = {
+        id: response.data.annotation._id,
+        content: {
+          text: selection.toString(),
+          boundingBox: {
+            x: relativeX,
+            y: relativeY,
+            width: rect.width,
+            height: rect.height,
+          },
+        },
+        pageIndex: currentPage - 1,
+        comment: comment.trim(),
+        highlight_color: selectedColor,
+        professor: {
+          username: professorUsername || "Unknown",
+        },
+      };
+      setHighlights([...highlights, newHighlight]);
+
+      // Reset states
+      setComment("");
+      setSelectedText("");
       handleCloseContextMenu();
     } catch (error) {
       console.error("Error creating annotation:", error);
+      if (error.response) {
+        console.error("Error response:", error.response.data);
+        console.error("Error status:", error.response.status);
+      }
     }
   };
 

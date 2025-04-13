@@ -4,7 +4,11 @@ const RawScore = require("../models/RawScore");
 const FinalScore = require("../models/FinalScore");
 const GroupMember = require("../models/GroupMember");
 const Rubric = require("../models/Rubric");
-const { verifyToken, checkAdminOrProfessorOrTeacherAssistant } = require("./middleware");
+const Submission = require("../models/Submission"); // Add this import
+const {
+  verifyToken,
+  checkAdminOrProfessorOrTeacherAssistant,
+} = require("./middleware");
 
 const router = express.Router();
 
@@ -17,7 +21,9 @@ router.post(
 
     try {
       // 1. หา assessment
-      const assessment = await mongoose.model("Assessment").findById(assessment_id);
+      const assessment = await mongoose
+        .model("Assessment")
+        .findById(assessment_id);
       if (!assessment) {
         return res.status(404).json({ message: "Assessment not found" });
       }
@@ -25,7 +31,9 @@ router.post(
       // 2. หา rubric
       const rubric = await Rubric.findById(assessment.rubric_id);
       if (!rubric) {
-        return res.status(404).json({ message: "Rubric not found for this assessment" });
+        return res
+          .status(404)
+          .json({ message: "Rubric not found for this assessment" });
       }
 
       // 3. ตรวจสอบว่า criteria ถูกต้อง
@@ -67,7 +75,9 @@ router.post(
       }
 
       // 5. ดึง raw score ทั้งหมดของ submission นี้
-      const rawScores = await RawScore.find({ submission_id }).populate("professor_id");
+      const rawScores = await RawScore.find({ submission_id }).populate(
+        "professor_id"
+      );
 
       // 6. ดึง group member เพื่อนำมาคำนวณ weight
       const groupMembers = await GroupMember.find({ assessment_id });
@@ -87,16 +97,25 @@ router.post(
 
       // หาก weightMap ว่างเปล่า ให้แจ้งเตือน
       if (Object.keys(weightMap).length === 0) {
-        console.error("No weights found for professors or TAs in this assessment.");
-        return res.status(400).json({ message: "No weights found for professors or TAs in this assessment." });
+        console.error(
+          "No weights found for professors or TAs in this assessment."
+        );
+        return res
+          .status(400)
+          .json({
+            message:
+              "No weights found for professors or TAs in this assessment.",
+          });
       }
 
       // 7. รวมคะแนนตาม criteria
       const criteriaScores = {};
       rawScores.forEach((rawScore) => {
-        const professorId = rawScore.professor_id?._id?.toString?.() || rawScore.professor_id?.toString?.();
+        const professorId =
+          rawScore.professor_id?._id?.toString?.() ||
+          rawScore.professor_id?.toString?.();
         const weight = weightMap[professorId] || 1;
-        
+
         console.log("Using professorId:", professorId, "-> weight:", weight);
 
         // แปลง rawScore.score จาก Map เป็น Object
@@ -106,8 +125,8 @@ router.post(
         console.log("RawScore Score (as Object):", scoreObject);
 
         // กรองเฉพาะ criteria ID ที่ตรงกับ rubric
-        const validScores = Object.entries(scoreObject || {}).filter(([criteriaId]) =>
-          criteriaIds.includes(criteriaId)
+        const validScores = Object.entries(scoreObject || {}).filter(
+          ([criteriaId]) => criteriaIds.includes(criteriaId)
         );
 
         // ตรวจสอบ validScores
@@ -130,7 +149,10 @@ router.post(
       for (const [criteriaId, scores] of Object.entries(criteriaScores)) {
         const totalScore = scores.reduce((sum, score) => sum + score, 0);
         if (isNaN(totalScore)) {
-          console.error(`Invalid totalScore for criteria "${criteriaId}":`, scores);
+          console.error(
+            `Invalid totalScore for criteria "${criteriaId}":`,
+            scores
+          );
           continue; // ข้าม criteria ที่มีค่าผิดพลาด
         }
         finalScores[criteriaId] = Number(totalScore); // แปลงค่าให้เป็นตัวเลข
@@ -164,14 +186,53 @@ router.post(
         console.log("FinalScore created successfully!");
       }
 
+      // 10. Update grading_status_by for the professor in the Submission model
+      const submission = await Submission.findById(submission_id);
+      if (submission) {
+        const professorEntry = submission.grading_status_by.find(
+          (entry) => entry.professor_id.toString() === req.user.id
+        );
+        if (professorEntry) {
+          professorEntry.status = "already"; // Update status to "already"
+        }
+
+        // Check if all professors have completed grading
+        const allGraded = submission.grading_status_by.every(
+          (entry) => entry.status === "already"
+        );
+
+        if (allGraded) {
+          submission.grading_status = "already"; // Update submission status to "already"
+        } else {
+          submission.grading_status = "pending"; // Keep it as pending
+        }
+
+        await submission.save();
+        console.log(
+          "Grading status updated successfully for submission:",
+          submission_id
+        );
+      } else {
+        console.warn("Submission not found:", submission_id);
+      }
+
       res.status(201).json({
-        message: "Raw scores submitted and final scores calculated successfully",
+        message:
+          "Raw scores submitted and final scores calculated successfully",
         rawScore,
-        finalScore, // ใช้ตัวแปร finalScore ที่กำหนดไว้
+        finalScore,
       });
     } catch (error) {
-      console.error("Error submitting raw scores or calculating final scores:", error);
-      res.status(500).json({ message: "Error submitting raw scores or calculating final scores", error });
+      console.error(
+        "Error submitting raw scores or calculating final scores:",
+        error
+      );
+      res
+        .status(500)
+        .json({
+          message: "Error submitting raw scores or calculating final scores",
+          error,
+        });
     }
   }
 );
@@ -185,7 +246,10 @@ router.post(
 
     try {
       // Find the final score based on assessment_id and submission_id
-      const finalScore = await FinalScore.findOne({ assessment_id, submission_id });
+      const finalScore = await FinalScore.findOne({
+        assessment_id,
+        submission_id,
+      });
 
       if (!finalScore) {
         return res.status(404).json({ message: "FinalScore not found" });
