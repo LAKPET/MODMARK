@@ -3,6 +3,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
@@ -53,9 +55,37 @@ app.use("/annotation", annotationRoutes); // Use annotation routes
 app.use("/comment", commentRoutes); // Use comment routes
 app.use("/score", scoreRoutes); // Use score routes
 
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173", // Adjust this to match your frontend URL
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("A user connected: " + socket.id);
+
+  socket.on("create_annotation", (data) => {
+    io.emit("new_annotation", data);
+  });
+
+  socket.on("create_comment", (data) => {
+    io.emit("new_comment", data);
+  });
+
+  socket.on("create_reply", (data) => {
+    io.emit("new_reply", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected: " + socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () =>
+server.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
 
-module.exports = app;
+module.exports = { app, server };

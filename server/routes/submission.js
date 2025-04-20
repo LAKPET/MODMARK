@@ -249,55 +249,7 @@ router.put(
   }
 );
 
-// Update grading status for a professor
-router.put(
-  "/grade/:id",
-  verifyToken,
-  checkAdminOrProfessor,
-  async (req, res) => {
-    const { id } = req.params; // Submission ID
-    const { professor_id, status } = req.body; // Professor ID and grading status
 
-    try {
-      const submission = await Submission.findById(id);
-      if (!submission) {
-        return res.status(404).json({ message: "Submission not found" });
-      }
-
-      // Update grading status for the specific professor
-      const professorStatus = submission.grading_status_by.find(
-        (entry) => entry.professor_id.toString() === professor_id
-      );
-
-      if (professorStatus) {
-        professorStatus.status = status;
-      } else {
-        submission.grading_status_by.push({ professor_id, status });
-      }
-
-      // Check if all professors have completed grading
-      const allGraded = submission.grading_status_by.every(
-        (entry) => entry.status === "already"
-      );
-
-      if (allGraded) {
-        submission.grading_status = "already";
-      } else {
-        submission.grading_status = "pending";
-      }
-
-      await submission.save();
-
-      res.status(200).json({
-        message: "Grading status updated successfully!",
-        submission,
-      });
-    } catch (error) {
-      console.error("Error updating grading status:", error);
-      res.status(500).json({ message: "Error updating grading status", error });
-    }
-  }
-);
 
 // Delete a submission
 router.delete(

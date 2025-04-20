@@ -3,6 +3,7 @@ const router = express.Router();
 const Comment = require("../models/Comment");
 const Annotation = require("../models/Annotation");
 const { verifyToken } = require("./middleware");
+const { io } = require("../server"); // Import socket.io instance
 
 // Add a comment to an annotation
 router.post("/create", verifyToken, async (req, res) => {
@@ -74,6 +75,13 @@ router.post("/reply/:commentId", verifyToken, async (req, res) => {
     // อัปเดต Comment หลักให้มี Reply
     parentComment.replies.push(reply._id);
     await parentComment.save();
+
+    // ส่ง event ผ่าน socket.io
+    io.emit("new_reply", {
+      annotation_id: parentComment.annotation_id,
+      parent_comment_id: commentId,
+      reply,
+    });
 
     res.status(201).json(reply);
   } catch (error) {
