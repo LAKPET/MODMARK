@@ -84,8 +84,10 @@ const PDFViewer = ({
     return commentIcons
       .filter((icon) => icon.pageIndex === currentPage - 1)
       .map((icon) => {
-        const pdfPage = document.querySelector(".rpv-core__page-layer");
-        const pdfPageRect = pdfPage?.getBoundingClientRect();
+        const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
+        const currentPageElement = pdfPages[currentPage - 1];
+        const pdfPageRect = currentPageElement?.getBoundingClientRect();
+
         const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
         const iconY = icon.position.y;
 

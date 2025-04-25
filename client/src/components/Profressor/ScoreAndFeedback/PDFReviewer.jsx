@@ -114,10 +114,13 @@ const PDFReviewer = ({
 
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    const pdfPage = document.querySelector(".rpv-core__page-layer");
-    const pdfPageRect = pdfPage.getBoundingClientRect();
 
-    // Calculate position relative to the PDF page
+    // Get all PDF pages and find the current page
+    const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
+    const currentPageElement = pdfPages[currentPage - 1];
+    const pdfPageRect = currentPageElement?.getBoundingClientRect();
+
+    // Calculate position relative to the current PDF page
     const relativeX = rect.x - pdfPageRect.left;
     const relativeY = rect.y - pdfPageRect.top;
 
@@ -234,12 +237,12 @@ const PDFReviewer = ({
               boundingBox: annotation.bounding_box,
             },
             pageIndex: annotation.page_number - 1,
-            comment: firstComment, // ใช้ comment แรกถ้ามี
+            comment: firstComment,
             highlight_color: annotation.highlight_color || "#ffeb3b",
             professor: {
-              username: annotation.professor_id?.username, // เพิ่ม username
+              username: annotation.professor_id?.username,
             },
-            comments: annotation.comments || [], // เก็บ comments ทั้งหมด
+            comments: annotation.comments || [],
           };
         });
 
@@ -326,19 +329,21 @@ const PDFReviewer = ({
   }, [submissionId, assessmentId, apiUrl]);
 
   const calculatePageHeight = () => {
-    const pdfPage = document.querySelector(".rpv-core__page-layer");
-    if (pdfPage) {
+    // Get all PDF pages
+    const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
+    if (pdfPages.length > 0) {
       const container = document.querySelector(".rpv-core__viewer");
       if (container) {
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
+
         // Calculate scale to fit one page
         const scale = Math.min(
-          containerWidth / pdfPage.clientWidth,
-          containerHeight / pdfPage.clientHeight
+          containerWidth / pdfPages[0].clientWidth,
+          containerHeight / pdfPages[0].clientHeight
         );
         setScale(scale);
-        setPageHeight(pdfPage.clientHeight * scale);
+        setPageHeight(pdfPages[0].clientHeight * scale);
       }
     }
   };
@@ -410,10 +415,10 @@ const PDFReviewer = ({
           boundingBox: selectionPosition,
         },
         pageIndex: currentPage - 1,
-        comment: comment.trim(), // ยังคงใช้ comment นี้เพื่อแสดงผล
+        comment: comment.trim(),
         highlight_color: selectedColor,
         professor: {
-          username: professorUsername || "Unknown", // ใช้ username จาก localStorage
+          username: professorUsername || "Unknown",
         },
       };
       setHighlights([...highlights, newHighlight]);
@@ -458,8 +463,11 @@ const PDFReviewer = ({
     return commentIcons
       .filter((icon) => icon.pageIndex === currentPage - 1)
       .map((icon) => {
-        const pdfPage = document.querySelector(".rpv-core__page-layer");
-        const pdfPageRect = pdfPage?.getBoundingClientRect();
+        // Get all PDF pages and find the current page
+        const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
+        const currentPageElement = pdfPages[currentPage - 1];
+        const pdfPageRect = currentPageElement?.getBoundingClientRect();
+
         const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
         const iconY = icon.position.y;
 
@@ -491,7 +499,7 @@ const PDFReviewer = ({
               >
                 <CommentIcon
                   sx={{
-                    color: icon.highlight_color || "#1976d2", // ใช้สีของ highlight_color
+                    color: icon.highlight_color || "#1976d2",
                   }}
                 />
               </IconButton>
