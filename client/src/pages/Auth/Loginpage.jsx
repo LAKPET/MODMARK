@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Logo from "../../assets/Picture/Logo.png";
 import {
   MDBBtn,
@@ -9,7 +9,7 @@ import {
   MDBValidation,
   MDBValidationItem,
 } from "mdb-react-ui-kit";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
 import { useAuth } from "../../routes/AuthContext";
@@ -21,9 +21,47 @@ function Loginpage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState(""); // To show error messages
   const [loading, setLoading] = useState(false); // To handle loading state
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const navigate = useNavigate(); // To navigate after successful login
+  const location = useLocation();
   const { setUser } = useAuth();
   const apiUrl = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const authToken = localStorage.getItem("authToken");
+    const userRole = localStorage.getItem("UserRole");
+    const username = localStorage.getItem("Username");
+    const userId = localStorage.getItem("UserId");
+
+    if (authToken && userRole && username && userId) {
+      const user = {
+        username,
+        role: userRole,
+        id: userId,
+      };
+      setUser(user);
+
+      // Redirect based on role and previous location
+      const from = location.state?.from?.pathname || null;
+
+      if (from) {
+        // If there's a previous location, go back there
+        navigate(from);
+      } else if (userRole === "admin") {
+        navigate("/dashboard/admin/users");
+      } else if (userRole === "professor" || userRole === "ta") {
+        navigate("/professor/course");
+      } else if (userRole === "student") {
+        navigate("/student/course");
+      }
+    } else {
+      // Add a small delay to show the loading backdrop
+      setTimeout(() => {
+        setCheckingAuth(false);
+      }, 500);
+    }
+  }, [navigate, setUser, location]);
 
   const handlesubmit = (e) => {
     e.preventDefault();
@@ -41,7 +79,13 @@ function Loginpage() {
         localStorage.setItem("UserId", user.id);
         setUser(user);
 
-        if (user.role === "admin") {
+        // Redirect based on role and previous location
+        const from = location.state?.from?.pathname || null;
+
+        if (from) {
+          // If there's a previous location, go back there
+          navigate(from);
+        } else if (user.role === "admin") {
           navigate("/dashboard/admin/users");
         } else if (user.role === "professor" || user.role === "ta") {
           navigate("/professor/course");
@@ -56,11 +100,11 @@ function Loginpage() {
       });
   };
 
-  if (loading) {
+  if (loading || checkingAuth) {
     return (
       <Backdrop
         sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
-        open={loading}
+        open={loading || checkingAuth}
       >
         <CircularProgress color="inherit" />
       </Backdrop>

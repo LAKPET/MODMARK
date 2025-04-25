@@ -65,6 +65,7 @@ const PDFReviewer = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [comments, setComments] = useState({});
+  const [selectionPosition, setSelectionPosition] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -95,12 +96,16 @@ const PDFReviewer = ({
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
       setMousePosition({ x: event.clientX, y: event.clientY });
-      setContextMenu(true);
+      setContextMenu({
+        mouseX: event.clientX,
+        mouseY: event.clientY,
+      });
     }
   };
 
   const handleCloseContextMenu = () => {
     setContextMenu(null);
+    window.getSelection()?.removeAllRanges();
   };
 
   const handleAddHighlight = async () => {
@@ -116,85 +121,15 @@ const PDFReviewer = ({
     const relativeX = rect.x - pdfPageRect.left;
     const relativeY = rect.y - pdfPageRect.top;
 
-    try {
-      const token = localStorage.getItem("authToken");
-      const professorId = localStorage.getItem("UserId");
-      const professorUsername = localStorage.getItem("Username");
-
-      // Create annotation with both highlight and comment data
-      const annotation = {
-        submission_id: submissionId,
-        file_url: fileUrl,
-        page_number: currentPage,
-        highlight_text: selection.toString(),
-        bounding_box: {
-          x: relativeX,
-          y: relativeY,
-          width: rect.width,
-          height: rect.height,
-        },
-        professor_id: professorId,
-        highlight_color: selectedColor,
-        comment_text: comment.trim(), // Include comment text in the same request
-      };
-
-      console.log("Creating annotation with comment:", annotation);
-
-      const response = await axios.post(
-        `${apiUrl}/annotation/create`,
-        annotation,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      console.log("Annotation created:", response.data);
-
-      // Add new comment icon to the list
-      const newCommentIcon = {
-        id: response.data.annotation._id,
-        pageIndex: currentPage - 1,
-        position: {
-          x: relativeX,
-          y: relativeY,
-        },
-        comment: comment.trim(),
-        highlight_color: selectedColor,
-      };
-      setCommentIcons([...commentIcons, newCommentIcon]);
-
-      // Add new highlight to the list
-      const newHighlight = {
-        id: response.data.annotation._id,
-        content: {
-          text: selection.toString(),
-          boundingBox: {
-            x: relativeX,
-            y: relativeY,
-            width: rect.width,
-            height: rect.height,
-          },
-        },
-        pageIndex: currentPage - 1,
-        comment: comment.trim(),
-        highlight_color: selectedColor,
-        professor: {
-          username: professorUsername || "Unknown",
-        },
-      };
-      setHighlights([...highlights, newHighlight]);
-
-      // Reset states
-      setComment("");
-      setSelectedText("");
-      handleCloseContextMenu();
-    } catch (error) {
-      console.error("Error creating annotation:", error);
-      if (error.response) {
-        console.error("Error response:", error.response.data);
-        console.error("Error status:", error.response.status);
-      }
-    }
+    setSelectionPosition({
+      x: relativeX,
+      y: relativeY,
+      width: rect.width,
+      height: rect.height,
+    });
+    setSelectedText(selection.toString());
+    setShowCommentDialog(true);
+    handleCloseContextMenu();
   };
 
   const highlightPluginInstance = highlightPlugin({
@@ -426,39 +361,23 @@ const PDFReviewer = ({
   };
 
   const handleAddComment = async () => {
-    if (!comment.trim()) return;
+    if (!comment.trim() || !selectionPosition) return;
 
     try {
       const token = localStorage.getItem("authToken");
       const professorId = localStorage.getItem("UserId");
-      const professorUsername = localStorage.getItem("Username"); // ดึง username จาก localStorage
+      const professorUsername = localStorage.getItem("Username");
 
-      // Get the selection position relative to the PDF viewer
-      const selection = window.getSelection();
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      const pdfPage = document.querySelector(".rpv-core__page-layer");
-      const pdfPageRect = pdfPage.getBoundingClientRect();
-
-      // Calculate position relative to the PDF page
-      const relativeX = rect.x - pdfPageRect.left;
-      const relativeY = rect.y - pdfPageRect.top;
-
-      // Create new annotation with comment
+      // Create new annotation with comment using stored position
       const annotation = {
         submission_id: submissionId,
         file_url: fileUrl,
         page_number: currentPage,
         highlight_text: selectedText,
-        bounding_box: {
-          x: relativeX,
-          y: relativeY,
-          width: rect.width,
-          height: rect.height,
-        },
+        bounding_box: selectionPosition,
         professor_id: professorId,
         highlight_color: selectedColor,
-        comment_text: comment.trim(), // ส่ง comment_text แยกต่างหาก
+        comment_text: comment.trim(),
       };
 
       console.log("Creating annotation with comment:", annotation);
@@ -477,10 +396,7 @@ const PDFReviewer = ({
       const newCommentIcon = {
         id: response.data.annotation._id,
         pageIndex: currentPage - 1,
-        position: {
-          x: relativeX,
-          y: relativeY,
-        },
+        position: selectionPosition,
         comment: comment.trim(),
         highlight_color: selectedColor,
       };
@@ -491,12 +407,7 @@ const PDFReviewer = ({
         id: response.data.annotation._id,
         content: {
           text: selectedText,
-          boundingBox: {
-            x: relativeX,
-            y: relativeY,
-            width: rect.width,
-            height: rect.height,
-          },
+          boundingBox: selectionPosition,
         },
         pageIndex: currentPage - 1,
         comment: comment.trim(), // ยังคงใช้ comment นี้เพื่อแสดงผล
@@ -511,6 +422,7 @@ const PDFReviewer = ({
       setComment("");
       setShowCommentDialog(false);
       setSelectedText("");
+      setSelectionPosition(null);
     } catch (error) {
       console.error("Error adding comment:", error);
       if (error.response) {
@@ -778,14 +690,19 @@ const PDFReviewer = ({
       </Box>
 
       <Menu
-        open={contextMenu}
+        open={Boolean(contextMenu)}
         onClose={handleCloseContextMenu}
         anchorReference="anchorPosition"
         anchorPosition={
           contextMenu
-            ? { top: mousePosition.y, left: mousePosition.x }
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
             : undefined
         }
+        sx={{
+          "& .MuiPaper-root": {
+            maxHeight: "300px",
+          },
+        }}
       >
         <MenuItem onClick={handleAddHighlight}>
           <CommentIcon sx={{ mr: 1 }} />
@@ -794,8 +711,13 @@ const PDFReviewer = ({
       </Menu>
 
       <CommentDialog
-        open={showCommentDialog}
-        onClose={() => setShowCommentDialog(false)}
+        open={Boolean(showCommentDialog)}
+        onClose={() => {
+          setShowCommentDialog(false);
+          setSelectedText("");
+          setComment("");
+          setSelectionPosition(null);
+        }}
         selectedText={selectedText}
         comment={comment}
         onCommentChange={setComment}
