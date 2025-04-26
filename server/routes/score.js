@@ -279,4 +279,34 @@ router.post(
   }
 );
 
+// Get raw score for a specific submission and professor
+router.get(
+  "/assessment/rawscore/:submission_id",
+  verifyToken,
+  checkAdminOrProfessorOrTeacherAssistant,
+  async (req, res) => {
+    const { submission_id } = req.params;
+
+    try {
+      // Find the raw score for the professor and submission
+      const rawScore = await RawScore.findOne({
+        submission_id,
+        professor_id: req.user.id,
+      }).populate("rubric_id", "rubric_name description criteria");
+
+      if (!rawScore) {
+        return res.status(404).json({ message: "RawScore not found for this submission and professor" });
+      }
+
+      res.status(200).json({
+        message: "RawScore fetched successfully",
+        rawScore,
+      });
+    } catch (error) {
+      console.error("Error fetching raw score:", error);
+      res.status(500).json({ message: "Error fetching raw score", error });
+    }
+  }
+);
+
 module.exports = router;
