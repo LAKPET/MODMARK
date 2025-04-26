@@ -6,6 +6,7 @@ const GroupMember = require("../models/GroupMember");
 const AssessmentRubric = require("../models/AssessmentRubric");
 const Rubric = require("../models/Rubric");
 const User = require("../models/User");
+const FinalScore = require("../models/FinalScore");
 const Section = require("../models/Section"); // Import Section model
 const {
   verifyToken,
@@ -285,6 +286,163 @@ router.get(
     } catch (error) {
       console.error("Error fetching assessments:", error);
       res.status(500).json({ message: "Error fetching assessments", error });
+    }
+  }
+);
+
+// Get assessment progress for a student in a section
+router.get(
+  "/progress/:section_id",
+  verifyToken,
+  async (req, res) => {
+    const { section_id } = req.params;
+
+    try {
+      // Find all assessments in the section
+      const totalAssessments = await Assessment.countDocuments({ section_id });
+
+      // Find all submissions by the student in the section
+      const completedSubmissions = await mongoose
+        .model("Submission")
+        .countDocuments({
+          section_id,
+          student_id: req.user.id,
+          status: { $in: ["submit", "late"] }, // Count only submitted or late submissions
+        });
+
+      // Fetch the course_id for the section
+      const section = await mongoose.model("Section").findById(section_id);
+      if (!section) {
+        return res.status(404).json({ message: "Section not found" });
+      }
+
+      res.status(200).json({
+        course_id: section.course_id,
+        section_id,
+        total_assessments: totalAssessments,
+        completed_assessments: completedSubmissions,
+        remaining_assessments: totalAssessments - completedSubmissions,
+      });
+    } catch (error) {
+      console.error("Error fetching assessment progress:", error);
+      res.status(500).json({
+        message: "Error fetching assessment progress",
+        error,
+      });
+    }
+  }
+);
+
+// Get scores for a student in each assessment of a section
+router.get(
+  "/scores/:section_id",
+  verifyToken,
+  async (req, res) => {
+    const { section_id } = req.params;
+
+    try {
+      // Find all assessments in the section
+      const assessments = await Assessment.find({ section_id }).populate({
+        path: "rubric_id",
+        select: "score rubric_name",
+      });
+
+      if (!assessments.length) {
+        return res.status(404).json({ message: "No assessments found in this section" });
+      }
+
+      // Fetch the student's scores for each assessment
+      const scores = await Promise.all(
+        assessments.map(async (assessment) => {
+          const finalScore = await mongoose.model("FinalScore").findOne({
+            assessment_id: assessment._id,
+            student_id: req.user.id,
+          });
+
+          return {
+            assessment_name: assessment.assessment_name,
+            max_score: assessment.rubric_id?.score || 0,
+            student_score: finalScore?.total_score || 0,
+          };
+        })
+      );
+
+      res.status(200).json(scores);
+    } catch (error) {
+      console.error("Error fetching scores for assessments:", error);
+      res.status(500).json({ message: "Error fetching scores for assessments", error });
+    }
+  }
+);
+
+// Get overall score statistics for a section
+router.get(
+  "/statistics/:section_id",
+  verifyToken,
+  async (req, res) => {
+    const { section_id } = req.params;
+
+    try {
+      // Find all assessments in the section
+      const assessments = await Assessment.find({ section_id }).populate({
+        path: "rubric_id",
+        select: "score rubric_name",
+      });
+
+      if (!assessments.length) {
+        return res.status(404).json({ message: "No assessments found in this section" });
+      }
+
+      const statistics = await Promise.all(
+        assessments.map(async (assessment) => {
+          // Fetch all final scores for the current assessment
+          const finalScores = await FinalScore.find({
+            assessment_id: assessment._id,
+          });
+
+          if (!finalScores.length) {
+            return {
+              assessment_name: assessment.assessment_name,
+              max_score: 0,
+              min_score: 0,
+              mean_score: 0,
+            };
+          }
+
+          const scores = finalScores.map((fs) => fs.total_score || 0); // Ensure total_score is handled properly
+          const maxScore = Math.max(...scores);
+          const minScore = Math.min(...scores);
+          const meanScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+          return {
+            assessment_name: assessment.assessment_name,
+            max_score: maxScore,
+            min_score: minScore,
+            mean_score: meanScore,
+          };
+        })
+      );
+
+      // Calculate overall statistics for all assessments combined
+      const allScores = (await FinalScore.find({
+        assessment_id: { $in: assessments.map((a) => a._id) },
+      })).map((fs) => fs.total_score || 0); // Ensure total_score is handled properly
+
+      const overallMax = allScores.length > 0 ? Math.max(...allScores) : 0;
+      const overallMin = allScores.length > 0 ? Math.min(...allScores) : 0;
+      const overallMean = allScores.length > 0 ? (allScores.reduce((sum, score) => sum + score, 0) / allScores.length) : 0;
+
+      res.status(200).json({
+        per_assessment_statistics: statistics,
+        overall_statistics: {
+          max_score: overallMax,
+          min_score: overallMin,
+          mean_score: overallMean,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching statistics for assessments:", error);
+      res.status(500).json({ message: "Error fetching statistics for assessments", error });
     }
   }
 );

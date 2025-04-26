@@ -36,6 +36,8 @@ router.post(
           .json({ message: "Rubric not found for this assessment" });
       }
 
+      const rubricId = rubric._id; // Store rubric_id for later use
+
       // 3. ตรวจสอบว่า criteria ถูกต้อง
       const criteriaIds = rubric.criteria.map((c) => c._id.toString()); // ดึง ObjectId ของ criteria
       console.log("Criteria IDs from Rubric:", criteriaIds);
@@ -49,6 +51,9 @@ router.post(
         }
       }
 
+      // Calculate total score for raw score
+      const totalRawScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+
       // 4. Save or Update raw score
       let rawScore = await RawScore.findOne({
         professor_id: req.user.id,
@@ -58,6 +63,8 @@ router.post(
       if (rawScore) {
         // Update existing RawScore
         rawScore.score = scores; // อัปเดตคะแนนใหม่
+        rawScore.rubric_id = rubricId; // Add rubric_id
+        rawScore.total_score = totalRawScore; // Add total score
         await rawScore.save();
         console.log("RawScore updated successfully!");
       } else {
@@ -68,7 +75,9 @@ router.post(
           group_id: req.body.group_id,
           assessment_id,
           submission_id,
+          rubric_id: rubricId, // Add rubric_id
           score: scores,
+          total_score: totalRawScore, // Add total score
         });
         await rawScore.save();
         console.log("RawScore created successfully!");
@@ -144,22 +153,25 @@ router.post(
       // ตรวจสอบค่า criteriaScores
       console.log("Criteria Scores:", criteriaScores);
 
-      // 8. คำนวณ final score ต่อ criteria
+      // 8. คำนวณ final score ต่อ criteria และรวมคะแนนทั้งหมด
       const finalScores = {};
+      let totalScore = 0; // Initialize total score
       for (const [criteriaId, scores] of Object.entries(criteriaScores)) {
-        const totalScore = scores.reduce((sum, score) => sum + score, 0);
-        if (isNaN(totalScore)) {
+        const totalCriteriaScore = scores.reduce((sum, score) => sum + score, 0);
+        if (isNaN(totalCriteriaScore)) {
           console.error(
             `Invalid totalScore for criteria "${criteriaId}":`,
             scores
           );
           continue; // ข้าม criteria ที่มีค่าผิดพลาด
         }
-        finalScores[criteriaId] = Number(totalScore); // แปลงค่าให้เป็นตัวเลข
+        finalScores[criteriaId] = Number(totalCriteriaScore); // แปลงค่าให้เป็นตัวเลข
+        totalScore += totalCriteriaScore; // Add to total score
       }
 
       // 🔐 แปลง finalScores ให้เป็น Object ที่ปลอดภัย
       console.log("Final Scores (Before Save):", finalScores);
+      console.log("Total Score:", totalScore); // Log total score
       const safeFinalScores = Object.fromEntries(
         Object.entries(finalScores).map(([key, value]) => [key, value])
       );
@@ -170,6 +182,8 @@ router.post(
       if (existingFinalScore) {
         // Update FinalScore
         existingFinalScore.score = safeFinalScores;
+        existingFinalScore.rubric_id = rubricId; // Add rubric_id
+        existingFinalScore.total_score = totalScore; // Add total score
         await existingFinalScore.save();
         console.log("FinalScore updated successfully!");
         finalScore = existingFinalScore; // อัปเดตตัวแปร finalScore
@@ -180,7 +194,9 @@ router.post(
           group_id: req.body.group_id,
           assessment_id,
           submission_id,
+          rubric_id: rubricId, // Add rubric_id
           score: safeFinalScores, // ใช้ Object ที่ถูกต้อง
+          total_score: totalScore, // Add total score
         });
         await finalScore.save();
         console.log("FinalScore created successfully!");
