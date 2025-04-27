@@ -30,53 +30,14 @@ const CommentsPanel = ({
   onSendReply,
   onToggleReplyInput,
   selectedHighlight,
+  comments,
+  onSaveEdit,
+  onDeleteReply,
 }) => {
-  const [comments, setComments] = useState({});
   const [editingReply, setEditingReply] = useState(null);
   const [editReplyText, setEditReplyText] = useState("");
   const apiUrl = import.meta.env.VITE_API_URL;
   const currentUserId = localStorage.getItem("UserId");
-
-  // Fetch comments for a highlight when it's selected or when reply icon is clicked
-  useEffect(() => {
-    if (selectedHighlight) {
-      fetchCommentsForHighlight(selectedHighlight.id);
-    }
-  }, [selectedHighlight]);
-
-  // Also fetch comments when reply icon is clicked for any highlight
-  useEffect(() => {
-    const highlightIds = Object.keys(replyInputs).filter(
-      (id) => replyInputs[id]
-    );
-    highlightIds.forEach((id) => {
-      if (!comments[id]) {
-        fetchCommentsForHighlight(id);
-      }
-    });
-  }, [replyInputs]);
-
-  const fetchCommentsForHighlight = async (highlightId) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `${apiUrl}/comment/annotation/${highlightId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      console.log("Fetched comments:", response.data);
-
-      // Update the comments state with the fetched data
-      setComments((prev) => ({
-        ...prev,
-        [highlightId]: response.data,
-      }));
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-  };
 
   const handleEditReply = (reply) => {
     setEditingReply(reply._id);
@@ -92,19 +53,7 @@ const CommentsPanel = ({
     if (!editReplyText.trim()) return;
 
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.put(
-        `${apiUrl}/comment/reply/update/${replyId}`,
-        {
-          comment_text: editReplyText.trim(),
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Fetch updated comments
-      await fetchCommentsForHighlight(highlightId);
+      await onSaveEdit(highlightId, commentId, replyId, editReplyText.trim());
 
       // Reset editing state
       setEditingReply(null);
@@ -116,13 +65,7 @@ const CommentsPanel = ({
 
   const handleDeleteReply = async (highlightId, replyId) => {
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/comment/reply/delete/${replyId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // Fetch updated comments
-      await fetchCommentsForHighlight(highlightId);
+      await onDeleteReply(highlightId, replyId);
     } catch (error) {
       console.error("Error deleting reply:", error);
     }
@@ -269,7 +212,8 @@ const CommentsPanel = ({
                   {highlight.comment}
                 </Typography>
 
-                {replyInputs[highlight.id] && (
+                {/* Only show replies section if replyInputs[highlight.id] is explicitly true */}
+                {replyInputs[highlight.id] === true && (
                   <>
                     {comments[highlight.id] &&
                       comments[highlight.id].map((comment) => (

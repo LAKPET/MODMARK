@@ -85,7 +85,28 @@ const PDFViewer = ({
       .filter((icon) => icon.pageIndex === currentPage - 1)
       .map((icon) => {
         const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
-        const currentPageElement = pdfPages[currentPage - 1];
+
+        // Find the current page element by checking which one is visible in the viewport
+        let currentPageElement = null;
+        for (let i = 0; i < pdfPages.length; i++) {
+          const pageRect = pdfPages[i].getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+
+          // Check if the page is visible in the viewport
+          if (
+            pageRect.top <= viewportHeight / 2 &&
+            pageRect.bottom >= viewportHeight / 2
+          ) {
+            currentPageElement = pdfPages[i];
+            break;
+          }
+        }
+
+        // If we couldn't find the page element, use the first one as fallback
+        if (!currentPageElement && pdfPages.length > 0) {
+          currentPageElement = pdfPages[0];
+        }
+
         const pdfPageRect = currentPageElement?.getBoundingClientRect();
 
         const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;

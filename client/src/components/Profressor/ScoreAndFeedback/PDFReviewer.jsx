@@ -117,7 +117,27 @@ const PDFReviewer = ({
 
     // Get all PDF pages and find the current page
     const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
-    const currentPageElement = pdfPages[currentPage - 1];
+
+    // Find the current page element by checking which one contains the selection
+    let currentPageElement = null;
+    for (let i = 0; i < pdfPages.length; i++) {
+      const pageRect = pdfPages[i].getBoundingClientRect();
+      if (
+        rect.top >= pageRect.top &&
+        rect.top <= pageRect.bottom &&
+        rect.left >= pageRect.left &&
+        rect.left <= pageRect.right
+      ) {
+        currentPageElement = pdfPages[i];
+        break;
+      }
+    }
+
+    // If we couldn't find the page element, use the first one as fallback
+    if (!currentPageElement && pdfPages.length > 0) {
+      currentPageElement = pdfPages[0];
+    }
+
     const pdfPageRect = currentPageElement?.getBoundingClientRect();
 
     // Calculate position relative to the current PDF page
@@ -510,9 +530,11 @@ const PDFReviewer = ({
   };
 
   const toggleReplyInput = (highlightId) => {
+    // If the reply input doesn't exist yet, initialize it as false (closed)
     setReplyInputs((prev) => ({
       ...prev,
-      [highlightId]: !prev[highlightId],
+      [highlightId]:
+        prev[highlightId] === undefined ? true : !prev[highlightId],
     }));
 
     // If opening the reply input and we don't have comments yet, fetch them
@@ -562,21 +584,56 @@ const PDFReviewer = ({
 
         console.log("Reply sent:", response.data);
 
-        // Fetch updated comments for this highlight
-        await fetchCommentsForHighlight(highlightId);
-
-        // Reset the reply input
+        // Reset only the reply text, but keep the input open
         setReplyTexts((prev) => ({
           ...prev,
           [highlightId]: "",
         }));
-        setReplyInputs((prev) => ({
-          ...prev,
-          [highlightId]: false,
-        }));
+
+        // Immediately fetch updated comments for this highlight
+        await fetchCommentsForHighlight(highlightId);
       } catch (error) {
         console.error("Error sending reply:", error);
       }
+    }
+  };
+
+  const handleSaveEdit = async (
+    highlightId,
+    commentId,
+    replyId,
+    editReplyText
+  ) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await axios.put(
+        `${apiUrl}/comment/reply/update/${replyId}`,
+        {
+          comment_text: editReplyText,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Fetch updated comments
+      await fetchCommentsForHighlight(highlightId);
+    } catch (error) {
+      console.error("Error updating reply:", error);
+    }
+  };
+
+  const handleDeleteReply = async (highlightId, replyId) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await axios.delete(`${apiUrl}/comment/reply/delete/${replyId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Fetch updated comments
+      await fetchCommentsForHighlight(highlightId);
+    } catch (error) {
+      console.error("Error deleting reply:", error);
     }
   };
 
@@ -630,6 +687,25 @@ const PDFReviewer = ({
       // Handle error (e.g., show success message)
     }
   };
+
+  // Add useEffect to fetch comments when selectedHighlight changes
+  useEffect(() => {
+    if (selectedHighlight) {
+      fetchCommentsForHighlight(selectedHighlight.id);
+    }
+  }, [selectedHighlight]);
+
+  // Add useEffect to fetch comments when replyInputs changes
+  useEffect(() => {
+    const highlightIds = Object.keys(replyInputs).filter(
+      (id) => replyInputs[id]
+    );
+    highlightIds.forEach((id) => {
+      if (!comments[id]) {
+        fetchCommentsForHighlight(id);
+      }
+    });
+  }, [replyInputs]);
 
   return (
     <Box
@@ -692,6 +768,9 @@ const PDFReviewer = ({
               onSendReply={handleSendReply}
               onToggleReplyInput={toggleReplyInput}
               selectedHighlight={selectedHighlight}
+              comments={comments}
+              onSaveEdit={handleSaveEdit}
+              onDeleteReply={handleDeleteReply}
             />
           )}
         </Box>
