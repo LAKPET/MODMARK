@@ -69,6 +69,7 @@ const PDFReviewer = ({
   const [comments, setComments] = useState({});
   const [selectionPosition, setSelectionPosition] = useState(null);
   const [gradingStatus, setGradingStatus] = useState(null);
+  const [submissionData, setSubmissionData] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -386,6 +387,28 @@ const PDFReviewer = ({
 
     fetchRubricData();
   }, [submissionId, assessmentId, apiUrl]);
+
+  useEffect(() => {
+    const fetchSubmissionData = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(
+          `${apiUrl}/submission/${submissionId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        console.log("Fetched submission data:", response.data);
+        setSubmissionData(response.data);
+      } catch (err) {
+        console.error("Error fetching submission data:", err);
+      }
+    };
+
+    if (submissionId) {
+      fetchSubmissionData();
+    }
+  }, [submissionId, apiUrl]);
 
   const calculatePageHeight = () => {
     // Get all PDF pages
@@ -802,7 +825,7 @@ const PDFReviewer = ({
               onScoreChange={handleScoreChange}
               onSubmitScores={handleSubmitScores}
               apiUrl={apiUrl}
-              submissionInfo={submissionInfo}
+              submissionInfo={submissionData || submissionInfo}
               gradingStatus={gradingStatus}
             />
           ) : (

@@ -18,104 +18,131 @@ const scoreRoutes = require("./score");
 const router = express.Router();
 
 // Create a new group and submit work
-router.post("/submit", verifyToken, checkAdminOrStudent, upload.single("file"), async (req, res) => {
-  const {
-    assessment_id,
-    section_id,
-    group_name,
-    members, // Array of group members
-    file_type,
-  } = req.body;
-
-  try {
-    if (!assessment_id || !section_id) {
-      return res.status(400).json({ message: "Assessment ID and Section ID are required" });
-    }
-
-    const assessmentExists = await mongoose.model("Assessment").exists({ _id: assessment_id });
-    const sectionExists = await mongoose.model("Section").exists({ _id: section_id });
-
-    if (!assessmentExists || !sectionExists) {
-      return res.status(404).json({ message: "Assessment or Section not found" });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    const file_url = await uploadFile(req.file);
-    const membersArray = typeof members === "string" ? JSON.parse(members) : members;
-
-    for (const member of membersArray) {
-      const existingUser = await User.findById(member.user_id);
-      if (!existingUser) {
-        return res.status(404).json({ message: `User with ID ${member.user_id} not found.` });
-      }
-
-      const isEnrolled = await mongoose.model("Enrollment").exists({ section_id, student_id: existingUser._id });
-      if (!isEnrolled) {
-        return res.status(400).json({ message: `User with ID ${member.user_id} is not enrolled in section ${section_id}.` });
-      }
-    }
-
-    const newGroup = new Group({
-      assessment_id: new mongoose.Types.ObjectId(assessment_id),
-      group_name,
-      group_type: "study",
-      status: "submit",
-    });
-
-    await newGroup.save();
-
-    for (const member of membersArray) {
-      const newGroupMember = new GroupMember({
-        group_id: newGroup._id,
-        assessment_id: new mongoose.Types.ObjectId(assessment_id),
-        user_id: member.user_id,
-        role: "student",
-        weight: 1,
-      });
-      await newGroupMember.save();
-    }
-
-    // Fetch professors related to the section or assessment
-    const professors = await mongoose.model('GroupMember').find({
+router.post(
+  "/submit",
+  verifyToken,
+  checkAdminOrStudent,
+  upload.single("file"),
+  async (req, res) => {
+    const {
       assessment_id,
-      role: 'professor'
-    });
-
-    // Create grading_status_by array with professors
-    const gradingStatusBy = professors.map((professor) => ({
-      professor_id: professor.user_id,
-      status: 'pending'
-    }));
-
-    // Add grading_status_by to the submission
-    const newSubmission = new Submission({
-      assessment_id: new mongoose.Types.ObjectId(assessment_id),
-      section_id: new mongoose.Types.ObjectId(section_id),
-      group_id: newGroup._id,
-      student_id: req.user.id,
-      file_url: req.file.filename,
+      section_id,
+      group_name,
+      members, // Array of group members
       file_type,
-      status: "submit",
-      grading_status_by: gradingStatusBy
-    });
+    } = req.body;
 
-    await newSubmission.save();
+    try {
+      if (!assessment_id || !section_id) {
+        return res
+          .status(400)
+          .json({ message: "Assessment ID and Section ID are required" });
+      }
 
-    res.status(201).json({
-      message: "Submission created successfully!",
-      submission: newSubmission,
-    });
-  } catch (error) {
-    console.error("Error creating submission:", error);
-    res.status(500).json({ message: "Error creating submission", error });
+      const assessmentExists = await mongoose
+        .model("Assessment")
+        .exists({ _id: assessment_id });
+      const sectionExists = await mongoose
+        .model("Section")
+        .exists({ _id: section_id });
+
+      if (!assessmentExists || !sectionExists) {
+        return res
+          .status(404)
+          .json({ message: "Assessment or Section not found" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const file_url = await uploadFile(req.file);
+      const membersArray =
+        typeof members === "string" ? JSON.parse(members) : members;
+
+      for (const member of membersArray) {
+        const existingUser = await User.findById(member.user_id);
+        if (!existingUser) {
+          return res
+            .status(404)
+            .json({ message: `User with ID ${member.user_id} not found.` });
+        }
+
+        const isEnrolled = await mongoose
+          .model("Enrollment")
+          .exists({ section_id, student_id: existingUser._id });
+        if (!isEnrolled) {
+          return res
+            .status(400)
+            .json({
+              message: `User with ID ${member.user_id} is not enrolled in section ${section_id}.`,
+            });
+        }
+      }
+
+      const newGroup = new Group({
+        assessment_id: new mongoose.Types.ObjectId(assessment_id),
+        group_name,
+        group_type: "study",
+        status: "submit",
+      });
+
+      await newGroup.save();
+
+      for (const member of membersArray) {
+        const newGroupMember = new GroupMember({
+          group_id: newGroup._id,
+          assessment_id: new mongoose.Types.ObjectId(assessment_id),
+          user_id: member.user_id,
+          role: "student",
+          weight: 1,
+        });
+        await newGroupMember.save();
+      }
+
+      // Fetch professors related to the section or assessment
+      const professors = await mongoose.model("GroupMember").find({
+        assessment_id,
+        role: "professor",
+      });
+
+      // Create grading_status_by array with professors
+      const gradingStatusBy = professors.map((professor) => ({
+        professor_id: professor.user_id,
+        status: "pending",
+      }));
+
+      // Add grading_status_by to the submission
+      const newSubmission = new Submission({
+        assessment_id: new mongoose.Types.ObjectId(assessment_id),
+        section_id: new mongoose.Types.ObjectId(section_id),
+        group_id: newGroup._id,
+        student_id: req.user.id,
+        file_url: req.file.filename,
+        file_type,
+        status: "submit",
+        grading_status_by: gradingStatusBy,
+      });
+
+      await newSubmission.save();
+
+      res.status(201).json({
+        message: "Submission created successfully!",
+        submission: newSubmission,
+      });
+    } catch (error) {
+      console.error("Error creating submission:", error);
+      res.status(500).json({ message: "Error creating submission", error });
+    }
   }
-});
+);
 
 // Serve PDF files
-router.get("/pdf/:filename",verifyToken,checkAdminOrProfessorOrStudent,async (req, res) => {
+router.get(
+  "/pdf/:filename",
+  verifyToken,
+  checkAdminOrProfessorOrStudent,
+  async (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(__dirname, "../../server/uploads", filename);
 
@@ -141,15 +168,16 @@ router.get(
       const submissions = await Submission.find({
         assessment_id: new mongoose.Types.ObjectId(assessment_id),
       })
-        .populate("assessment_id", "assessment_name rubric_id")
+        .populate("assessment_id", "assessment_name rubric_id due_date")
         .populate("group_id", "group_name")
         .populate("student_id", "personal_num first_name last_name email");
 
       // Fetch all group members for each submission
       const submissionsWithGroupMembers = await Promise.all(
         submissions.map(async (submission) => {
-          const groupMembers = await GroupMember.find({ group_id: submission.group_id })
-            .populate("user_id", "personal_num first_name last_name email");
+          const groupMembers = await GroupMember.find({
+            group_id: submission.group_id,
+          }).populate("user_id", "personal_num first_name last_name email");
           return {
             ...submission.toObject(),
             group_members: groupMembers,
@@ -261,8 +289,6 @@ router.put(
     }
   }
 );
-
-
 
 // Delete a submission
 router.delete(

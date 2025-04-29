@@ -1,17 +1,16 @@
 import React from "react";
 import Nav from "react-bootstrap/Nav";
 import Logo from "../../../assets/Picture/Logo.png";
-import { NavLink, useLocation, useParams } from "react-router-dom"; // Import NavLink, useLocation, and useParams
+import { NavLink, useLocation, useParams } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AssessmentIcon from "@mui/icons-material/Assessment";
-import CreditScoreIcon from "@mui/icons-material/CreditScore";
+import GradeIcon from "@mui/icons-material/Grade";
 import "../../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
-  const location = useLocation(); // Get the current route
-  const { id } = useParams(); // Get the id from the URL
+  const location = useLocation();
+  const { id } = useParams();
 
-  // Helper function to determine if a link is active
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -21,13 +20,12 @@ function Sidebar() {
         height: "100vh",
         width: "230px",
         position: "fixed",
-        top: 0, // Sidebar starts from the top
+        top: 0,
         left: 0,
-        zIndex: 10, // Sidebar is on top of Navbar
-        backgroundColor: "#8B5F34", // Updated background color
+        zIndex: 10,
+        backgroundColor: "#8B5F34",
       }}
     >
-      {/* Logo */}
       <div className="mb-4 mt-2 text-center">
         <NavLink to="/student/course">
           <img src={Logo} alt="Logo" width="140" height="100" />
@@ -38,7 +36,6 @@ function Sidebar() {
         <hr className="line" />
       </div>
 
-      {/* Sidebar Links */}
       <Nav className="flex-column mt-4">
         <Nav.Link
           as={NavLink}
@@ -52,9 +49,9 @@ function Sidebar() {
         </Nav.Link>
         <Nav.Link
           as={NavLink}
-          to={`/assessment/${id}`}
+          to={`/student/assessment/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive(`/assessment/${id}`) ? "active" : ""
+            isActive(`/student/assessment/${id}`) ? "active" : ""
           }`}
         >
           <AssessmentIcon className="me-2" />
@@ -62,17 +59,16 @@ function Sidebar() {
         </Nav.Link>
         <Nav.Link
           as={NavLink}
-          to={`/score&feedback/${id}`}
+          to={`/student/score-feedback/${id}`}
           className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive(`/score&feedback/${id}`) ? "active" : ""
+            isActive(`/student/score-feedback/${id}`) ? "active" : ""
           }`}
         >
-          <CreditScoreIcon className="me-2" />
-          <span>Score and Feedback</span>
+          <GradeIcon className="me-2" />
+          <span>Score & Feedback</span>
         </Nav.Link>
       </Nav>
 
-      {/* Language Switcher */}
       <div className="mt-auto">
         <p className="text-white">Language</p>
         <div className="d-flex justify-content-center align-items-center">

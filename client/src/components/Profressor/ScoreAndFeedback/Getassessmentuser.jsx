@@ -7,6 +7,8 @@ import Backdrop from "@mui/material/Backdrop";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { formatDateTime } from "../../../utils/FormatDateTime";
 import { getStatusColor } from "../../../utils/StatusColor";
+import { sortSubmissions } from "../../../utils/SortSubmission";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import "../../../assets/Styles/Assessment/Getassessment.css";
 
 export default function Getassessmentuser() {
@@ -17,8 +19,19 @@ export default function Getassessmentuser() {
   const [error, setError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [assessmentType, setAssessmentType] = useState(null);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const apiUrl = import.meta.env.VITE_API_URL;
+
+  const handleSort = (column) => {
+    const newOrder =
+      sortColumn === column && sortOrder === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortOrder(newOrder);
+  };
+
+  const sortedSubmissions = sortSubmissions(submissions, sortColumn, sortOrder);
 
   useEffect(() => {
     // Get user ID from localStorage
@@ -129,30 +142,67 @@ export default function Getassessmentuser() {
           <tr className="fw-bold">
             {assessmentType === "group" ? (
               <>
-                <th>Group Name</th>
+                <th
+                  onClick={() => handleSort("group_name")}
+                  className="sortable"
+                >
+                  Group Name <SwapVertIcon />
+                </th>
                 <th>Personal Num</th>
                 <th>Group Members</th>
                 <th>Emails</th>
-                <th>Submission Date</th>
+                <th
+                  onClick={() => handleSort("submitted_at")}
+                  className="sortable"
+                >
+                  Submission Date <SwapVertIcon />
+                </th>
                 <th>Grading Status</th>
                 <th></th>
               </>
             ) : (
               <>
-                <th>User ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Submission Date</th>
-                <th>Grading Status</th>
+                <th
+                  onClick={() => handleSort("personal_num")}
+                  className="sortable"
+                >
+                  User ID <SwapVertIcon />
+                </th>
+                <th
+                  onClick={() => handleSort("first_name")}
+                  className="sortable"
+                >
+                  First Name <SwapVertIcon />
+                </th>
+                <th
+                  onClick={() => handleSort("last_name")}
+                  className="sortable"
+                >
+                  Last Name <SwapVertIcon />
+                </th>
+                <th onClick={() => handleSort("email")} className="sortable">
+                  Email <SwapVertIcon />
+                </th>
+                <th
+                  onClick={() => handleSort("submitted_at")}
+                  className="sortable"
+                >
+                  Submission Date <SwapVertIcon />
+                </th>
+                <th
+                  onClick={() => handleSort("grading_status")}
+                  className="sortable"
+                >
+                  Grading Status <SwapVertIcon />
+                </th>
                 <th></th>
               </>
             )}
           </tr>
         </MDBTableHead>
         <MDBTableBody>
-          {submissions.length > 0 ? (
-            submissions.map((submission) => (
+          {sortedSubmissions.length > 0 ? (
+            sortedSubmissions.map((submission) => (
               <tr key={submission._id}>
                 {assessmentType === "group" ? (
                   <>

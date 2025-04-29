@@ -14,6 +14,8 @@ import Alluserassessmentpage from "../pages/Profressor/Alluserassessmentpage";
 import Teampage from "../pages/Profressor/Teampage";
 import Dashboardpage_stu from "../pages/Student/Dashboardpage_stu";
 import Viewassessmentpage from "../pages/Profressor/Viewassessmentpage";
+import StudentAssessmentpage from "../pages/Student/Assessmentpage";
+import StudentScoreAndFeedbackpage from "../pages/Student/ScoreAndFeedbackpage";
 import RoutePreserver from "./RoutePreserver";
 
 function AppRoutes() {
@@ -93,6 +95,22 @@ function AppRoutes() {
           element={
             <ProtectedRoute requiredRole="student">
               <Dashboardpage_stu />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/assessment/:id"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentAssessmentpage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/score-feedback/:id"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentScoreAndFeedbackpage />
             </ProtectedRoute>
           }
         />

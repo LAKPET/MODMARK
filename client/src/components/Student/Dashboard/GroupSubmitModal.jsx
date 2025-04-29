@@ -12,6 +12,22 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Checkbox from "@mui/material/Checkbox";
+import { styled } from "@mui/material/styles";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
+
+const SubmitButton = styled(Button)(({ theme }) => ({
+  color: "white",
+  backgroundColor: "#F27171",
+  fontSize: "0.875rem",
+  textTransform: "none",
+  borderRadius: "8px",
+  "&:hover": {
+    backgroundColor: "#d16060",
+  },
+  "&:disabled": {
+    backgroundColor: "#ccc",
+  },
+}));
 
 const GroupSubmitModal = ({
   open,
@@ -112,6 +128,7 @@ const GroupSubmitModal = ({
               minHeight: 250,
               cursor: "pointer",
               transition: "border 0.2s, background 0.2s",
+              padding: "20px",
             }}
           >
             <input
@@ -121,30 +138,52 @@ const GroupSubmitModal = ({
               style={{ display: "none" }}
               onChange={handleBrowse}
             />
-            <span style={{ fontSize: 40, marginBottom: 8 }}>⬆️</span>
+            <span style={{ fontSize: 80, marginBottom: 16 }}>
+              <FileUploadIcon sx={{ fontSize: 100 }} />
+            </span>
             {localFile ? (
               <div
-                style={{ color: "#8B5F34", fontWeight: 500, marginBottom: 8 }}
+                style={{
+                  color: "#8B5F34",
+                  fontWeight: 500,
+                  marginBottom: 8,
+                  textAlign: "center",
+                  width: "100%",
+                }}
               >
                 {localFile.name}
               </div>
             ) : (
-              <div>
+              <div style={{ textAlign: "center", width: "100%" }}>
                 Drag and Drop here
                 <br />
                 or{" "}
-                <span style={{ color: "#8B5F34", textDecoration: "underline" }}>
+                <div style={{ color: "#8B5F34", textDecoration: "underline" }}>
                   Browse files
-                </span>
+                </div>
               </div>
             )}
-            <div style={{ fontSize: 12, color: "#aaa", marginTop: 8 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#aaa",
+                marginTop: 8,
+                textAlign: "center",
+                width: "100%",
+              }}
+            >
               Accepted File : PDF file
             </div>
           </div>
           {/* Group info */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 16 }}>
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 20,
+                marginBottom: 16,
+              }}
+            >
               {assessment?.assessment_name}
             </div>
             <div
@@ -161,7 +200,7 @@ const GroupSubmitModal = ({
                 margin="dense"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                style={{ flex: 1 }}
+                style={{ flex: 1, marginTop: 0 }}
               />
               <TextField
                 label="Type"
@@ -172,7 +211,7 @@ const GroupSubmitModal = ({
                 style={{ flex: 1, marginTop: 0 }}
               />
             </div>
-            <div style={{ marginTop: 8, fontWeight: 500 }}>Member</div>
+            <div style={{ marginTop: 8, fontWeight: 600 }}>Member</div>
             <TableContainer style={{ maxHeight: 120, marginTop: 8 }}>
               <Table size="small">
                 <TableHead>
@@ -209,14 +248,9 @@ const GroupSubmitModal = ({
         <Button onClick={onClose} variant="outlined" disabled={uploading}>
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          style={{ background: "#8B5F34", color: "white" }}
-          disabled={uploading || !localFile}
-        >
+        <SubmitButton onClick={handleSubmit} disabled={uploading || !localFile}>
           Submit
-        </Button>
+        </SubmitButton>
       </DialogActions>
     </Dialog>
   );

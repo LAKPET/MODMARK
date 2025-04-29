@@ -70,6 +70,11 @@ export default function CourseDetail() {
   const [groupMembers, setGroupMembers] = useState([]);
   const [groupMembersData, setGroupMembersData] = useState([]);
   const [groupLoading, setGroupLoading] = useState(false);
+  const [progressData, setProgressData] = useState({
+    total_assessments: 0,
+    completed_assessments: 0,
+    remaining_assessments: 0,
+  });
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -107,8 +112,22 @@ export default function CourseDetail() {
     if (sectionId) {
       fetchAssessments();
       fetchSubmittedAssessments();
+      fetchProgressData();
     }
   }, [sectionId]);
+
+  const fetchProgressData = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get(
+        `${apiUrl}/assessment/progress/${sectionId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setProgressData(response.data);
+    } catch (error) {
+      console.error("Error fetching progress data:", error);
+    }
+  };
 
   const fetchAssessments = async () => {
     try {
@@ -140,13 +159,6 @@ export default function CourseDetail() {
     }
   };
 
-  // Function to get the next unsubmitted assessment
-  const getCurrentAssessment = () => {
-    return assessments.find(
-      (assessment) => !submittedAssessments[assessment._id]
-    );
-  };
-
   const handleFileChange = async (event, assessmentId) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -167,7 +179,6 @@ export default function CourseDetail() {
         setGroupModalAssessment(assessment);
         setGroupFile(file);
         setGroupModalOpen(true);
-        setUploading(false);
         setGroupLoading(true);
         // ดึงสมาชิกกลุ่ม
         const membersRes = await axios.get(
@@ -176,31 +187,33 @@ export default function CourseDetail() {
         );
         setGroupMembersData(membersRes.data);
         setGroupLoading(false);
-        return;
-      }
-      // ถ้า individual ส่งไฟล์ทันที
-      setUploadingAssessmentId(assessmentId);
-      const userId = localStorage.getItem("UserId");
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("assessment_id", assessmentId);
-      formData.append("group_name", "Group1");
-      formData.append("members", JSON.stringify([{ user_id: userId }]));
-      formData.append("file_type", "pdf");
-      formData.append("section_id", sectionId);
-      const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const result = await uploadRes.json();
-      if (uploadRes.ok) {
-        setSubmittedAssessments((prev) => ({
-          ...prev,
-          [assessmentId]: true,
-        }));
       } else {
-        alert(result.message || "File upload failed.");
+        // ถ้า individual ส่งไฟล์ทันที
+        setUploadingAssessmentId(assessmentId);
+        const userId = localStorage.getItem("UserId");
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("assessment_id", assessmentId);
+        formData.append("group_name", "Group1");
+        formData.append("members", JSON.stringify([{ user_id: userId }]));
+        formData.append("file_type", "pdf");
+        formData.append("section_id", sectionId);
+        const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const result = await uploadRes.json();
+        if (uploadRes.ok) {
+          setSubmittedAssessments((prev) => ({
+            ...prev,
+            [assessmentId]: true,
+          }));
+          // Refresh progress data after submission
+          fetchProgressData();
+        } else {
+          alert(result.message || "File upload failed.");
+        }
       }
     } catch (error) {
       console.error("File upload error:", error);
@@ -319,9 +332,9 @@ export default function CourseDetail() {
     return <div className="text-center mt-5 text-danger">{errorMessage}</div>;
   }
 
-  const currentAssessment = getCurrentAssessment();
-  const completedCount = Object.keys(submittedAssessments).length;
-  const totalAssessments = assessments.length;
+  // Calculate the gauge value based on completed assessments
+  const gaugeValue = progressData.completed_assessments;
+  const gaugeMax = progressData.total_assessments;
 
   return (
     <>
@@ -338,7 +351,7 @@ export default function CourseDetail() {
           <Col md={3}>
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
-                <h5 className="card-title">ส่งงานกี่เปอร์เซ็นต์แล้ว</h5>
+                <h5 className="card-title">Complete Assessments</h5>
                 <div
                   className="d-flex justify-content-center align-items-center"
                   style={{ height: "150px" }}
@@ -354,7 +367,11 @@ export default function CourseDetail() {
                     <Gauge
                       width={150}
                       height={150}
-                      value={50}
+                      value={gaugeValue}
+                      min={0}
+                      max={gaugeMax}
+                      valueMin={0}
+                      valueMax={gaugeMax}
                       cornerRadius="50%"
                       sx={(theme) => ({
                         [`& .${gaugeClasses.valueText}`]: {
@@ -369,6 +386,12 @@ export default function CourseDetail() {
                       })}
                     />
                   </div>
+                </div>
+                <div className="text-center mt-2">
+                  <span className="text-muted">
+                    {progressData.completed_assessments} of{" "}
+                    {progressData.total_assessments} completed
+                  </span>
                 </div>
               </div>
             </div>
@@ -409,7 +432,7 @@ export default function CourseDetail() {
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="card-title mb-0">Assessment</h5>
+                  <h5 className="card-title">Assessment</h5>
                   <Button
                     onClick={handleModalOpen}
                     sx={{ minWidth: "auto", p: 1, color: "black" }}
@@ -419,8 +442,8 @@ export default function CourseDetail() {
                 </div>
 
                 <div className="text-muted mb-3">
-                  Progress: {completedCount}/{totalAssessments} assessments
-                  completed
+                  Progress: {progressData.completed_assessments}/
+                  {progressData.total_assessments} assessments completed
                 </div>
                 {displayedAssessments.map((assessment) => (
                   <div key={assessment._id} className="mt-3">

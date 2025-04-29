@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Paper,
   Typography,
@@ -26,6 +26,42 @@ const ScorePanel = ({
 }) => {
   const navigate = useNavigate();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const currentProfessorId = localStorage.getItem("UserId");
+
+  // Add useEffect to log the comparison
+  useEffect(() => {
+    console.log("Current Professor ID:", currentProfessorId);
+    console.log("Submission Info:", submissionInfo);
+    console.log("Grading Status By:", submissionInfo?.grading_status_by);
+
+    if (submissionInfo?.grading_status_by) {
+      const hasPermission = submissionInfo.grading_status_by.some(
+        (status) => status.professor_id === currentProfessorId
+      );
+      console.log("Has Grading Permission:", hasPermission);
+
+      // Log each professor ID in the array for comparison
+      submissionInfo.grading_status_by.forEach((status, index) => {
+        console.log(`Professor ${index + 1} ID:`, status.professor_id);
+        console.log(
+          `Matches current user:`,
+          status.professor_id === currentProfessorId
+        );
+        console.log(
+          `Type comparison:`,
+          typeof status.professor_id,
+          typeof currentProfessorId
+        );
+      });
+    } else {
+      console.log("No grading_status_by array found in submissionInfo");
+    }
+  }, [currentProfessorId, submissionInfo]);
+
+  // Check if the current professor has permission to grade
+  const hasGradingPermission = submissionInfo?.grading_status_by?.some(
+    (status) => status.professor_id === currentProfessorId
+  );
 
   const handleScoreChange = (criterionId, levelId) => {
     const selectedLevel = rubric.criteria
@@ -121,6 +157,12 @@ const ScorePanel = ({
           </Alert>
         )}
 
+        {!hasGradingPermission && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            You don't have permission to grade this assessment.
+          </Alert>
+        )}
+
         {rubric?.criteria.map((criterion) => (
           <Box key={criterion._id} sx={{ mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: "bold" }}>
@@ -165,18 +207,20 @@ const ScorePanel = ({
           <Typography variant="h6" sx={{ color: "#8B5F34" }}>
             Total Score: {total} / {maxPossible}
           </Typography>
-          <IconButton
-            onClick={handleSubmitScores}
-            sx={{
-              backgroundColor: "#8B5F34",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#6B4A2A",
-              },
-            }}
-          >
-            <SendIcon />
-          </IconButton>
+          {hasGradingPermission && (
+            <IconButton
+              onClick={handleSubmitScores}
+              sx={{
+                backgroundColor: "#8B5F34",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#6B4A2A",
+                },
+              }}
+            >
+              <SendIcon />
+            </IconButton>
+          )}
         </Box>
       </Paper>
 

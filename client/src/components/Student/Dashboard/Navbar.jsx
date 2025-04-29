@@ -42,7 +42,9 @@ function Navber() {
       }
     };
 
-    fetchCourseDetails();
+    if (id) {
+      fetchCourseDetails();
+    }
   }, [id, navigate]);
 
   const handleLogout = async () => {
@@ -76,12 +78,12 @@ function Navber() {
 
   // Determine the current page based on the path
   const getCurrentPage = () => {
-    if (location.pathname.includes("/dashboard")) {
+    if (location.pathname.includes("/student/dashboard")) {
       return "Dashboard";
-    } else if (location.pathname.includes("/assessment")) {
+    } else if (location.pathname.includes("/student/assessment")) {
       return "Assessment";
-    } else if (location.pathname.includes("/score&feedback")) {
-      return "Score&Feedback";
+    } else if (location.pathname.includes("/student/score-feedback")) {
+      return "Score & Feedback";
     } else {
       return "My Dashboard";
     }
@@ -105,15 +107,25 @@ function Navber() {
               </Link>
               {courseDetails && (
                 <>
-                  <Typography sx={{ color: "inherit" }}>
+                  <Link
+                    component={NavLink}
+                    to={`/student/dashboard/${id}`}
+                    underline="hover"
+                    color="inherit"
+                  >
                     {courseDetails.course_number}-{courseDetails.section_number}
-                  </Typography>
+                  </Link>
                 </>
               )}
               {courseDetails && (
-                <Typography sx={{ color: "text.primary" }}>
+                <Link
+                  component={NavLink}
+                  to={location.pathname}
+                  underline="hover"
+                  color="inherit"
+                >
                   {getCurrentPage()}
-                </Typography>
+                </Link>
               )}
             </Breadcrumbs>
           </div>
