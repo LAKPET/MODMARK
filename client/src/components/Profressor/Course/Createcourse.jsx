@@ -7,10 +7,15 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
 import "../../../assets/Styles/Course/Createcourse.css";
 
-export default function Createcourse({ show, handleClose, role }) {
+export default function Createcourse({
+  show,
+  handleClose,
+  role,
+  onCourseCreated,
+}) {
   const [courseNumber, setCourseNumber] = useState("");
   const [courseName, setCourseName] = useState("");
   const [courseDescription, setCourseDescription] = useState("");
@@ -58,6 +63,9 @@ export default function Createcourse({ show, handleClose, role }) {
       console.log("Course created successfully:", response.data);
       handleClose(); // Close the modal after success
       setShowSuccessModal(true); // Show success modal
+      if (onCourseCreated) {
+        onCourseCreated();
+      }
     } catch (error) {
       console.error(
         "Error creating course:",

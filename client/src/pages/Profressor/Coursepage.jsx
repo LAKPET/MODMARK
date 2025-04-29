@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navber from "../../components/Profressor/Course/Navbar";
 import Sidebar from "../../components/Profressor/Course/Sidebar";
 import Createcourse from "../../components/Profressor/Course/Createcourse";
@@ -12,6 +12,7 @@ function Coursepage() {
   const [showModal, setShowModal] = useState(false);
   const { user } = useAuth();
   const [role, setRole] = useState("");
+  const getCourseRef = useRef();
 
   useEffect(() => {
     const userRole = localStorage.getItem("UserRole");
@@ -20,6 +21,12 @@ function Coursepage() {
 
   const handleShowModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
+
+  const refreshCourses = () => {
+    if (getCourseRef.current) {
+      getCourseRef.current.fetchCourses();
+    }
+  };
 
   return (
     <div>
@@ -50,7 +57,7 @@ function Coursepage() {
           </Row>
           <Row>
             <Col>
-              <Getcourse />
+              <Getcourse ref={getCourseRef} />
             </Col>
           </Row>
         </Container>
@@ -62,6 +69,7 @@ function Coursepage() {
           show={showModal}
           handleClose={handleCloseModal}
           role={role}
+          onCourseCreated={refreshCourses}
         />
       )}
     </div>

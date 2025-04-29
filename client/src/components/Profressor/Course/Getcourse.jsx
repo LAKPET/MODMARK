@@ -1,37 +1,47 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import axios from "axios";
 import "../../../assets/Styles/Course/Getcourse.css"; // Updated import statement
 import Ant from "../../../assets/Picture/Ant.png";
 import { useNavigate } from "react-router-dom";
 
-export default function Getcourse() {
+const Getcourse = forwardRef((props, ref) => {
   const [courses, setCourses] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
+
+  const fetchCourses = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get(`${apiUrl}/course/my-courses`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setCourses(response.data.courses || []);
+      console.log(response.data.courses);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch courses");
+      console.error("Error fetching courses:", err);
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useImperativeHandle(ref, () => ({
+    fetchCourses,
+  }));
+
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const response = await axios.get(`${apiUrl}/course/my-courses`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setCourses(response.data.courses || []);
-        console.log(response.data.courses);
-      } catch (error) {
-        console.error(
-          "Error fetching courses:",
-          error.response?.data || error.message
-        );
-        setCourses([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchCourses();
   }, []);
 
@@ -90,4 +100,6 @@ export default function Getcourse() {
       </div>
     </div>
   );
-}
+});
+
+export default Getcourse;

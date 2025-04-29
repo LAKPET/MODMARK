@@ -12,7 +12,7 @@ import picturetab2 from "../../../assets/Picture/mdi_number-2-box.png";
 import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
-import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 export default function CreateAssessmentModal({
@@ -86,7 +86,10 @@ export default function CreateAssessmentModal({
       .then((response) => {
         handleClose();
         resetForm();
-        setShowSuccessModal(true); // Show success modal
+        setShowSuccessModal(true);
+        if (refreshAssessments) {
+          refreshAssessments();
+        }
       })
       .catch((err) => {
         console.error(

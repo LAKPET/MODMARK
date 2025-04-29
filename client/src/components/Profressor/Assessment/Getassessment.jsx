@@ -151,7 +151,6 @@ export default function Getassessment() {
               <tr
                 key={assessment._id || index}
                 onClick={(e) => {
-                  // Don't navigate if clicking on edit or delete icons
                   if (e.target.closest(".action-icons")) return;
                   navigate(
                     `/assessment/${id}/allassessmentuser/${assessment._id}`
@@ -176,8 +175,7 @@ export default function Getassessment() {
                     <EditIcon
                       className="icon-style"
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent row click
-                        console.log("Edit clicked for ID:", assessment._id);
+                        e.stopPropagation();
                         setSelectedAssessmentId(assessment._id);
                         setShowEditModal(true);
                       }}
@@ -185,8 +183,7 @@ export default function Getassessment() {
                     <DeleteIcon
                       className="icon-style"
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent row click
-                        console.log("Delete clicked for ID:", assessment._id);
+                        e.stopPropagation();
                         setSelectedAssessmentId(assessment._id);
                         setShowDeleteModal(true);
                       }}
