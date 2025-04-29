@@ -143,8 +143,21 @@ router.get(
       })
         .populate("assessment_id", "assessment_name rubric_id")
         .populate("group_id", "group_name")
-        .populate("student_id","personal_num first_name last_name email");
-      res.status(200).json(submissions);
+        .populate("student_id", "personal_num first_name last_name email");
+
+      // Fetch all group members for each submission
+      const submissionsWithGroupMembers = await Promise.all(
+        submissions.map(async (submission) => {
+          const groupMembers = await GroupMember.find({ group_id: submission.group_id })
+            .populate("user_id", "personal_num first_name last_name email");
+          return {
+            ...submission.toObject(),
+            group_members: groupMembers,
+          };
+        })
+      );
+
+      res.status(200).json(submissionsWithGroupMembers);
     } catch (error) {
       console.error("Error fetching submissions:", error);
       res.status(500).json({ message: "Error fetching submissions", error });
