@@ -112,7 +112,10 @@ export default function CourseTable() {
   };
 
   const handleShowCreateModal = () => setShowCreateModal(true);
-  const handleCloseCreateModal = () => setShowCreateModal(false);
+  const handleCloseCreateModal = () => {
+    setShowCreateModal(false);
+    fetchCourses(); // Refresh courses after closing create modal
+  };
   const handleCloseEditModal = () => setShowEditModal(false);
   const handleCloseDeleteModal = () => setShowDeleteModal(false);
   const handleCloseAddUserModal = () => setShowAddUserModal(false);
@@ -267,6 +270,8 @@ export default function CourseTable() {
       <Createcourse
         show={showCreateModal}
         handleClose={handleCloseCreateModal}
+        role={user?.role}
+        onCourseCreated={fetchCourses}
       />
       <DeleteCourse
         show={showDeleteModal}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { MDBInput } from "mdb-react-ui-kit";
 import axios from "axios";
-import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
 
 export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [courseNumber, setCourseNumber] = useState("");
@@ -22,7 +22,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const fetchCourseDetails = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axios.put(`${apiUrl}/section/update/${Id}`, {
+      const response = await axios.get(`${apiUrl}/section/${Id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const course = response.data;
@@ -30,7 +30,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
       setSectionName(course.section_number);
       setSemesterTerm(course.semester_term);
       setSemesterYear(course.semester_year);
-      // setCourseName(course.course_name);
+      setCourseName(course.course_name);
     } catch (err) {
       console.error("Failed to fetch course details:", err);
     }
@@ -47,7 +47,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
           section_number: sectionName,
           semester_term: semesterTerm,
           semester_year: semesterYear,
-          // course_name: courseName,
+          course_name: courseName,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -109,7 +109,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
               />
             </Form.Group>
 
-            {/* <Form.Group className="mb-4" controlId="formCourseName">
+            <Form.Group className="mb-4" controlId="formCourseName">
               <MDBInput
                 label="Course Name"
                 id="formCourseName"
@@ -117,7 +117,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
                 value={courseName}
                 onChange={(e) => setCourseName(e.target.value)}
               />
-            </Form.Group> */}
+            </Form.Group>
 
             <div className="d-flex justify-content-end">
               <Button className="custom-btn" type="submit">

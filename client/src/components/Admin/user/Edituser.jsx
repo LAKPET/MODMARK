@@ -6,7 +6,7 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import axios from "axios";
-import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
 
 export default function Edituser({ show, handleClose, userId, refreshUsers }) {
   const [firstname, setFirstname] = useState("");
@@ -26,7 +26,7 @@ export default function Edituser({ show, handleClose, userId, refreshUsers }) {
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/users/${userId}`, {
+      const response = await axios.get(`${apiUrl}/users/profile/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const user = response.data;

@@ -265,4 +265,21 @@ router.get(
   }
 );
 
+// ฟังก์ชันสำหรับดึงข้อมูล Section ตาม ID
+router.get("/:id", verifyToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const section = await Section.findById(id);
+    if (!section) {
+      return res.status(404).json({ message: "Section not found" });
+    }
+
+    res.status(200).json(section);
+  } catch (error) {
+    console.error("Error fetching section:", error);
+    res.status(500).json({ message: "Error fetching section", error });
+  }
+});
+
 module.exports = router;
