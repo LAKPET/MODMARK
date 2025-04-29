@@ -505,6 +505,9 @@ const PDFReviewer = ({
       };
       setHighlights([...highlights, newHighlight]);
 
+      // Immediately fetch comments for this highlight
+      await fetchCommentsForHighlight(response.data.annotation._id);
+
       // Reset states
       setComment("");
       setShowCommentDialog(false);
@@ -619,18 +622,19 @@ const PDFReviewer = ({
         const token = localStorage.getItem("authToken");
         const userId = localStorage.getItem("UserId");
 
-        // Find the comment ID for this highlight
-        const highlight = highlights.find((h) => h.id === highlightId);
-        if (
-          !highlight ||
-          !highlight.comments ||
-          highlight.comments.length === 0
-        ) {
-          console.error("No comment found for this highlight");
+        // First, ensure we have the latest comments
+        await fetchCommentsForHighlight(highlightId);
+
+        // Get the comment from our comments state
+        const highlightComments = comments[highlightId];
+
+        if (!highlightComments || highlightComments.length === 0) {
+          console.error("No comments found for this highlight");
           return;
         }
 
-        const commentId = highlight.comments[0]._id; // Use the first comment as parent
+        // Use the first comment as parent
+        const commentId = highlightComments[0]._id;
 
         // Send the reply
         const response = await axios.post(
@@ -646,13 +650,16 @@ const PDFReviewer = ({
 
         console.log("Reply sent:", response.data);
 
-        // Reset only the reply text, but keep the input open
+        // Reset the reply text
         setReplyTexts((prev) => ({
           ...prev,
           [highlightId]: "",
         }));
 
-        // Immediately fetch updated comments for this highlight
+        // Wait a short moment to ensure the server has processed the reply
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Fetch updated comments
         await fetchCommentsForHighlight(highlightId);
       } catch (error) {
         console.error("Error sending reply:", error);
