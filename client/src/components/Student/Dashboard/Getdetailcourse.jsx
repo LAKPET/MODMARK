@@ -7,7 +7,26 @@ import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Checkbox from "@mui/material/Checkbox";
 import "../../../assets/Styles/Course/Getcourse.css";
+import SegmentIcon from "@mui/icons-material/Segment";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import GroupSubmitModal from "./GroupSubmitModal";
 
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
@@ -41,6 +60,16 @@ export default function CourseDetail() {
   const [uploading, setUploading] = useState(false);
   const [submittedAssessments, setSubmittedAssessments] = useState({});
   const [uploadingAssessmentId, setUploadingAssessmentId] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedAssessments, setSelectedAssessments] = useState([]);
+  const [displayedAssessments, setDisplayedAssessments] = useState([]);
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [groupModalAssessment, setGroupModalAssessment] = useState(null);
+  const [groupFile, setGroupFile] = useState(null);
+  const [groupName, setGroupName] = useState("");
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [groupMembersData, setGroupMembersData] = useState([]);
+  const [groupLoading, setGroupLoading] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -120,14 +149,37 @@ export default function CourseDetail() {
 
   const handleFileChange = async (event, assessmentId) => {
     const file = event.target.files[0];
-    if (file) {
-      if (file.type !== "application/pdf") {
-        alert("Only PDF files are allowed!");
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      alert("Only PDF files are allowed!");
+      return;
+    }
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get(
+        `${apiUrl}/assessment/section/${sectionId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const assessment = response.data.find((a) => a._id === assessmentId);
+      if (!assessment) throw new Error("Assessment not found");
+      if (assessment.assignment_type === "group") {
+        setGroupModalAssessment(assessment);
+        setGroupFile(file);
+        setGroupModalOpen(true);
+        setUploading(false);
+        setGroupLoading(true);
+        // ดึงสมาชิกกลุ่ม
+        const membersRes = await axios.get(
+          `${apiUrl}/section/students/${sectionId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setGroupMembersData(membersRes.data);
+        setGroupLoading(false);
         return;
       }
-      setUploading(true);
+      // ถ้า individual ส่งไฟล์ทันที
       setUploadingAssessmentId(assessmentId);
-      const token = localStorage.getItem("authToken");
       const userId = localStorage.getItem("UserId");
       const formData = new FormData();
       formData.append("file", file);
@@ -136,29 +188,119 @@ export default function CourseDetail() {
       formData.append("members", JSON.stringify([{ user_id: userId }]));
       formData.append("file_type", "pdf");
       formData.append("section_id", sectionId);
-
-      try {
-        const response = await fetch(`${apiUrl}/submission/submit`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-        const result = await response.json();
-        if (response.ok) {
-          setSubmittedAssessments((prev) => ({
-            ...prev,
-            [assessmentId]: true,
-          }));
-        } else {
-          alert(result.message || "File upload failed.");
-        }
-      } catch (error) {
-        console.error("File upload error:", error);
-        alert("An error occurred during file upload.");
-      } finally {
-        setUploading(false);
-        setUploadingAssessmentId(null);
+      const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const result = await uploadRes.json();
+      if (uploadRes.ok) {
+        setSubmittedAssessments((prev) => ({
+          ...prev,
+          [assessmentId]: true,
+        }));
+      } else {
+        alert(result.message || "File upload failed.");
       }
+    } catch (error) {
+      console.error("File upload error:", error);
+      alert("An error occurred during file upload.");
+    } finally {
+      setUploading(false);
+      setUploadingAssessmentId(null);
+    }
+  };
+
+  const handleModalOpen = () => setOpenModal(true);
+  const handleModalClose = () => setOpenModal(false);
+
+  const handleAssessmentSelect = (assessment) => {
+    setSelectedAssessments((prev) => {
+      const isSelected = prev.find((a) => a._id === assessment._id);
+      if (isSelected) {
+        return prev.filter((a) => a._id !== assessment._id);
+      } else {
+        return [...prev, assessment];
+      }
+    });
+  };
+
+  useEffect(() => {
+    setDisplayedAssessments(
+      selectedAssessments.length > 0
+        ? selectedAssessments
+        : assessments.slice(0, 1)
+    );
+  }, [selectedAssessments, assessments]);
+
+  const modalStyle = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 400,
+    bgcolor: "background.paper",
+    boxShadow: 24,
+    p: 4,
+    borderRadius: 2,
+  };
+
+  // ฟังก์ชันสำหรับ submit group
+  const handleGroupSubmit = async (selectedMembers) => {
+    if (!groupFile) {
+      alert("Please select a file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const formData = new FormData();
+      formData.append("file", groupFile);
+      formData.append("assessment_id", groupModalAssessment._id);
+      formData.append("group_name", groupName);
+      formData.append(
+        "members",
+        JSON.stringify(selectedMembers.map((id) => ({ user_id: id })))
+      );
+      formData.append("file_type", "pdf");
+      formData.append("section_id", sectionId);
+      const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const result = await uploadRes.json();
+      if (uploadRes.ok) {
+        setGroupModalOpen(false);
+      } else {
+        alert(result.message || "File upload failed.");
+      }
+    } catch (error) {
+      alert("An error occurred during file upload.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleBrowse = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      if (selectedFile.type !== "application/pdf") {
+        alert("Only PDF files are allowed!");
+        return;
+      }
+      setGroupFile(selectedFile);
+    }
+  };
+
+  const handleDrop = (e) => {
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      if (droppedFile.type !== "application/pdf") {
+        alert("Only PDF files are allowed!");
+        return;
+      }
+      setGroupFile(droppedFile);
     }
   };
 
@@ -266,46 +408,74 @@ export default function CourseDetail() {
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
-                <h5 className="card-title">Assessment</h5>
+                <div className="d-flex justify-content-between align-items-center">
+                  <h5 className="card-title mb-0">Assessment</h5>
+                  <Button
+                    onClick={handleModalOpen}
+                    sx={{ minWidth: "auto", p: 1, color: "black" }}
+                  >
+                    <SegmentIcon />
+                  </Button>
+                </div>
+
                 <div className="text-muted mb-3">
                   Progress: {completedCount}/{totalAssessments} assessments
                   completed
                 </div>
-                {currentAssessment ? (
-                  <div className="mt-3">
+                {displayedAssessments.map((assessment) => (
+                  <div key={assessment._id} className="mt-3">
                     <div className="mb-3 p-3 bg-white rounded">
                       <div className="d-flex justify-content-between align-items-center">
                         <span className="small text-muted">
-                          {currentAssessment.assessment_name}
+                          {assessment.assessment_name}
                         </span>
-                        <StyledButton
-                          component="label"
-                          role={undefined}
-                          variant="contained"
-                          tabIndex={-1}
-                          isSubmitted={
-                            submittedAssessments[currentAssessment._id]
-                          }
-                          disabled={uploading}
-                        >
-                          {uploadingAssessmentId === currentAssessment._id
-                            ? "Uploading..."
-                            : "Un-submit"}
-                          <VisuallyHiddenInput
-                            type="file"
-                            onChange={(e) =>
-                              handleFileChange(e, currentAssessment._id)
-                            }
-                          />
-                        </StyledButton>
+                        {assessment.assignment_type === "group" ? (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={uploading}
+                            onClick={async () => {
+                              setGroupModalAssessment(assessment);
+                              setGroupFile(null);
+                              setGroupModalOpen(true);
+                              setGroupLoading(true);
+                              const token = localStorage.getItem("authToken");
+                              const membersRes = await axios.get(
+                                `${apiUrl}/section/students/${sectionId}`,
+                                {
+                                  headers: { Authorization: `Bearer ${token}` },
+                                }
+                              );
+                              setGroupMembersData(membersRes.data);
+                              setGroupLoading(false);
+                            }}
+                          >
+                            ส่งงานกลุ่ม
+                          </Button>
+                        ) : (
+                          <StyledButton
+                            component="label"
+                            role={undefined}
+                            variant="contained"
+                            tabIndex={-1}
+                            isSubmitted={submittedAssessments[assessment._id]}
+                            disabled={uploading}
+                          >
+                            {uploadingAssessmentId === assessment._id
+                              ? "Uploading..."
+                              : "Un-submit"}
+                            <VisuallyHiddenInput
+                              type="file"
+                              onChange={(e) =>
+                                handleFileChange(e, assessment._id)
+                              }
+                            />
+                          </StyledButton>
+                        )}
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="d-flex justify-content-center align-items-center h-100">
-                    <p className="text-muted">All assessments completed!</p>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
           </Col>
@@ -314,7 +484,12 @@ export default function CourseDetail() {
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
-                <h5 className="card-title">Score</h5>
+                <div className="d-flex justify-content-between align-items-center">
+                  <h5 className="card-title mb-0">Score</h5>
+                  <Button sx={{ minWidth: "auto", p: 1, color: "black" }}>
+                    <SegmentIcon />
+                  </Button>
+                </div>
                 <div className="mt-3">
                   {assessments.slice(0, 3).map((assessment, index) => (
                     <div
@@ -334,7 +509,12 @@ export default function CourseDetail() {
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
-                <h5 className="card-title">Feedback</h5>
+                <div className="d-flex justify-content-between align-items-center">
+                  <h5 className="card-title mb-0">Feedback</h5>
+                  <Button sx={{ minWidth: "auto", p: 1, color: "black" }}>
+                    <SegmentIcon />
+                  </Button>
+                </div>
                 <div className="mt-3">
                   {assessments.slice(0, 3).map((assessment, index) => (
                     <div
@@ -349,8 +529,56 @@ export default function CourseDetail() {
               </div>
             </div>
           </Col>
+
+          {/* Modal for Assessment Selection */}
+          <Modal
+            open={openModal}
+            onClose={handleModalClose}
+            aria-labelledby="assessment-selection-modal"
+          >
+            <Box sx={modalStyle}>
+              <h4 className="mb-3">Select Assessments</h4>
+              <List sx={{ width: "100%", maxHeight: 400, overflow: "auto" }}>
+                {assessments.map((assessment) => (
+                  <ListItem
+                    key={assessment._id}
+                    dense
+                    button
+                    onClick={() => handleAssessmentSelect(assessment)}
+                  >
+                    <Checkbox
+                      edge="start"
+                      checked={selectedAssessments.some(
+                        (a) => a._id === assessment._id
+                      )}
+                      tabIndex={-1}
+                      disableRipple
+                    />
+                    <ListItemText primary={assessment.assessment_name} />
+                  </ListItem>
+                ))}
+              </List>
+              <div className="d-flex justify-content-end mt-3">
+                <Button onClick={handleModalClose} variant="contained">
+                  Close
+                </Button>
+              </div>
+            </Box>
+          </Modal>
         </Row>
       </Container>
+      <GroupSubmitModal
+        open={groupModalOpen}
+        onClose={() => setGroupModalOpen(false)}
+        assessment={groupModalAssessment}
+        file={groupFile}
+        groupName={groupName}
+        setGroupName={setGroupName}
+        groupMembersData={groupMembersData}
+        uploading={uploading}
+        onSubmit={handleGroupSubmit}
+        setGroupFile={setGroupFile}
+      />
     </>
   );
 }

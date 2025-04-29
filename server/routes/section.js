@@ -53,7 +53,14 @@ router.put(
   checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { id } = req.params;
-    const { section_number, semester_term, semester_year, course_number, course_name, course_description } = req.body;
+    const {
+      section_number,
+      semester_term,
+      semester_year,
+      course_number,
+      course_name,
+      course_description,
+    } = req.body;
 
     try {
       // ค้นหา Section ที่จะทำการแก้ไข
@@ -101,7 +108,10 @@ router.put(
         course.course_name = course_name;
         isCourseUpdated = true;
       }
-      if (course_description && course.course_description !== course_description) {
+      if (
+        course_description &&
+        course.course_description !== course_description
+      ) {
         course.course_description = course_description;
         isCourseUpdated = true;
       }
@@ -121,7 +131,9 @@ router.put(
       });
     } catch (error) {
       console.error("Error updating section and course:", error);
-      res.status(500).json({ message: "Error updating section and course", error });
+      res
+        .status(500)
+        .json({ message: "Error updating section and course", error });
     }
   }
 );
@@ -168,7 +180,7 @@ router.delete(
 router.get(
   "/students/:section_id",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+
   async (req, res) => {
     const { section_id } = req.params;
 

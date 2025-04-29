@@ -8,6 +8,8 @@ import {
 } from "mdb-react-ui-kit";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import ModalComponent from "../../controls/Modal";
+import { validateRegistrationForm } from "../../utils/FormValidation";
 
 function Register() {
   const [personalNum, setPersonalNum] = useState("");
@@ -16,13 +18,28 @@ function Register() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!firstname || !lastname) {
-      alert("Firstname and Lastname are required!");
+
+    const formData = {
+      personalNum,
+      firstname,
+      lastname,
+      email,
+      username,
+      password,
+    };
+
+    const { isValid, errors: validationErrors } =
+      validateRegistrationForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
       return;
     }
 
@@ -36,9 +53,20 @@ function Register() {
         password,
       })
       .then(() => {
-        navigate("/login");
+        setShowModal(true);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        if (err.response?.data?.message) {
+          setErrors({ submit: err.response.data.message });
+        } else {
+          setErrors({ submit: "Registration failed. Please try again." });
+        }
+      });
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    navigate("/login");
   };
 
   return (
@@ -81,54 +109,140 @@ function Register() {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Personal Number"
-                id="form1"
-                type="text"
-                value={personalNum}
-                onChange={(e) => setPersonalNum(e.target.value)}
-              />
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Firstname"
-                id="form2"
-                type="text"
-                value={firstname}
-                onChange={(e) => setFirstname(e.target.value)}
-              />
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Lastname"
-                id="form3"
-                type="text"
-                value={lastname}
-                onChange={(e) => setLastname(e.target.value)}
-              />
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Email"
-                id="form4"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Username"
-                id="form5"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <MDBInput
-                wrapperClass="mb-4"
-                label="Password"
-                id="form6"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="mb-4">
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Personal Number"
+                  id="form1"
+                  type="text"
+                  value={personalNum}
+                  onChange={(e) => setPersonalNum(e.target.value)}
+                  invalid={!!errors.personalNum}
+                  className={errors.personalNum ? "border-danger" : ""}
+                />
+                {errors.personalNum && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.personalNum}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Firstname"
+                  id="form2"
+                  type="text"
+                  value={firstname}
+                  onChange={(e) => setFirstname(e.target.value)}
+                  invalid={!!errors.firstname}
+                  className={errors.firstname ? "border-danger" : ""}
+                />
+                {errors.firstname && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.firstname}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Lastname"
+                  id="form3"
+                  type="text"
+                  value={lastname}
+                  onChange={(e) => setLastname(e.target.value)}
+                  invalid={!!errors.lastname}
+                  className={errors.lastname ? "border-danger" : ""}
+                />
+                {errors.lastname && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.lastname}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Email"
+                  id="form4"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  invalid={!!errors.email}
+                  className={errors.email ? "border-danger" : ""}
+                />
+                {errors.email && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.email}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Username"
+                  id="form5"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  invalid={!!errors.username}
+                  className={errors.username ? "border-danger" : ""}
+                />
+                {errors.username && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.username}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <MDBInput
+                  wrapperClass="mb-2"
+                  label="Password"
+                  id="form6"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  invalid={!!errors.password}
+                  className={errors.password ? "border-danger" : ""}
+                />
+                {errors.password && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.password}
+                  </div>
+                )}
+              </div>
+
+              {errors.submit && (
+                <div
+                  className="text-danger mb-4 text-center"
+                  style={{ fontSize: "0.875rem" }}
+                >
+                  {errors.submit}
+                </div>
+              )}
 
               <MDBBtn type="submit" className="mb-4 w-100">
                 Register
@@ -153,6 +267,13 @@ function Register() {
           </div>
         </MDBCol>
       </MDBRow>
+
+      <ModalComponent
+        open={showModal}
+        handleClose={handleModalClose}
+        title="Registration Successful"
+        description="Your account has been created successfully. You can now login with your credentials."
+      />
     </MDBContainer>
   );
 }

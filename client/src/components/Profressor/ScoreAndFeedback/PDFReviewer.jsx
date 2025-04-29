@@ -44,6 +44,8 @@ const PDFReviewer = ({
   onPrevious,
   assessmentId,
   submissionInfo,
+  isFirstSubmission,
+  isLastSubmission,
 }) => {
   const [highlights, setHighlights] = useState([]);
   const [selectedText, setSelectedText] = useState("");
@@ -66,6 +68,7 @@ const PDFReviewer = ({
   const [error, setError] = useState(null);
   const [comments, setComments] = useState({});
   const [selectionPosition, setSelectionPosition] = useState(null);
+  const [gradingStatus, setGradingStatus] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -90,6 +93,11 @@ const PDFReviewer = ({
       { username: "Alice Johnson", text: "Another reply" },
     ],
   };
+
+  // Get student name from submissionInfo
+  const studentName = submissionInfo?.student_info
+    ? `${submissionInfo.student_info.first_name} ${submissionInfo.student_info.last_name}`
+    : null;
 
   const handleContextMenu = (event) => {
     event.preventDefault();
@@ -321,6 +329,14 @@ const PDFReviewer = ({
           throw new Error("Rubric not found for this assessment");
         }
 
+        // Check grading status
+        const currentUserId = localStorage.getItem("UserId");
+        const userStatus = submission.grading_status_by?.find(
+          (status) => status.professor_id === currentUserId
+        );
+        const status = userStatus ? userStatus.status : "pending";
+        setGradingStatus(status);
+
         // Then fetch the rubric data
         const rubricResponse = await axios.get(
           `${apiUrl}/rubric/${submission.assessment_id.rubric_id}`,
@@ -337,6 +353,29 @@ const PDFReviewer = ({
           initialScores[criterion._id] = "";
         });
         setScores(initialScores);
+
+        // If grading status is "already", fetch existing scores
+        if (status === "already") {
+          try {
+            const rawScoreResponse = await axios.get(
+              `${apiUrl}/score/assessment/rawscore/${submissionId}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            if (
+              rawScoreResponse.data &&
+              rawScoreResponse.data.rawScore &&
+              rawScoreResponse.data.rawScore.score
+            ) {
+              // Update scores with existing values
+              setScores(rawScoreResponse.data.rawScore.score);
+            }
+          } catch (scoreErr) {
+            console.error("Error fetching existing scores:", scoreErr);
+          }
+        }
       } catch (err) {
         console.error("Error fetching rubric:", err);
         setError("Error loading rubric data");
@@ -670,8 +709,12 @@ const PDFReviewer = ({
     try {
       const token = localStorage.getItem("authToken");
       await axios.post(
-        `${apiUrl}/submission/score/${submissionId}`,
+        `${apiUrl}/score/assessment/submit`,
         {
+          assessment_id: submissionInfo.assessment_id,
+          submission_id: submissionId,
+          student_id: submissionInfo.student_id,
+          group_id: submissionInfo.group_id,
           scores: Object.entries(scores).map(([criterionId, score]) => ({
             criterion_id: criterionId,
             score: parseFloat(score),
@@ -682,6 +725,7 @@ const PDFReviewer = ({
         }
       );
       // Handle success (e.g., show success message, redirect)
+      setGradingStatus("already");
     } catch (err) {
       console.error("Error submitting scores:", err);
       // Handle error (e.g., show success message)
@@ -724,6 +768,9 @@ const PDFReviewer = ({
         onPrevious={onPrevious}
         submissionId={submissionId}
         assessmentId={assessmentId}
+        isFirstSubmission={isFirstSubmission}
+        isLastSubmission={isLastSubmission}
+        studentName={studentName}
       />
 
       <Box
@@ -756,6 +803,7 @@ const PDFReviewer = ({
               onSubmitScores={handleSubmitScores}
               apiUrl={apiUrl}
               submissionInfo={submissionInfo}
+              gradingStatus={gradingStatus}
             />
           ) : (
             <CommentsPanel

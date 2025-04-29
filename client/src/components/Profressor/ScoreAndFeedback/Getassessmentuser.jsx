@@ -16,6 +16,7 @@ export default function Getassessmentuser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [assessmentType, setAssessmentType] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -40,6 +41,15 @@ export default function Getassessmentuser() {
         );
         console.log("Submissions data:", response.data);
         setSubmissions(response.data);
+
+        // Fetch assessment type
+        const assessmentResponse = await axios.get(
+          `${apiUrl}/assessment/${assessmentId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setAssessmentType(assessmentResponse.data.assignment_type);
       } catch (err) {
         setError("Error loading submissions.");
       } finally {
@@ -71,6 +81,25 @@ export default function Getassessmentuser() {
     return userStatus ? userStatus.status : "pending";
   };
 
+  const formatGroupMemberNames = (members) => {
+    if (!members || members.length === 0) return "No members";
+    return members
+      .map(
+        (member) => `${member.user_id.first_name} ${member.user_id.last_name}`
+      )
+      .join("\n");
+  };
+
+  const formatGroupMemberEmails = (members) => {
+    if (!members || members.length === 0) return "No members";
+    return members.map((member) => member.user_id.email).join("\n");
+  };
+
+  const formatGroupMemberPersonalNums = (members) => {
+    if (!members || members.length === 0) return "No members";
+    return members.map((member) => member.user_id.personal_num).join("\n");
+  };
+
   if (loading) {
     return (
       <Backdrop
@@ -98,57 +127,122 @@ export default function Getassessmentuser() {
       <MDBTable className="table-hover">
         <MDBTableHead>
           <tr className="fw-bold">
-            <th>User ID</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Username</th>
-            <th>Submission Date</th>
-            <th>Grading Status</th>
-            <th></th>
+            {assessmentType === "group" ? (
+              <>
+                <th>Group Name</th>
+                <th>Personal Num</th>
+                <th>Group Members</th>
+                <th>Emails</th>
+                <th>Submission Date</th>
+                <th>Grading Status</th>
+                <th></th>
+              </>
+            ) : (
+              <>
+                <th>User ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Submission Date</th>
+                <th>Grading Status</th>
+                <th></th>
+              </>
+            )}
           </tr>
         </MDBTableHead>
         <MDBTableBody>
           {submissions.length > 0 ? (
             submissions.map((submission) => (
               <tr key={submission._id}>
-                <td>{submission.student_id.personal_num}</td>
-                <td>{submission.student_id.first_name}</td>
-                <td>{submission.student_id.last_name}</td>
-                <td>{submission.student_id.email}</td>
-                <td>{formatDateTime(submission.submitted_at)}</td>
-                <td>
-                  <span
-                    className="status-badge"
-                    style={{
-                      backgroundColor: getStatusColor(
-                        getUserGradingStatus(submission)
-                      ),
-                      color: "white",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      display: "inline-block",
-                      textTransform: "capitalize",
-                      marginLeft: " 18px",
-                    }}
-                  >
-                    {getUserGradingStatus(submission)}
-                  </span>
-                </td>
-                <td>
-                  <Button
-                    onClick={() => handleViewPdf(submission.file_url)}
-                    className="custom-btn"
-                  >
-                    View PDF
-                  </Button>
-                </td>
+                {assessmentType === "group" ? (
+                  <>
+                    <td>{submission.group_id?.group_name || "N/A"}</td>
+                    <td style={{ whiteSpace: "pre-line" }}>
+                      {formatGroupMemberPersonalNums(
+                        submission.group_members || []
+                      )}
+                    </td>
+                    <td style={{ whiteSpace: "pre-line" }}>
+                      {formatGroupMemberNames(submission.group_members || [])}
+                    </td>
+                    <td style={{ whiteSpace: "pre-line" }}>
+                      {formatGroupMemberEmails(submission.group_members || [])}
+                    </td>
+                    <td>{formatDateTime(submission.submitted_at)}</td>
+                    <td>
+                      <span
+                        className="status-badge"
+                        style={{
+                          backgroundColor: getStatusColor(
+                            getUserGradingStatus(submission)
+                          ),
+                          color: "white",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          display: "inline-block",
+                          textTransform: "capitalize",
+                          marginLeft: " 18px",
+                        }}
+                      >
+                        {getUserGradingStatus(submission)}
+                      </span>
+                    </td>
+                    <td>
+                      <Button
+                        onClick={() => handleViewPdf(submission.file_url)}
+                        className="custom-btn"
+                      >
+                        View PDF
+                      </Button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{submission.student_id.personal_num}</td>
+                    <td>{submission.student_id.first_name}</td>
+                    <td>{submission.student_id.last_name}</td>
+                    <td>{submission.student_id.email}</td>
+                    <td>{formatDateTime(submission.submitted_at)}</td>
+                    <td>
+                      <span
+                        className="status-badge"
+                        style={{
+                          backgroundColor: getStatusColor(
+                            getUserGradingStatus(submission)
+                          ),
+                          color: "white",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          display: "inline-block",
+                          textTransform: "capitalize",
+                          marginLeft: " 18px",
+                        }}
+                      >
+                        {getUserGradingStatus(submission)}
+                      </span>
+                    </td>
+                    <td>
+                      <Button
+                        onClick={() => handleViewPdf(submission.file_url)}
+                        className="custom-btn"
+                      >
+                        View PDF
+                      </Button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="7" className="text-center">
+              <td
+                colSpan={assessmentType === "group" ? 7 : 7}
+                className="text-center"
+              >
                 No submissions found
               </td>
             </tr>

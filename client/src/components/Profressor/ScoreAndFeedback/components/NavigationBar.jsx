@@ -1,5 +1,5 @@
 import React from "react";
-import { Paper, Typography, IconButton, Box } from "@mui/material";
+import { Paper, Typography, IconButton, Box, Tooltip } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -12,6 +12,9 @@ const NavigationBar = ({
   onPrevious,
   submissionId,
   assessmentId,
+  isFirstSubmission,
+  isLastSubmission,
+  studentName,
 }) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -50,7 +53,7 @@ const NavigationBar = ({
         </IconButton>
       </Box>
 
-      {/* Center - Page info */}
+      {/* Center - Page info and student name */}
       <Box
         sx={{
           display: "flex",
@@ -59,6 +62,20 @@ const NavigationBar = ({
           margin: "0 auto",
         }}
       >
+        {studentName && (
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: "bold",
+              color: "#fff",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              padding: "2px 8px",
+              borderRadius: "4px",
+            }}
+          >
+            Name: {studentName}
+          </Typography>
+        )}
         <Typography
           variant="subtitle2"
           sx={{ fontWeight: "bold", color: "#fff" }}
@@ -82,32 +99,50 @@ const NavigationBar = ({
 
       {/* Right side - Navigation arrows */}
       <Box sx={{ display: "flex", gap: 1 }}>
-        <IconButton
-          onClick={onPrevious}
-          size="small"
-          sx={{
-            color: "#fff",
-            p: 0.5,
-            "&:hover": {
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-            },
-          }}
+        <Tooltip
+          title={isFirstSubmission ? "First submission" : "Previous submission"}
         >
-          <ArrowBackIosIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          onClick={onNext}
-          size="small"
-          sx={{
-            color: "#fff",
-            p: 0.5,
-            "&:hover": {
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-            },
-          }}
+          <span>
+            <IconButton
+              onClick={onPrevious}
+              size="small"
+              disabled={isFirstSubmission}
+              sx={{
+                color: isFirstSubmission ? "rgba(255, 255, 255, 0.3)" : "#fff",
+                p: 0.5,
+                "&:hover": {
+                  backgroundColor: isFirstSubmission
+                    ? "transparent"
+                    : "rgba(255, 255, 255, 0.1)",
+                },
+              }}
+            >
+              <ArrowBackIosIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip
+          title={isLastSubmission ? "Last submission" : "Next submission"}
         >
-          <ArrowForwardIosIcon fontSize="small" />
-        </IconButton>
+          <span>
+            <IconButton
+              onClick={onNext}
+              size="small"
+              disabled={isLastSubmission}
+              sx={{
+                color: isLastSubmission ? "rgba(255, 255, 255, 0.3)" : "#fff",
+                p: 0.5,
+                "&:hover": {
+                  backgroundColor: isLastSubmission
+                    ? "transparent"
+                    : "rgba(255, 255, 255, 0.1)",
+                },
+              }}
+            >
+              <ArrowForwardIosIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
       </Box>
     </Paper>
   );

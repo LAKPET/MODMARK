@@ -15,14 +15,16 @@ import "mdb-react-ui-kit/dist/css/mdb.min.css";
 import { useAuth } from "../../routes/AuthContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
+import { validateLoginForm } from "../../utils/FormValidation";
 
 function Loginpage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState(""); // To show error messages
-  const [loading, setLoading] = useState(false); // To handle loading state
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const navigate = useNavigate(); // To navigate after successful login
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
   const location = useLocation();
   const { setUser } = useAuth();
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -67,6 +69,20 @@ function Loginpage() {
     e.preventDefault();
     setLoading(true);
     setErrorMessage("");
+    setErrors({});
+
+    const formData = {
+      email,
+      password,
+    };
+
+    const { isValid, errors: validationErrors } = validateLoginForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      setLoading(false);
+      return;
+    }
 
     axios
       .post(`${apiUrl}/auth/login`, { email, password })
@@ -125,12 +141,8 @@ function Loginpage() {
 
             <p>Please login to your account</p>
 
-            <MDBValidation className="row g-3" onSubmit={handlesubmit}>
-              <MDBValidationItem
-                className="col-12"
-                feedback="Please enter a valid email."
-                invalid
-              >
+            <form onSubmit={handlesubmit}>
+              <div className="mb-4">
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Email address"
@@ -138,15 +150,20 @@ function Loginpage() {
                   type="email"
                   onChange={(e) => setEmail(e.target.value)}
                   value={email}
-                  required
+                  invalid={!!errors.email}
+                  className={errors.email ? "border-danger" : ""}
                 />
-              </MDBValidationItem>
+                {errors.email && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.email}
+                  </div>
+                )}
+              </div>
 
-              <MDBValidationItem
-                className="col-12"
-                feedback="Password is required."
-                invalid
-              >
+              <div className="mb-4">
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Password"
@@ -154,12 +171,26 @@ function Loginpage() {
                   type="password"
                   onChange={(e) => setPassword(e.target.value)}
                   value={password}
-                  required
+                  invalid={!!errors.password}
+                  className={errors.password ? "border-danger" : ""}
                 />
-              </MDBValidationItem>
+                {errors.password && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.password}
+                  </div>
+                )}
+              </div>
 
               {errorMessage && (
-                <div className="text-danger mb-4">{errorMessage}</div>
+                <div
+                  className="text-danger mb-4"
+                  style={{ fontSize: "0.875rem" }}
+                >
+                  {errorMessage}
+                </div>
               )}
 
               <div className="text-center pt-1 mb-5 pb-1">
@@ -174,7 +205,7 @@ function Loginpage() {
                   Forgot password?
                 </a>
               </div>
-            </MDBValidation>
+            </form>
 
             <div className="d-flex flex-row align-items-center justify-content-center pb-4 mb-4">
               <p className="mb-0">Don't have an account?</p>

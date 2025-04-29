@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Paper, Typography, Box, IconButton, Divider } from "@mui/material";
+import {
+  Paper,
+  Typography,
+  Box,
+  IconButton,
+  Divider,
+  Alert,
+} from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import axios from "axios";
 import Selection from "../../../../controls/Selection";
@@ -15,6 +22,7 @@ const ScorePanel = ({
   onSubmitScores,
   apiUrl,
   submissionInfo,
+  gradingStatus,
 }) => {
   const navigate = useNavigate();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -56,6 +64,25 @@ const ScorePanel = ({
     }
   };
 
+  // Calculate total score
+  const calculateTotalScore = () => {
+    if (!rubric || !scores) return { total: 0, maxPossible: 0 };
+
+    let total = 0;
+    let maxPossible = 0;
+
+    rubric.criteria.forEach((criterion) => {
+      maxPossible += criterion.weight;
+      if (scores[criterion._id]) {
+        total += parseFloat(scores[criterion._id]);
+      }
+    });
+
+    return { total, maxPossible };
+  };
+
+  const { total, maxPossible } = calculateTotalScore();
+
   return (
     <>
       <Paper
@@ -86,6 +113,13 @@ const ScorePanel = ({
             Assessment: {submissionInfo?.assessment_name}
           </Typography>
         </Box>
+
+        {gradingStatus === "already" && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            This assessment has already been graded. You can update the scores
+            if needed.
+          </Alert>
+        )}
 
         {rubric?.criteria.map((criterion) => (
           <Box key={criterion._id} sx={{ mb: 3 }}>
@@ -120,7 +154,17 @@ const ScorePanel = ({
           </Box>
         ))}
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ color: "#8B5F34" }}>
+            Total Score: {total} / {maxPossible}
+          </Typography>
           <IconButton
             onClick={handleSubmitScores}
             sx={{
