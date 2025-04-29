@@ -70,6 +70,7 @@ const PDFReviewer = ({
   const [selectionPosition, setSelectionPosition] = useState(null);
   const [gradingStatus, setGradingStatus] = useState(null);
   const [submissionData, setSubmissionData] = useState(null);
+  const [pollingInterval, setPollingInterval] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -779,6 +780,37 @@ const PDFReviewer = ({
         fetchCommentsForHighlight(id);
       }
     });
+  }, [replyInputs]);
+
+  // Add polling mechanism for active reply threads
+  useEffect(() => {
+    // Clear any existing polling interval
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+
+    // Get all highlight IDs that have reply inputs open
+    const activeHighlightIds = Object.keys(replyInputs).filter(
+      (id) => replyInputs[id]
+    );
+
+    if (activeHighlightIds.length > 0) {
+      // Set up polling interval to fetch new replies every 5 seconds
+      const interval = setInterval(() => {
+        activeHighlightIds.forEach((id) => {
+          fetchCommentsForHighlight(id);
+        });
+      }, 5000);
+
+      setPollingInterval(interval);
+    }
+
+    // Clean up interval on unmount or when active highlights change
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
   }, [replyInputs]);
 
   return (
