@@ -66,7 +66,10 @@ router.post(
       }
 
       // Calculate total score for raw score
-      const totalRawScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+      const totalRawScore = Object.values(scores).reduce(
+        (sum, score) => sum + score,
+        0
+      );
 
       // 4. Save or Update raw score
       let rawScore = await RawScore.findOne({
@@ -123,12 +126,9 @@ router.post(
         console.error(
           "No weights found for professors or TAs in this assessment."
         );
-        return res
-          .status(400)
-          .json({
-            message:
-              "No weights found for professors or TAs in this assessment.",
-          });
+        return res.status(400).json({
+          message: "No weights found for professors or TAs in this assessment.",
+        });
       }
 
       // 7. รวมคะแนนตาม criteria
@@ -171,7 +171,10 @@ router.post(
       const finalScores = {};
       let totalScore = 0; // Initialize total score
       for (const [criteriaId, scores] of Object.entries(criteriaScores)) {
-        const totalCriteriaScore = scores.reduce((sum, score) => sum + score, 0);
+        const totalCriteriaScore = scores.reduce(
+          (sum, score) => sum + score,
+          0
+        );
         if (isNaN(totalCriteriaScore)) {
           console.error(
             `Invalid totalScore for criteria "${criteriaId}":`,
@@ -192,24 +195,24 @@ router.post(
 
       // Logic for storing scores based on assignment type
       let finalScore;
-        // Individual assessment: Save score directly in FinalScore
-        finalScore = new FinalScore({
-          student_id: req.body.student_id,
-          group_id: req.body.group_id,
-          assessment_id,
-          submission_id,
-          rubric_id: rubricId,
-          score: safeFinalScores,
-          total_score: totalScore,
-          status: "graded",
-        });
-        await finalScore.save();
+      // Individual assessment: Save score directly in FinalScore
+      finalScore = new FinalScore({
+        student_id: req.body.student_id,
+        group_id: req.body.group_id,
+        assessment_id,
+        submission_id,
+        rubric_id: rubricId,
+        score: safeFinalScores,
+        total_score: totalScore,
+        status: "graded",
+      });
+      await finalScore.save();
 
       // 10. Update grading_status_by for the professor in the Submission model
       const submission = await Submission.findById(submission_id);
       if (submission) {
         const professorEntry = submission.grading_status_by.find(
-          (entry) => entry.professor_id.toString() === req.user.id
+          (entry) => entry.grader_id.toString() === req.user.id
         );
         if (professorEntry) {
           professorEntry.status = "already"; // Update status to "already"
@@ -246,12 +249,21 @@ router.post(
         console.log("FinalScore status updated successfully!");
 
         // If FinalScore is graded, distribute scores to StudentScore
-        if (finalScore.status === "graded" && assessment.assignment_type === "group") {
-          const groupMembers = await GroupMember.find({ group_id: req.body.group_id });
-          const totalWeight = groupMembers.reduce((sum, member) => sum + member.weight, 0);
+        if (
+          finalScore.status === "graded" &&
+          assessment.assignment_type === "group"
+        ) {
+          const groupMembers = await GroupMember.find({
+            group_id: req.body.group_id,
+          });
+          const totalWeight = groupMembers.reduce(
+            (sum, member) => sum + member.weight,
+            0
+          );
 
           for (const member of groupMembers) {
-            const individualScore = (finalScore.total_score * member.weight) / totalWeight;
+            const individualScore =
+              (finalScore.total_score * member.weight) / totalWeight;
             const studentScore = new StudentScore({
               student_id: member.user_id,
               assessment_id,
@@ -277,12 +289,10 @@ router.post(
         "Error submitting raw scores or calculating final scores:",
         error
       );
-      res
-        .status(500)
-        .json({
-          message: "Error submitting raw scores or calculating final scores",
-          error,
-        });
+      res.status(500).json({
+        message: "Error submitting raw scores or calculating final scores",
+        error,
+      });
     }
   }
 );
@@ -329,7 +339,11 @@ router.get(
       }).populate("rubric_id", "rubric_name description criteria");
 
       if (!rawScore) {
-        return res.status(404).json({ message: "RawScore not found for this submission and professor" });
+        return res
+          .status(404)
+          .json({
+            message: "RawScore not found for this submission and professor",
+          });
       }
 
       res.status(200).json({
