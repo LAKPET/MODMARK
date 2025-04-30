@@ -108,12 +108,14 @@ router.post(
         role: { $in: ["professor", "ta"] }, // Include both professors and TAs
       });
 
+
       // Create grading_status_by array with professors and TAs
-      const gradingStatusBy = graders.map((grader) => ({
-        grader_id: grader.user_id, // Changed to a more generic name
-        role: grader.role, // Include role for clarity
+      const gradingStatusBy = graders.map((graders) => ({
+        grader_id: graders.user_id, // Changed to a more generic name
+        role: graders.role, // Include role for clarity
         status: "pending",
       }));
+
 
       // Add grading_status_by to the submission
       const newSubmission = new Submission({

@@ -264,8 +264,7 @@ router.get(
 // Get all assessments in a section (Student/Prof/TA/Admin view)
 router.get(
   "/section/:section_id",
-  verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant, // Allows students too
+  verifyToken, // Allows students too
   async (req, res) => {
     const { section_id } = req.params;
 
@@ -462,8 +461,7 @@ router.get(
 // Get overall score statistics for a section (Admin/Prof/TA view)
 router.get(
     "/statistics/:section_id",
-    verifyToken,
-    checkAdminOrProfessorOrTeacherAssistant, // Usually restricted view
+    verifyToken, // Usually restricted view
     async (req, res) => {
       const { section_id } = req.params;
 

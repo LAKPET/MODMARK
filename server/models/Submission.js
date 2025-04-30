@@ -13,7 +13,8 @@ const submissionSchema = new mongoose.Schema({
   grading_status_by: {
     type: [
       {
-        professor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        grader_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        role: { type: String, enum: ['professor', 'ta'] },
         status: { type: String, enum: ['pending', 'already'], default: 'pending' }
       }
     ],
