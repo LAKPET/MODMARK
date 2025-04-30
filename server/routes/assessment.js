@@ -265,7 +265,7 @@ router.get(
 router.get(
   "/section/:section_id",
   verifyToken,
-  checkAdminOrProfessorOrStudent, // Allows students too
+  checkAdminOrProfessorOrTeacherAssistant, // Allows students too
   async (req, res) => {
     const { section_id } = req.params;
 

@@ -1,4 +1,4 @@
-require("dotenv").config({ path: ".env.backend" });
+require("dotenv").config({ path: ".env" });
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -34,10 +34,11 @@ app.get("/", (req, res) => {
   res.send("Welcome to the API!");
 });
 
-// const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/modmark";
+// ใช้ตัวแปร DB_link จาก .env
+const mongoUri = process.env.DB_link;
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/modmark")
+  .connect(mongoUri)
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("Database connection error:", err));
 

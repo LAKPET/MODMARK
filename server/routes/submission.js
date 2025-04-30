@@ -9,6 +9,7 @@ const {
   checkAdminOrStudent,
   checkAdminOrProfessor,
   checkAdminOrProfessorOrStudent,
+  checkAdminOrProfessorOrTeacherAssistant,
 } = require("./middleware");
 const { upload, uploadFile } = require("../services/storageService");
 const fs = require("fs");
@@ -101,14 +102,16 @@ router.post(
       }
 
       // Fetch professors related to the section or assessment
-      const professors = await mongoose.model("GroupMember").find({
+      // Fetch professors and teaching assistants related to the section or assessment
+      const graders = await mongoose.model("GroupMember").find({
         assessment_id,
-        role: "professor",
+        role: { $in: ["professor", "ta"] }, // Include both professors and TAs
       });
 
-      // Create grading_status_by array with professors
-      const gradingStatusBy = professors.map((professor) => ({
-        professor_id: professor.user_id,
+      // Create grading_status_by array with professors and TAs
+      const gradingStatusBy = graders.map((grader) => ({
+        grader_id: grader.user_id, // Changed to a more generic name
+        role: grader.role, // Include role for clarity
         status: "pending",
       }));
 
@@ -141,7 +144,7 @@ router.post(
 router.get(
   "/pdf/:filename",
   verifyToken,
-  checkAdminOrProfessorOrStudent,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(__dirname, "../../server/uploads", filename);
@@ -160,7 +163,7 @@ router.get(
 router.get(
   "/assessment/:assessment_id",
   verifyToken,
-  checkAdminOrProfessorOrStudent,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     const { assessment_id } = req.params;
 
