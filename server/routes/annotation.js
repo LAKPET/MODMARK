@@ -2,10 +2,10 @@ const express = require("express");
 const router = express.Router();
 const Annotation = require("../models/Annotation");
 const Comment = require("../models/Comment"); // เพิ่มการ require โมเดล Comment
-const { verifyToken, checkAdminOrProfessor } = require("./middleware");
+const { verifyToken, checkAdminOrProfessorOrTeacherAssistant } = require("./middleware");
 
 // Create a new annotation
-router.post("/create", verifyToken, checkAdminOrProfessor, async (req, res) => {
+router.post("/create", verifyToken, checkAdminOrProfessorOrTeacherAssistant, async (req, res) => {
   try {
     console.log("Creating annotation:", req.body);
     const {
@@ -99,7 +99,7 @@ router.get("/submission/:submissionId", verifyToken, async (req, res) => {
 router.delete(
   "/delete/:id",
   verifyToken,
-  checkAdminOrProfessor,
+  checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
     try {
       console.log("Deleting annotation:", req.params.id);

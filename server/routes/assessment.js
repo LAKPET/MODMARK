@@ -64,7 +64,7 @@ router.post(
 
       // Validate grader weights
       let totalWeight = 0;
-      if (assignment_type === "individual") {
+      if (!teamgrading_type) {
         totalWeight = 1; // Professor creating is the sole grader initially
       } else if (graders && graders.length > 0) {
         totalWeight = graders.reduce((sum, grader) => sum + grader.weight, 0);
@@ -82,13 +82,13 @@ router.post(
           }
         }
       } else if (
-        assignment_type !== "individual" &&
+        teamgrading_type &&
         (!graders || graders.length === 0)
       ) {
-        // Require graders for non-individual assignments unless handled differently
-        // return res.status(400).json({ message: "Graders are required for group/peer assignments." });
+        // Require graders for team grading unless handled differently
+        // return res.status(400).json({ message: "Graders are required for team grading." });
         // Or assign the creator as default grader? Let's assume creator is default if none provided for now.
-        totalWeight = 1; // Defaulting to creator if no graders provided for group types
+        totalWeight = 1; // Defaulting to creator if no graders provided for team grading
       }
 
       const newAssessment = new Assessment({
@@ -130,8 +130,8 @@ router.post(
       await gradingGroup.save();
 
       // Save graders with their weights in GroupMember
-      if (assignment_type === "individual") {
-        // Create GroupMember for the professor who created the assessment
+      if (!teamgrading_type) {
+        // If teamgrading_type is false, only the professor who created the assessment is the grader
         const professorGroupMember = new GroupMember({
           group_id: gradingGroup._id,
           assessment_id: newAssessment._id,
@@ -163,7 +163,7 @@ router.post(
           });
           await newGroupMember.save();
         }
-      } else if (assignment_type !== "individual") {
+      } else {
         // Default: Add the creator as the grader if no specific graders were provided
         const professorGroupMember = new GroupMember({
           group_id: gradingGroup._id,
