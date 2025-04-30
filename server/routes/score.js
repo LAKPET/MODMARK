@@ -5,6 +5,7 @@ const FinalScore = require("../models/FinalScore");
 const GroupMember = require("../models/GroupMember");
 const Rubric = require("../models/Rubric");
 const Submission = require("../models/Submission"); // Add this import
+const StudentScore = require("../models/StudentScore"); // Add this import
 const {
   verifyToken,
   checkAdminOrProfessorOrTeacherAssistant,
@@ -26,6 +27,19 @@ router.post(
         .findById(assessment_id);
       if (!assessment) {
         return res.status(404).json({ message: "Assessment not found" });
+      }
+
+      // Check if the professor is a GroupMember of the grading group
+      const groupMember = await GroupMember.findOne({
+        assessment_id,
+        user_id: req.user.id,
+        role: { $in: ["professor", "ta"] },
+      });
+
+      if (!groupMember || groupMember.weight <= 0) {
+        return res.status(403).json({
+          message: "You do not have permission to grade this assessment.",
+        });
       }
 
       // 2. หา rubric
@@ -176,31 +190,20 @@ router.post(
         Object.entries(finalScores).map(([key, value]) => [key, value])
       );
 
-      // 9. Update หรือ Save final score
-      let finalScore; // กำหนดตัวแปร finalScore ไว้ภายนอก if-else block
-      const existingFinalScore = await FinalScore.findOne({ submission_id });
-      if (existingFinalScore) {
-        // Update FinalScore
-        existingFinalScore.score = safeFinalScores;
-        existingFinalScore.rubric_id = rubricId; // Add rubric_id
-        existingFinalScore.total_score = totalScore; // Add total score
-        await existingFinalScore.save();
-        console.log("FinalScore updated successfully!");
-        finalScore = existingFinalScore; // อัปเดตตัวแปร finalScore
-      } else {
-        // Create new FinalScore
+      // Logic for storing scores based on assignment type
+      let finalScore;
+        // Individual assessment: Save score directly in FinalScore
         finalScore = new FinalScore({
           student_id: req.body.student_id,
           group_id: req.body.group_id,
           assessment_id,
           submission_id,
-          rubric_id: rubricId, // Add rubric_id
-          score: safeFinalScores, // ใช้ Object ที่ถูกต้อง
-          total_score: totalScore, // Add total score
+          rubric_id: rubricId,
+          score: safeFinalScores,
+          total_score: totalScore,
+          status: "graded",
         });
         await finalScore.save();
-        console.log("FinalScore created successfully!");
-      }
 
       // 10. Update grading_status_by for the professor in the Submission model
       const submission = await Submission.findById(submission_id);
@@ -230,6 +233,37 @@ router.post(
         );
       } else {
         console.warn("Submission not found:", submission_id);
+      }
+
+      // 11. Update grading status in FinalScore
+      if (finalScore) {
+        const allGraded = submission.grading_status_by.every(
+          (entry) => entry.status === "already"
+        );
+
+        finalScore.status = allGraded ? "graded" : "pending"; // Update status
+        await finalScore.save();
+        console.log("FinalScore status updated successfully!");
+
+        // If FinalScore is graded, distribute scores to StudentScore
+        if (finalScore.status === "graded" && assessment.assignment_type === "group") {
+          const groupMembers = await GroupMember.find({ group_id: req.body.group_id });
+          const totalWeight = groupMembers.reduce((sum, member) => sum + member.weight, 0);
+
+          for (const member of groupMembers) {
+            const individualScore = (finalScore.total_score * member.weight) / totalWeight;
+            const studentScore = new StudentScore({
+              student_id: member.user_id,
+              assessment_id,
+              group_id: req.body.group_id,
+              score: individualScore,
+            });
+            await studentScore.save();
+          }
+          console.log("Scores distributed to StudentScore successfully!");
+        }
+      } else {
+        console.warn("FinalScore not found for submission:", submission_id);
       }
 
       res.status(201).json({
