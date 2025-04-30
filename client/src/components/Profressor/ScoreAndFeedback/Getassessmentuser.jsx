@@ -86,7 +86,7 @@ export default function Getassessmentuser() {
 
     // Find the status for the current user
     const userStatus = submission.grading_status_by.find(
-      (status) => status.professor_id === currentUserId
+      (status) => status.grader_id === currentUserId
     );
 
     console.log("Found status:", userStatus);

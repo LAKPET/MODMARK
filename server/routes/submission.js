@@ -73,11 +73,9 @@ router.post(
           .model("Enrollment")
           .exists({ section_id, student_id: existingUser._id });
         if (!isEnrolled) {
-          return res
-            .status(400)
-            .json({
-              message: `User with ID ${member.user_id} is not enrolled in section ${section_id}.`,
-            });
+          return res.status(400).json({
+            message: `User with ID ${member.user_id} is not enrolled in section ${section_id}.`,
+          });
         }
       }
 
@@ -108,14 +106,12 @@ router.post(
         role: { $in: ["professor", "ta"] }, // Include both professors and TAs
       });
 
-
       // Create grading_status_by array with professors and TAs
       const gradingStatusBy = graders.map((graders) => ({
         grader_id: graders.user_id, // Changed to a more generic name
         role: graders.role, // Include role for clarity
         status: "pending",
       }));
-
 
       // Add grading_status_by to the submission
       const newSubmission = new Submission({
@@ -165,7 +161,7 @@ router.get(
 router.get(
   "/assessment/:assessment_id",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+
   async (req, res) => {
     const { assessment_id } = req.params;
 

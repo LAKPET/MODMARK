@@ -276,7 +276,7 @@ router.get(
 router.get(
   "/section/:section_id",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant, // Allows students too
+  // Allows students too
   async (req, res) => {
     const { section_id } = req.params;
 
@@ -482,11 +482,11 @@ router.get(
 
 // Get overall score statistics for a section (Admin/Prof/TA view)
 router.get(
-    "/statistics/:section_id",
-    verifyToken,
-    checkAdminOrProfessorOrTeacherAssistant, // Usually restricted view
-    async (req, res) => {
-      const { section_id } = req.params;
+  "/statistics/:section_id",
+  verifyToken,
+  checkAdminOrProfessorOrTeacherAssistant, // Usually restricted view
+  async (req, res) => {
+    const { section_id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(section_id)) {
       return res.status(400).json({ message: "Invalid Section ID format" });

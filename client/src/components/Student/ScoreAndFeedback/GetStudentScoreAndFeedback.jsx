@@ -139,7 +139,7 @@ export default function GetStudentScoreAndFeedback() {
           {sortedAssessments.length > 0 ? (
             sortedAssessments.map((assessment, index) => {
               const hasGradingPermission = assessment.grading_status_by?.some(
-                (status) => status.professor_id === currentProfessorId
+                (status) => status.grader_id === currentProfessorId
               );
               return (
                 <tr key={assessment._id || index}>

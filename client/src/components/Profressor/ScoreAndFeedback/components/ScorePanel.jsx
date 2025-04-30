@@ -36,20 +36,20 @@ const ScorePanel = ({
 
     if (submissionInfo?.grading_status_by) {
       const hasPermission = submissionInfo.grading_status_by.some(
-        (status) => status.professor_id === currentProfessorId
+        (status) => status.grader_id === currentProfessorId
       );
       console.log("Has Grading Permission:", hasPermission);
 
       // Log each professor ID in the array for comparison
       submissionInfo.grading_status_by.forEach((status, index) => {
-        console.log(`Professor ${index + 1} ID:`, status.professor_id);
+        console.log(`Professor ${index + 1} ID:`, status.grader_id);
         console.log(
           `Matches current user:`,
-          status.professor_id === currentProfessorId
+          status.grader_id === currentProfessorId
         );
         console.log(
           `Type comparison:`,
-          typeof status.professor_id,
+          typeof status.grader_id,
           typeof currentProfessorId
         );
       });
@@ -60,7 +60,7 @@ const ScorePanel = ({
 
   // Check if the current professor has permission to grade
   const hasGradingPermission = submissionInfo?.grading_status_by?.some(
-    (status) => status.professor_id === currentProfessorId
+    (status) => status.grader_id === currentProfessorId
   );
 
   const handleScoreChange = (criterionId, levelId) => {

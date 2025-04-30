@@ -334,7 +334,7 @@ const PDFReviewer = ({
         // Check grading status
         const currentUserId = localStorage.getItem("UserId");
         const userStatus = submission.grading_status_by?.find(
-          (status) => status.professor_id === currentUserId
+          (status) => status.grader_id === currentUserId
         );
         const status = userStatus ? userStatus.status : "pending";
         setGradingStatus(status);
