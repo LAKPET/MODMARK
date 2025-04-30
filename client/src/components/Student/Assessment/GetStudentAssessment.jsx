@@ -219,7 +219,10 @@ export default function GetStudentAssessment() {
       formData.append("file", groupFile);
       formData.append("assessment_id", groupModalAssessment._id);
       formData.append("group_name", "Group1");
-      formData.append("members", JSON.stringify(selectedMembers));
+      formData.append(
+        "members",
+        JSON.stringify(selectedMembers.map((id) => ({ user_id: id })))
+      );
       formData.append("file_type", "pdf");
       formData.append("section_id", id);
 
