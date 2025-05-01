@@ -57,6 +57,10 @@ router.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      if (!group_name) {
+        return res.status(400).json({ message: "Group name is required" });
+      }
+
       const file_url = await uploadFile(req.file);
       const membersArray =
         typeof members === "string" ? JSON.parse(members) : members;
@@ -81,7 +85,7 @@ router.post(
 
       const newGroup = new Group({
         assessment_id: new mongoose.Types.ObjectId(assessment_id),
-        group_name,
+        group_name: group_name,
         group_type: "study",
         status: "submit",
       });
