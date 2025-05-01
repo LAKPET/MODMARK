@@ -177,7 +177,10 @@ export default function UserTable() {
             </TableHead>
             <TableBody>
               {users
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .slice(
+                  page * (rowsPerPage === -1 ? users.length : rowsPerPage),
+                  (page + 1) * (rowsPerPage === -1 ? users.length : rowsPerPage)
+                )
                 .map((user) => (
                   <TableRow
                     hover
@@ -225,7 +228,21 @@ export default function UserTable() {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          ActionsComponent={TablePaginationActions} // Use the component
+          ActionsComponent={TablePaginationActions}
+          sx={{
+            "& .MuiTablePagination-selectLabel": {
+              marginTop: "auto",
+              marginBottom: "auto",
+            },
+            "& .MuiTablePagination-displayedRows": {
+              marginTop: "auto",
+              marginBottom: "auto",
+            },
+            "& .MuiTablePagination-select": {
+              marginTop: "auto",
+              marginBottom: "auto",
+            },
+          }}
         />
       </Paper>
 

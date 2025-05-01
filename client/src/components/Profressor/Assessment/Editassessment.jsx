@@ -12,7 +12,7 @@ import picturetab2 from "../../../assets/Picture/mdi_number-2-box.png";
 import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
-import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 
@@ -75,11 +75,11 @@ export default function EditAssessmentModal({
             }, {})
           );
           console.log("Graders:", data.graders);
-          setRubric(data.rubric_id || "");
+          setRubric(data.rubric_id._id);
         } catch (error) {
           console.error("Error fetching assessment details:", error);
         } finally {
-          setLoading(false); // Set loading to false after data is fetched
+          setLoading(false);
         }
       };
 

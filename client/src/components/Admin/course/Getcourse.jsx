@@ -200,8 +200,10 @@ export default function CourseTable() {
                 {courses.length > 0
                   ? courses
                       .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
+                        page *
+                          (rowsPerPage === -1 ? courses.length : rowsPerPage),
+                        (page + 1) *
+                          (rowsPerPage === -1 ? courses.length : rowsPerPage)
                       )
                       .map((course) => (
                         <TableRow
@@ -262,7 +264,21 @@ export default function CourseTable() {
             page={page}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            ActionsComponent={TablePaginationActions} // Use the component
+            ActionsComponent={TablePaginationActions}
+            sx={{
+              "& .MuiTablePagination-selectLabel": {
+                marginTop: "auto",
+                marginBottom: "auto",
+              },
+              "& .MuiTablePagination-displayedRows": {
+                marginTop: "auto",
+                marginBottom: "auto",
+              },
+              "& .MuiTablePagination-select": {
+                marginTop: "auto",
+                marginBottom: "auto",
+              },
+            }}
           />
         </Paper>
       )}

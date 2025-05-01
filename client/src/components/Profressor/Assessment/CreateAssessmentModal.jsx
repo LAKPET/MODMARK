@@ -35,6 +35,10 @@ export default function CreateAssessmentModal({
   const [rubric, setRubric] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
   const apiUrl = import.meta.env.VITE_API_URL;
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 5,
+    page: 0,
+  });
 
   const handleWeightChange = (id, value) => {
     setWeights((prev) => ({ ...prev, [id]: parseFloat(value) || 0 }));
@@ -109,6 +113,10 @@ export default function CreateAssessmentModal({
     if (activeTab === "createRubric") {
       setActiveTab("assessmentDetail");
     }
+  };
+
+  const handlePaginationModelChange = (newModel) => {
+    setPaginationModel(newModel);
   };
 
   const columns = [
@@ -277,8 +285,28 @@ export default function CreateAssessmentModal({
                     <DataGrid
                       rows={rows}
                       columns={columns}
-                      pageSize={5}
-                      sx={{ border: 0 }}
+                      paginationModel={paginationModel}
+                      onPaginationModelChange={handlePaginationModelChange}
+                      pageSizeOptions={[5, 10, { value: -1, label: "All" }]}
+                      sx={{
+                        border: 0,
+                        "& .MuiTablePagination-root": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                        "& .MuiTablePagination-selectLabel": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                        "& .MuiTablePagination-displayedRows": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                        "& .MuiTablePagination-select": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                      }}
                     />
                   </Paper>
                 </div>

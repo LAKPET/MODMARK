@@ -59,6 +59,34 @@
   }
 }
 
+/* Media query for 2K screens */
+@media (min-width: 2560px) {
+  .main-content {
+    max-width: 2400px;
+    margin: 120px auto 0;
+    padding: 40px;
+    margin-left: 230px;
+  }
+  
+  .main-content > .container {
+    max-width: 2320px;
+  }
+}
+
+/* Media query for 4K screens */
+@media (min-width: 3840px) {
+  .main-content {
+    max-width: 3600px;
+    margin: 120px auto 0;
+    padding: 48px;
+    margin-left: 230px;
+  }
+  
+  .main-content > .container {
+    max-width: 3520px;
+  }
+}
+
 .main-content-feedback {
   height: 100vh;
   overflow: hidden;

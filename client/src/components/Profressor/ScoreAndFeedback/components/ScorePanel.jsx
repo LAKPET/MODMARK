@@ -73,7 +73,6 @@ const ScorePanel = ({
   const { id } = useParams();
   const handleModalClose = () => {
     setShowSuccessModal(false);
-    navigate(`/assessment/${id}/allassessmentuser/${assessmentId}`);
   };
 
   const handleSubmitScores = async () => {
@@ -146,7 +145,7 @@ const ScorePanel = ({
             Scoring
           </Typography>
           <Typography variant="subtitle1" sx={{ color: "#666" }}>
-            Assessment: {submissionInfo?.assessment_name}
+            Assessment: {submissionInfo?.assessment_id?.assessment_name}
           </Typography>
         </Box>
 
