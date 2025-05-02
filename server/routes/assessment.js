@@ -9,6 +9,7 @@ const User = require("../models/User");
 const FinalScore = require("../models/FinalScore");
 const Section = require("../models/Section"); // Import Section model
 const StudentScore = require("../models/StudentScore"); // Import StudentScore model
+const Submission = require("../models/Submission"); // Import Submission model
 const {
   verifyToken,
   checkAdminOrProfessorOrTeacherAssistant,
@@ -354,7 +355,7 @@ router.get(
 
       // Find all assessments in the section
       const assessmentsInSection = await Assessment.find({ section_id })
-        .select("_id assignment_type")
+        .select("_id")
         .lean();
       const totalAssessments = assessmentsInSection.length;
 
@@ -370,24 +371,11 @@ router.get(
 
       const assessmentIds = assessmentsInSection.map((a) => a._id);
 
-      // Count completed/graded assessments for this student
-      // Count individual assessments with a graded FinalScore
-      const gradedIndividualCount = await FinalScore.countDocuments({
+      // Count submissions for this student in the section
+      const completedAssessments = await Submission.countDocuments({
         assessment_id: { $in: assessmentIds },
         student_id: student_id,
-        status: "graded", // Check for graded status
       });
-
-      // Count group assessments where the student has a StudentScore (assuming StudentScore implies completion/grading)
-      const gradedGroupCount = await StudentScore.countDocuments({
-        assessment_id: { $in: assessmentIds },
-        student_id: student_id,
-        // Add status check here if StudentScore has a status field like 'graded'
-      });
-
-      // Combine counts - Note: This assumes an assessment is EITHER individual OR group,
-      // and a student won't have both FinalScore and StudentScore for the same assessment.
-      const completedAssessments = gradedIndividualCount + gradedGroupCount;
 
       res.status(200).json({
         course_id: section.course_id,
@@ -436,28 +424,16 @@ router.get(
           let studentScoreValue = null; // Use null to indicate not graded/no score yet
           let maxScore = assessment.rubric_id?.score || 0; // Get max score from populated rubric
 
-          if (assessment.assignment_type === "individual") {
-            const finalScore = await FinalScore.findOne({
-              assessment_id: assessment._id,
-              student_id: student_id,
-              status: "graded", // ** Ensure we only fetch graded scores **
-            })
-              .select("total_score")
-              .lean();
-            if (finalScore) {
-              studentScoreValue = finalScore.total_score;
-            }
-          } else if (assessment.assignment_type === "group") {
-            const studentScore = await StudentScore.findOne({
-              assessment_id: assessment._id,
-              student_id: student_id,
-              // Add status check if necessary for StudentScore
-            })
-              .select("score")
-              .lean();
-            if (studentScore) {
-              studentScoreValue = studentScore.score;
-            }
+          // Fetch score from StudentScore
+          const studentScore = await StudentScore.findOne({
+            assessment_id: assessment._id,
+            student_id: student_id,
+          })
+            .select("score")
+            .lean();
+
+          if (studentScore) {
+            studentScoreValue = studentScore.score;
           }
 
           return {
@@ -483,8 +459,7 @@ router.get(
 // Get overall score statistics for a section (Admin/Prof/TA view)
 router.get(
   "/statistics/:section_id",
-  verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant, // Usually restricted view
+  verifyToken, // Usually restricted view
   async (req, res) => {
     const { section_id } = req.params;
 
@@ -513,24 +488,14 @@ router.get(
           let scores = [];
           let maxPossibleScore = assessment.rubric_id?.score || 0;
 
-          if (assessment.assignment_type === "individual") {
-            const finalScores = await FinalScore.find({
-              assessment_id: assessment._id,
-              status: "graded", // Only include graded scores
-            })
-              .select("total_score")
-              .lean();
-            scores = finalScores.map((fs) => fs.total_score ?? 0); // Use nullish coalescing
-          } else if (assessment.assignment_type === "group") {
-            // For group stats, we usually look at the StudentScore
-            const studentScores = await StudentScore.find({
-              assessment_id: assessment._id,
-              // Add status filter if needed
-            })
-              .select("score")
-              .lean();
-            scores = studentScores.map((ss) => ss.score ?? 0);
-          }
+          // Fetch scores from StudentScore
+          const studentScores = await StudentScore.find({
+            assessment_id: assessment._id,
+          })
+            .select("score")
+            .lean();
+
+          scores = studentScores.map((ss) => ss.score ?? 0);
 
           allScoresInSection.push(...scores); // Collect scores for overall calculation
 
