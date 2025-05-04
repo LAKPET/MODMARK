@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import Login from "../pages/Auth/Loginpage";
 import Register from "../pages/Auth/Registerpage";
 import ProfessorCoursepage from "../pages/Profressor/Coursepage";
@@ -17,6 +17,9 @@ import Viewassessmentpage from "../pages/Profressor/Viewassessmentpage";
 import StudentAssessmentpage from "../pages/Student/Assessmentpage";
 import StudentScoreAndFeedbackpage from "../pages/Student/ScoreAndFeedbackpage";
 import RoutePreserver from "./RoutePreserver";
+import AssessmentDetailPage from "../pages/Student/AssessmentDetailPage";
+
+const navigate = useNavigate();
 
 function AppRoutes() {
   return (
@@ -111,6 +114,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute requiredRole="student">
               <StudentScoreAndFeedbackpage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/assessment/:id/details/:assessmentId"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <AssessmentDetailPage />
             </ProtectedRoute>
           }
         />

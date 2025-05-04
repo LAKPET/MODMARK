@@ -75,6 +75,12 @@ export default function CourseDetail() {
     completed_assessments: 0,
     remaining_assessments: 0,
   });
+  const [overallStatistics, setOverallStatistics] = useState({
+    max_score: 0,
+    min_score: 0,
+    mean_score: 0,
+  });
+  const [scoreData, setScoreData] = useState([]); // State สำหรับเก็บคะแนน
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -317,6 +323,62 @@ export default function CourseDetail() {
     }
   };
 
+  useEffect(() => {
+    const fetchOverallStatistics = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(
+          `${apiUrl}/assessment/statistics/${sectionId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setOverallStatistics(response.data.overall_statistics);
+      } catch (error) {
+        console.error("Error fetching overall statistics:", error);
+      }
+    };
+
+    if (sectionId) {
+      fetchOverallStatistics();
+    }
+  }, [sectionId]);
+
+  useEffect(() => {
+    const fetchScores = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(
+          `${apiUrl}/assessment/scores/${sectionId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setAssessments(response.data);
+        console.log("Fetched scores:", response.data);
+      } catch (error) {
+        console.error("Error fetching scores:", error);
+      }
+    };
+
+    fetchScores();
+  }, []);
+
+  useEffect(() => {
+    const fetchScoreData = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(
+          `${apiUrl}/assessment/scores/${sectionId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setScoreData(response.data); // เก็บข้อมูลคะแนนใน state
+      } catch (error) {
+        console.error("Error fetching score data:", error);
+      }
+    };
+
+    if (sectionId) {
+      fetchScoreData(); // เรียกใช้ฟังก์ชัน fetchScoreData
+    }
+  }, [sectionId]); // ทำงานทุกครั้งที่ sectionId เปลี่ยน
+
   if (loading) {
     return (
       <Backdrop
@@ -405,17 +467,17 @@ export default function CourseDetail() {
                 <div className="mt-3">
                   <div className="d-flex justify-content-between mb-2">
                     <span>max</span>
-                    <span>74</span>
+                    <span>{overallStatistics.max_score}</span>
                   </div>
                   <hr className="bg-white my-2" style={{ opacity: 0.5 }} />
                   <div className="d-flex justify-content-between mb-2">
                     <span>min</span>
-                    <span>30</span>
+                    <span>{overallStatistics.min_score}</span>
                   </div>
                   <hr className="bg-white my-2" style={{ opacity: 0.5 }} />
                   <div className="d-flex justify-content-between mb-2">
                     <span>mean</span>
-                    <span>52</span>
+                    <span>{overallStatistics.mean_score}</span>
                   </div>
                   <hr className="bg-white my-2" style={{ opacity: 0.5 }} />
                   <div className="d-flex justify-content-between mb-2">
@@ -445,60 +507,68 @@ export default function CourseDetail() {
                   Progress: {progressData.completed_assessments}/
                   {progressData.total_assessments} assessments completed
                 </div>
-                {displayedAssessments.map((assessment) => (
-                  <div key={assessment._id} className="mt-3">
-                    <div className="mb-3 p-3 bg-white rounded">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="small text-muted">
-                          {assessment.assessment_name}
-                        </span>
-                        {assessment.assignment_type === "group" ? (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            disabled={uploading}
-                            onClick={async () => {
-                              setGroupModalAssessment(assessment);
-                              setGroupFile(null);
-                              setGroupModalOpen(true);
-                              setGroupLoading(true);
-                              const token = localStorage.getItem("authToken");
-                              const membersRes = await axios.get(
-                                `${apiUrl}/section/students/${sectionId}`,
-                                {
-                                  headers: { Authorization: `Bearer ${token}` },
+                {displayedAssessments.length > 0 ? (
+                  displayedAssessments.map((assessment) => (
+                    <div key={assessment._id} className="mt-3">
+                      <div className="mb-3 p-3 bg-white rounded">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span className="small text-muted">
+                            {assessment.assessment_name}
+                          </span>
+                          {assessment.assignment_type === "group" ? (
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              disabled={uploading}
+                              onClick={async () => {
+                                setGroupModalAssessment(assessment);
+                                setGroupFile(null);
+                                setGroupModalOpen(true);
+                                setGroupLoading(true);
+                                const token = localStorage.getItem("authToken");
+                                const membersRes = await axios.get(
+                                  `${apiUrl}/section/students/${sectionId}`,
+                                  {
+                                    headers: {
+                                      Authorization: `Bearer ${token}`,
+                                    },
+                                  }
+                                );
+                                setGroupMembersData(membersRes.data);
+                                setGroupLoading(false);
+                              }}
+                            >
+                              ส่งงานกลุ่ม
+                            </Button>
+                          ) : (
+                            <StyledButton
+                              component="label"
+                              role={undefined}
+                              variant="contained"
+                              tabIndex={-1}
+                              isSubmitted={submittedAssessments[assessment._id]}
+                              disabled={uploading}
+                            >
+                              {uploadingAssessmentId === assessment._id
+                                ? "Uploading..."
+                                : "Un-submit"}
+                              <VisuallyHiddenInput
+                                type="file"
+                                onChange={(e) =>
+                                  handleFileChange(e, assessment._id)
                                 }
-                              );
-                              setGroupMembersData(membersRes.data);
-                              setGroupLoading(false);
-                            }}
-                          >
-                            ส่งงานกลุ่ม
-                          </Button>
-                        ) : (
-                          <StyledButton
-                            component="label"
-                            role={undefined}
-                            variant="contained"
-                            tabIndex={-1}
-                            isSubmitted={submittedAssessments[assessment._id]}
-                            disabled={uploading}
-                          >
-                            {uploadingAssessmentId === assessment._id
-                              ? "Uploading..."
-                              : "Un-submit"}
-                            <VisuallyHiddenInput
-                              type="file"
-                              onChange={(e) =>
-                                handleFileChange(e, assessment._id)
-                              }
-                            />
-                          </StyledButton>
-                        )}
+                              />
+                            </StyledButton>
+                          )}
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="d-flex justify-content-center align-items-center h-50">
+                    <span className="text-muted">No assessments available</span>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </Col>
@@ -514,15 +584,25 @@ export default function CourseDetail() {
                   </Button>
                 </div>
                 <div className="mt-3">
-                  {assessments.slice(0, 3).map((assessment, index) => (
-                    <div
-                      key={assessment._id}
-                      className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
-                    >
-                      <span>{assessment.assessment_name}</span>
-                      <span className="badge bg-light text-dark">-/10</span>
+                  {scoreData.length > 0 ? (
+                    scoreData.slice(0, 3).map((score) => (
+                      <div
+                        key={score.assessment_id}
+                        className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
+                      >
+                        <span>{score.assessment_name}</span>
+                        <span className="badge bg-light text-dark">
+                          {score.student_score !== null
+                            ? `${score.student_score}/${score.max_score}`
+                            : "-/" + score.max_score}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="d-flex justify-content-center align-items-center h-100">
+                      <span className="text-muted">No scores available</span>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -539,15 +619,21 @@ export default function CourseDetail() {
                   </Button>
                 </div>
                 <div className="mt-3">
-                  {assessments.slice(0, 3).map((assessment, index) => (
-                    <div
-                      key={assessment._id}
-                      className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
-                    >
-                      <span>{assessment.assessment_name}</span>
-                      <i className="fas fa-file-alt"></i>
+                  {assessments.length > 0 ? (
+                    assessments.slice(0, 3).map((assessment, index) => (
+                      <div
+                        key={assessment._id}
+                        className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
+                      >
+                        <span>{assessment.assessment_name}</span>
+                        <i className="fas fa-file-alt"></i>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="d-flex justify-content-center align-items-center h-100">
+                      <span className="text-muted">No feedback available</span>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
