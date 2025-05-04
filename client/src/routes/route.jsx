@@ -17,11 +17,11 @@ import Viewassessmentpage from "../pages/Profressor/Viewassessmentpage";
 import StudentAssessmentpage from "../pages/Student/Assessmentpage";
 import StudentScoreAndFeedbackpage from "../pages/Student/ScoreAndFeedbackpage";
 import RoutePreserver from "./RoutePreserver";
-import AssessmentDetailPage from "../pages/Student/AssessmentDetailPage";
-
-const navigate = useNavigate();
+import Viewassessmentfile from "../components/Profressor/ScoreAndFeedback/Viewassessmentfile"; // นำเข้า Viewassessmentfile
+// import AssessmentDetailPage from "../pages/Student/AssessmentDetailPage";
 
 function AppRoutes() {
+  const navigate = useNavigate();
   return (
     <>
       <RoutePreserver />
@@ -118,13 +118,21 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/student/view-pdf/:id/:fileUrl/:assessmentId"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <Viewassessmentfile />
+            </ProtectedRoute>
+          }
+        />
+        {/* <Route
           path="/student/assessment/:id/details/:assessmentId"
           element={
             <ProtectedRoute requiredRole="student">
               <AssessmentDetailPage />
             </ProtectedRoute>
           }
-        />
+        /> */}
         <Route
           path="/dashboard/admin/*"
           element={

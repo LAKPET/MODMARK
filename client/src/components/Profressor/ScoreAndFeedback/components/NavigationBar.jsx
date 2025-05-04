@@ -18,8 +18,14 @@ const NavigationBar = ({
 }) => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const isStudent = localStorage.getItem("UserRole") === "student"; // ตรวจสอบ UserRole
+
   const handleHome = () => {
-    navigate(`/assessment/${id}/allassessmentuser/${assessmentId}`);
+    if (isStudent) {
+      navigate(`/student/score-feedback/${id}`);
+    } else {
+      navigate(`/assessment/${id}/allassessmentuser/${assessmentId}`);
+    }
   };
 
   return (
@@ -98,52 +104,58 @@ const NavigationBar = ({
       </Box>
 
       {/* Right side - Navigation arrows */}
-      <Box sx={{ display: "flex", gap: 1 }}>
-        <Tooltip
-          title={isFirstSubmission ? "First submission" : "Previous submission"}
-        >
-          <span>
-            <IconButton
-              onClick={onPrevious}
-              size="small"
-              disabled={isFirstSubmission}
-              sx={{
-                color: isFirstSubmission ? "rgba(255, 255, 255, 0.3)" : "#fff",
-                p: 0.5,
-                "&:hover": {
-                  backgroundColor: isFirstSubmission
-                    ? "transparent"
-                    : "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-            >
-              <ArrowBackIosIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip
-          title={isLastSubmission ? "Last submission" : "Next submission"}
-        >
-          <span>
-            <IconButton
-              onClick={onNext}
-              size="small"
-              disabled={isLastSubmission}
-              sx={{
-                color: isLastSubmission ? "rgba(255, 255, 255, 0.3)" : "#fff",
-                p: 0.5,
-                "&:hover": {
-                  backgroundColor: isLastSubmission
-                    ? "transparent"
-                    : "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-            >
-              <ArrowForwardIosIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Box>
+      {!isStudent && (
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Tooltip
+            title={
+              isFirstSubmission ? "First submission" : "Previous submission"
+            }
+          >
+            <span>
+              <IconButton
+                onClick={onPrevious}
+                size="small"
+                disabled={isFirstSubmission}
+                sx={{
+                  color: isFirstSubmission
+                    ? "rgba(255, 255, 255, 0.3)"
+                    : "#fff",
+                  p: 0.5,
+                  "&:hover": {
+                    backgroundColor: isFirstSubmission
+                      ? "transparent"
+                      : "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <ArrowBackIosIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip
+            title={isLastSubmission ? "Last submission" : "Next submission"}
+          >
+            <span>
+              <IconButton
+                onClick={onNext}
+                size="small"
+                disabled={isLastSubmission}
+                sx={{
+                  color: isLastSubmission ? "rgba(255, 255, 255, 0.3)" : "#fff",
+                  p: 0.5,
+                  "&:hover": {
+                    backgroundColor: isLastSubmission
+                      ? "transparent"
+                      : "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <ArrowForwardIosIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+      )}
     </Paper>
   );
 };

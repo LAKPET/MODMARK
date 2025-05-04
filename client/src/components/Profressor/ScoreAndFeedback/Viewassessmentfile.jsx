@@ -6,7 +6,7 @@ import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import PDFReviewer from "./PDFReviewer";
 
-export default function ViewAssessmentFile() {
+export default function Viewassessmentfile() {
   const { id, fileUrl, assessmentId } = useParams();
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;

@@ -118,6 +118,8 @@ const ScorePanel = ({
 
   const { total, maxPossible } = calculateTotalScore();
 
+  const isStudent = !currentProfessorId && !hasGradingPermission;
+
   return (
     <>
       <Paper
@@ -149,14 +151,14 @@ const ScorePanel = ({
           </Typography>
         </Box>
 
-        {gradingStatus === "already" && (
+        {!isStudent && gradingStatus === "already" && (
           <Alert severity="info" sx={{ mb: 2 }}>
             This assessment has already been graded. You can update the scores
             if needed.
           </Alert>
         )}
 
-        {!hasGradingPermission && (
+        {!isStudent && !hasGradingPermission && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             You don't have permission to grade this assessment.
           </Alert>

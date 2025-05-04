@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../../assets/Styles/Assessment/Getassessment.css";
 import Backdrop from "@mui/material/Backdrop";
@@ -10,11 +10,13 @@ import { formatDateTime } from "../../../utils/FormatDateTime"; // นำเข�
 
 export default function GetStudentScoreAndFeedback() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [scoreData, setScoreData] = useState([]);
   const [statisticsData, setStatisticsData] = useState([]);
   const [submissionData, setSubmissionData] = useState([]);
+  const [selectedSubmission, setSelectedSubmission] = useState(null); // State สำหรับเก็บข้อมูล submission ที่เลือก
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -98,6 +100,14 @@ export default function GetStudentScoreAndFeedback() {
     };
   });
 
+  const handleViewPDF = (submission) => {
+    setSelectedSubmission(submission); // เก็บข้อมูล submission ที่เลือก
+  };
+
+  const handleClosePDF = () => {
+    setSelectedSubmission(null); // ปิด PDF Viewer
+  };
+
   return (
     <Container className="mt-4">
       <Row className="pb-3 mb-4">
@@ -105,57 +115,71 @@ export default function GetStudentScoreAndFeedback() {
           <h2 className="mb-0 fw-semibold">Score and Feedback</h2>
         </Col>
       </Row>
-      <MDBTable className="table-hover">
-        <MDBTableHead>
-          <tr className="fw-bold">
-            <th>Assessment Name</th>
-            <th>Score Received</th>
-            <th>Max</th>
-            <th>Min</th>
-            <th>Mean</th>
-            <th>Submission Date</th>
-            <th>Actions</th>
-          </tr>
-        </MDBTableHead>
-        <MDBTableBody>
-          {combinedData.length > 0 ? (
-            combinedData.map((data) => (
-              <tr key={data.assessment_id}>
-                <td>{data.assessment_name}</td>
-                <td>
-                  {data.student_score !== null
-                    ? data.student_score
-                    : "Not graded"}
-                </td>
-                <td>{data.max_score}</td>
-                <td>{data.min_score}</td>
-                <td>{data.mean_score}</td>
-                <td>{data.submission_date}</td>
-                <td>
-                  {data.pdf_link ? (
-                    <Button
-                      variant="link"
-                      href={data.pdf_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View PDF
-                    </Button>
-                  ) : (
-                    "No file"
-                  )}
+      {selectedSubmission ? (
+        <PDFReviewer
+          fileUrl={selectedSubmission.pdf_link}
+          submissionId={selectedSubmission._id}
+          assessmentId={selectedSubmission.assessment_id}
+          rubricId={selectedSubmission.rubric_id} // ใช้ rubric_id
+          onClose={handleClosePDF}
+        />
+      ) : (
+        <MDBTable className="table-hover">
+          <MDBTableHead>
+            <tr className="fw-bold">
+              <th>Assessment Name</th>
+              <th>Score Received</th>
+              <th>Max</th>
+              <th>Min</th>
+              <th>Mean</th>
+              <th>Submission Date</th>
+              <th>Actions</th>
+            </tr>
+          </MDBTableHead>
+          <MDBTableBody>
+            {combinedData.length > 0 ? (
+              combinedData.map((data) => (
+                <tr key={data.assessment_id}>
+                  <td>{data.assessment_name}</td>
+                  <td>
+                    {data.student_score !== null
+                      ? data.student_score
+                      : "Not graded"}
+                  </td>
+                  <td>{data.max_score}</td>
+                  <td>{data.min_score}</td>
+                  <td>{data.mean_score}</td>
+                  <td>{data.submission_date}</td>
+                  <td>
+                    {data.pdf_link ? (
+                      <Button
+                        onClick={() =>
+                          navigate(
+                            `/student/view-pdf/${id}/${encodeURIComponent(
+                              data.pdf_link.split("/").pop()
+                            )}/${data.assessment_id}`
+                          )
+                        }
+                        className="custom-btn"
+                      >
+                        View PDF
+                      </Button>
+                    ) : (
+                      "No file"
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="text-center">
+                  No data available
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="7" className="text-center">
-                No data available
-              </td>
-            </tr>
-          )}
-        </MDBTableBody>
-      </MDBTable>
+            )}
+          </MDBTableBody>
+        </MDBTable>
+      )}
     </Container>
   );
 }

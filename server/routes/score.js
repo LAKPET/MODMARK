@@ -32,7 +32,10 @@ router.post(
       }
 
       // Case 1: Individual assignment graded by a single professor
-      if (assessment.assignment_type === "individual" && !assessment.teamgrading_type) {
+      if (
+        assessment.assignment_type === "individual" &&
+        !assessment.teamgrading_type
+      ) {
         // 2. Find the rubric
         const rubric = await Rubric.findById(assessment.rubric_id);
         if (!rubric) {
@@ -55,7 +58,10 @@ router.post(
         }
 
         // 4. Calculate total score
-        const totalRawScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+        const totalRawScore = Object.values(scores).reduce(
+          (sum, score) => sum + score,
+          0
+        );
 
         // 5. Save or update RawScore
         let rawScore = await RawScore.findOne({
@@ -125,12 +131,14 @@ router.post(
         const submission = await Submission.findById(submission_id);
         if (submission) {
           // Update the grading_status_by for the current professor
-          submission.grading_status_by = submission.grading_status_by.map((grader) => {
-            if (grader.grader_id.toString() === req.user.id) {
-              return { ...grader, status: "already" };
+          submission.grading_status_by = submission.grading_status_by.map(
+            (grader) => {
+              if (grader.grader_id.toString() === req.user.id) {
+                return { ...grader, status: "already" };
+              }
+              return grader;
             }
-            return grader;
-          });
+          );
 
           // Check if all graders have completed grading
           const allGraded = submission.grading_status_by.every(
@@ -158,7 +166,10 @@ router.post(
       }
 
       // Case 2: Individual assignment graded by multiple professors
-      if (assessment.assignment_type !== "individual" || assessment.teamgrading_type) {
+      if (
+        assessment.assignment_type !== "individual" ||
+        assessment.teamgrading_type
+      ) {
         // 2. Find the rubric
         const rubric = await Rubric.findById(assessment.rubric_id);
         if (!rubric) {
@@ -183,7 +194,10 @@ router.post(
         }
 
         // 4. Calculate total score
-        const totalRawScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+        const totalRawScore = Object.values(scores).reduce(
+          (sum, score) => sum + score,
+          0
+        );
 
         // 5. Save or update RawScore
         let rawScore = await RawScore.findOne({
@@ -221,7 +235,9 @@ router.post(
         const groupMembersForWeight = await GroupMember.find({ assessment_id }); // เปลี่ยนชื่อจาก groupMembers
 
         if (!groupMembersForWeight || groupMembersForWeight.length === 0) {
-          console.error("No GroupMember data found for the given group_id and assessment_id.");
+          console.error(
+            "No GroupMember data found for the given group_id and assessment_id."
+          );
         }
 
         // Filter roles to include only professor or ta
@@ -249,14 +265,20 @@ router.post(
         let totalScore = 0; // Final aggregated score
         console.log("Starting aggregation of RawScores...");
         rawScores.forEach((rawScore) => {
-          console.log(`Processing RawScore for professor_id: ${rawScore.professor_id}`);
+          console.log(
+            `Processing RawScore for professor_id: ${rawScore.professor_id}`
+          );
           const scoreObject = Object.fromEntries(rawScore.score);
           const weight = weightMap[rawScore.professor_id.toString()] || 1; // Default weight is 1
-          console.log(`Weight for professor_id ${rawScore.professor_id}: ${weight}`);
+          console.log(
+            `Weight for professor_id ${rawScore.professor_id}: ${weight}`
+          );
 
           Object.entries(scoreObject).forEach(([criteriaId, score]) => {
             const weightedScore = score * weight; // Apply weight to the score
-            console.log(`Adding weighted score for criteriaId: ${criteriaId}, score: ${score}, weighted score: ${weightedScore}`);
+            console.log(
+              `Adding weighted score for criteriaId: ${criteriaId}, score: ${score}, weighted score: ${weightedScore}`
+            );
             if (!criteriaScores[criteriaId]) {
               criteriaScores[criteriaId] = [];
             }
@@ -264,23 +286,36 @@ router.post(
           });
         });
 
-        console.log("Aggregated Criteria Scores before calculating total:", criteriaScores);
+        console.log(
+          "Aggregated Criteria Scores before calculating total:",
+          criteriaScores
+        );
 
         // Calculate total score per criteria
         const finalScores = {}; // Declare finalScores here
         for (const [criteriaId, scores] of Object.entries(criteriaScores)) {
-          const totalCriteriaScore = scores.reduce((sum, score) => sum + score, 0);
-          console.log(`Total score for criteriaId: ${criteriaId}, scores: ${scores}, totalCriteriaScore: ${totalCriteriaScore}`);
+          const totalCriteriaScore = scores.reduce(
+            (sum, score) => sum + score,
+            0
+          );
+          console.log(
+            `Total score for criteriaId: ${criteriaId}, scores: ${scores}, totalCriteriaScore: ${totalCriteriaScore}`
+          );
           finalScores[criteriaId] = totalCriteriaScore; // Assign to finalScores
           totalScore += totalCriteriaScore;
         }
 
         console.log("Final Scores after aggregation:", finalScores);
-        console.log("Final aggregated totalScore after calculation:", totalScore);
+        console.log(
+          "Final aggregated totalScore after calculation:",
+          totalScore
+        );
 
         // Check if totalScore is a valid number
         if (isNaN(totalScore)) {
-          throw new Error("Total Score is NaN. Please check the calculation logic.");
+          throw new Error(
+            "Total Score is NaN. Please check the calculation logic."
+          );
         }
 
         // 9. Save or update FinalScore
@@ -334,12 +369,14 @@ router.post(
         const submission = await Submission.findById(submission_id);
         if (submission) {
           // Update the grading_status_by for the current professor
-          submission.grading_status_by = submission.grading_status_by.map((grader) => {
-            if (grader.grader_id.toString() === req.user.id) {
-              return { ...grader, status: "already" };
+          submission.grading_status_by = submission.grading_status_by.map(
+            (grader) => {
+              if (grader.grader_id.toString() === req.user.id) {
+                return { ...grader, status: "already" };
+              }
+              return grader;
             }
-            return grader;
-          });
+          );
 
           // Check if all graders have completed grading
           const allGraded = submission.grading_status_by.every(
@@ -367,7 +404,10 @@ router.post(
       }
 
       // Case 3: Group assignment graded by a single professor
-      if (assessment.assignment_type === "group" && !assessment.teamgrading_type) {
+      if (
+        assessment.assignment_type === "group" &&
+        !assessment.teamgrading_type
+      ) {
         // 2. Find the rubric
         const rubric = await Rubric.findById(assessment.rubric_id);
         if (!rubric) {
@@ -390,7 +430,10 @@ router.post(
         }
 
         // 4. Calculate total score
-        const totalRawScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+        const totalRawScore = Object.values(scores).reduce(
+          (sum, score) => sum + score,
+          0
+        );
 
         // 5. Save or update RawScore
         let rawScore = await RawScore.findOne({
@@ -440,7 +483,9 @@ router.post(
         }
 
         // 7. Distribute FinalScore to group members
-        const groupMembersForDistribution = await GroupMember.find({ group_id: req.body.group_id }); // เปลี่ยนชื่อจาก groupMembers
+        const groupMembersForDistribution = await GroupMember.find({
+          group_id: req.body.group_id,
+        }); // เปลี่ยนชื่อจาก groupMembers
         console.log("Group Members:", groupMembersForDistribution);
 
         for (const member of groupMembersForDistribution) {
@@ -458,11 +503,14 @@ router.post(
             if (studentScore) {
               studentScore.score = totalRawScore;
               await studentScore.save();
-              console.log(`StudentScore updated for student_id: ${member.user_id}`, {
-                student_id: member.user_id,
-                score: studentScore.score,
-                submission_id: studentScore.submission_id,
-              });
+              console.log(
+                `StudentScore updated for student_id: ${member.user_id}`,
+                {
+                  student_id: member.user_id,
+                  score: studentScore.score,
+                  submission_id: studentScore.submission_id,
+                }
+              );
             } else {
               studentScore = new StudentScore({
                 student_id: member.user_id, // Use user_id as student_id
@@ -472,11 +520,14 @@ router.post(
                 score: totalRawScore,
               });
               await studentScore.save();
-              console.log(`StudentScore created for student_id: ${member.user_id}`, {
-                student_id: member.user_id,
-                score: studentScore.score,
-                submission_id: studentScore.submission_id,
-              });
+              console.log(
+                `StudentScore created for student_id: ${member.user_id}`,
+                {
+                  student_id: member.user_id,
+                  score: studentScore.score,
+                  submission_id: studentScore.submission_id,
+                }
+              );
             }
           } catch (error) {
             console.error(`Error processing user_id: ${member.user_id}`, error);
@@ -488,12 +539,14 @@ router.post(
         const submission = await Submission.findById(submission_id);
         if (submission) {
           // Update the grading_status_by for the current professor
-          submission.grading_status_by = submission.grading_status_by.map((grader) => {
-            if (grader.grader_id.toString() === req.user.id) {
-              return { ...grader, status: "already" };
+          submission.grading_status_by = submission.grading_status_by.map(
+            (grader) => {
+              if (grader.grader_id.toString() === req.user.id) {
+                return { ...grader, status: "already" };
+              }
+              return grader;
             }
-            return grader;
-          });
+          );
 
           // Check if all graders have completed grading
           const allGraded = submission.grading_status_by.every(
@@ -520,7 +573,10 @@ router.post(
       }
 
       // Case 4: Group assignment graded by multiple professors
-      if (assessment.assignment_type === "group" && assessment.teamgrading_type) {
+      if (
+        assessment.assignment_type === "group" &&
+        assessment.teamgrading_type
+      ) {
         // 2. Find the rubric
         const rubric = await Rubric.findById(assessment.rubric_id);
         if (!rubric) {
@@ -543,7 +599,10 @@ router.post(
         }
 
         // 4. Calculate total score
-        const totalRawScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+        const totalRawScore = Object.values(scores).reduce(
+          (sum, score) => sum + score,
+          0
+        );
 
         // 5. Save or update RawScore
         let rawScore = await RawScore.findOne({
@@ -577,7 +636,9 @@ router.post(
         const groupMembersForWeight = await GroupMember.find({ assessment_id }); // เปลี่ยนชื่อจาก groupMembers
 
         if (!groupMembersForWeight || groupMembersForWeight.length === 0) {
-          console.error("No GroupMember data found for the given group_id and assessment_id.");
+          console.error(
+            "No GroupMember data found for the given group_id and assessment_id."
+          );
         }
 
         // Filter roles to include only professor or ta
@@ -595,14 +656,20 @@ router.post(
         let totalScore = 0; // Final aggregated score
         console.log("Starting aggregation of RawScores...");
         rawScores.forEach((rawScore) => {
-          console.log(`Processing RawScore for professor_id: ${rawScore.professor_id}`);
+          console.log(
+            `Processing RawScore for professor_id: ${rawScore.professor_id}`
+          );
           const scoreObject = Object.fromEntries(rawScore.score);
           const weight = weightMap[rawScore.professor_id.toString()] || 1; // Default weight is 1
-          console.log(`Weight for professor_id ${rawScore.professor_id}: ${weight}`);
+          console.log(
+            `Weight for professor_id ${rawScore.professor_id}: ${weight}`
+          );
 
           Object.entries(scoreObject).forEach(([criteriaId, score]) => {
             const weightedScore = score * weight; // Apply weight to the score
-            console.log(`Adding weighted score for criteriaId: ${criteriaId}, score: ${score}, weighted score: ${weightedScore}`);
+            console.log(
+              `Adding weighted score for criteriaId: ${criteriaId}, score: ${score}, weighted score: ${weightedScore}`
+            );
             if (!criteriaScores[criteriaId]) {
               criteriaScores[criteriaId] = [];
             }
@@ -610,30 +677,51 @@ router.post(
           });
         });
 
-        console.log("Aggregated Criteria Scores before calculating total:", criteriaScores);
+        console.log(
+          "Aggregated Criteria Scores before calculating total:",
+          criteriaScores
+        );
 
         // Calculate total score per criteria
         const finalScores = {}; // Declare finalScores here
         for (const [criteriaId, scores] of Object.entries(criteriaScores)) {
-          const totalCriteriaScore = scores.reduce((sum, score) => sum + score, 0);
-          console.log(`Total score for criteriaId: ${criteriaId}, scores: ${scores}, totalCriteriaScore: ${totalCriteriaScore}`);
+          const totalCriteriaScore = scores.reduce(
+            (sum, score) => sum + score,
+            0
+          );
+          console.log(
+            `Total score for criteriaId: ${criteriaId}, scores: ${scores}, totalCriteriaScore: ${totalCriteriaScore}`
+          );
           finalScores[criteriaId] = totalCriteriaScore; // Assign to finalScores
           totalScore += totalCriteriaScore;
         }
 
         console.log("Final Scores after aggregation:", finalScores);
-        console.log("Final aggregated totalScore after calculation:", totalScore);
+        console.log(
+          "Final aggregated totalScore after calculation:",
+          totalScore
+        );
 
         // Ensure totalScore is consistent
         if (totalScore !== 37) {
-          console.error(`Mismatch in totalScore calculation. Expected: 37, Got: ${totalScore}`);
+          console.error(
+            `Mismatch in totalScore calculation. Expected: 37, Got: ${totalScore}`
+          );
         }
 
         // 9. Distribute FinalScore to group members
-        const groupMembersForDistribution = await GroupMember.find({ group_id: req.body.group_id }); // เปลี่ยนชื่อจาก groupMembers
-        console.log("Group Members fetched for score distribution:", groupMembersForDistribution);
+        const groupMembersForDistribution = await GroupMember.find({
+          group_id: req.body.group_id,
+        }); // เปลี่ยนชื่อจาก groupMembers
+        console.log(
+          "Group Members fetched for score distribution:",
+          groupMembersForDistribution
+        );
 
-        if (!groupMembersForDistribution || groupMembersForDistribution.length === 0) {
+        if (
+          !groupMembersForDistribution ||
+          groupMembersForDistribution.length === 0
+        ) {
           console.error("No GroupMember data found for the given group_id.");
         }
 
@@ -651,16 +739,23 @@ router.post(
             });
 
             if (studentScore) {
-              console.log(`Existing StudentScore found for student_id: ${member.user_id}, current score: ${studentScore.score}`);
+              console.log(
+                `Existing StudentScore found for student_id: ${member.user_id}, current score: ${studentScore.score}`
+              );
               studentScore.score = totalScore; // Assign FinalScore's totalScore
               await studentScore.save();
-              console.log(`StudentScore updated for student_id: ${member.user_id}`, {
-                student_id: member.user_id,
-                score: studentScore.score,
-                submission_id: studentScore.submission_id,
-              });
+              console.log(
+                `StudentScore updated for student_id: ${member.user_id}`,
+                {
+                  student_id: member.user_id,
+                  score: studentScore.score,
+                  submission_id: studentScore.submission_id,
+                }
+              );
             } else {
-              console.log(`No existing StudentScore found for student_id: ${member.user_id}. Creating new StudentScore.`);
+              console.log(
+                `No existing StudentScore found for student_id: ${member.user_id}. Creating new StudentScore.`
+              );
               studentScore = new StudentScore({
                 student_id: member.user_id,
                 assessment_id,
@@ -669,11 +764,14 @@ router.post(
                 score: totalScore, // Assign FinalScore's totalScore
               });
               await studentScore.save();
-              console.log(`StudentScore created for student_id: ${member.user_id}`, {
-                student_id: member.user_id,
-                score: studentScore.score,
-                submission_id: studentScore.submission_id,
-              });
+              console.log(
+                `StudentScore created for student_id: ${member.user_id}`,
+                {
+                  student_id: member.user_id,
+                  score: studentScore.score,
+                  submission_id: studentScore.submission_id,
+                }
+              );
             }
           } catch (error) {
             console.error(`Error processing user_id: ${member.user_id}`, error);
@@ -705,12 +803,14 @@ router.post(
         const submission = await Submission.findById(submission_id);
         if (submission) {
           // Update the grading_status_by for the current professor
-          submission.grading_status_by = submission.grading_status_by.map((grader) => {
-            if (grader.grader_id.toString() === req.user.id) {
-              return { ...grader, status: "already" };
+          submission.grading_status_by = submission.grading_status_by.map(
+            (grader) => {
+              if (grader.grader_id.toString() === req.user.id) {
+                return { ...grader, status: "already" };
+              }
+              return grader;
             }
-            return grader;
-          });
+          );
 
           // Check if all graders have completed grading
           const allGraded = submission.grading_status_by.every(
@@ -778,7 +878,7 @@ router.post(
 router.get(
   "/assessment/rawscore/:submission_id",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+
   async (req, res) => {
     const { submission_id } = req.params;
 
@@ -790,7 +890,11 @@ router.get(
       }).populate("rubric_id", "rubric_name description criteria");
 
       if (!rawScore) {
-        return res.status(404).json({ message: "RawScore not found for this submission and professor" });
+        return res
+          .status(404)
+          .json({
+            message: "RawScore not found for this submission and professor",
+          });
       }
 
       res.status(200).json({
