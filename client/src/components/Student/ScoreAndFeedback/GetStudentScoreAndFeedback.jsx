@@ -8,9 +8,11 @@ import { formatDateTime } from "../../../utils/FormatDateTime";
 import { sortAssessments } from "../../../utils/SortAssessment";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
-import { Alert } from "@mui/material";
-import { IconButton } from "@mui/material";
+import { Alert, Dialog, DialogContent, IconButton } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import PDFReviewer from "./PDFReviewer";
 
 export default function GetStudentScoreAndFeedback() {
   const { id } = useParams();
@@ -19,12 +21,14 @@ export default function GetStudentScoreAndFeedback() {
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [submissionInfo, setSubmissionInfo] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL;
   const [sortColumn, setSortColumn] = useState(null);
   const [sortOrder, setSortOrder] = useState("asc");
-
-  const currentProfessorId = localStorage.getItem("UserId");
 
   const handleSort = (column) => {
     const newOrder =
@@ -35,18 +39,66 @@ export default function GetStudentScoreAndFeedback() {
 
   const sortedAssessments = sortAssessments(assessments, sortColumn, sortOrder);
 
+  const handleViewPDF = (fileUrl, assessmentId) => {
+    navigate(`/student/viewpdf/${id}/${fileUrl}/${assessmentId}`);
+  };
+
+  const handleClosePDFViewer = () => {
+    setShowPDFViewer(false);
+    setSelectedSubmission(null);
+    setPdfUrl(null);
+    setSubmissionInfo(null);
+  };
+
   const refreshAssessments = async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
       const token = localStorage.getItem("authToken");
+
+      // Fetch assessments for the section
       const assessmentResponse = await axios.get(
-        `${apiUrl}/assessment/section/${id}/student-submissions`,
+        `${apiUrl}/assessment/section/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setAssessments(assessmentResponse.data);
+
+      // Fetch submissions for each assessment
+      const assessmentsWithSubmissions = await Promise.all(
+        assessmentResponse.data.map(async (assessment) => {
+          try {
+            const submissionResponse = await axios.get(
+              `${apiUrl}/submission/assessment/${assessment._id}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            // Find the student's submission
+            const studentSubmission = submissionResponse.data.find(
+              (sub) => sub.student_id._id === localStorage.getItem("UserId")
+            );
+
+            return {
+              ...assessment,
+              submission: studentSubmission || null,
+            };
+          } catch (err) {
+            console.error(
+              `Error fetching submission for assessment ${assessment._id}:`,
+              err
+            );
+            return {
+              ...assessment,
+              submission: null,
+            };
+          }
+        })
+      );
+
+      setAssessments(assessmentsWithSubmissions);
     } catch (err) {
+      console.error("Error fetching data:", err);
       setError("Error loading data.");
     } finally {
       if (showLoading) setLoading(false);
@@ -132,61 +184,80 @@ export default function GetStudentScoreAndFeedback() {
               Score <SwapVertIcon />
             </th>
             <th>Feedback</th>
+            <th>Actions</th>
           </tr>
         </MDBTableHead>
 
         <MDBTableBody>
           {sortedAssessments.length > 0 ? (
-            sortedAssessments.map((assessment, index) => {
-              const hasGradingPermission = assessment.grading_status_by?.some(
-                (status) => status.grader_id === currentProfessorId
-              );
-              return (
-                <tr key={assessment._id || index}>
-                  <td>
-                    <div className="align-status">
-                      <span className="assessment-name">
-                        {assessment.assessment_name}
-                      </span>
-                      <span className="assignment_type-status">
-                        {assessment.assignment_type}
-                      </span>
-                    </div>
-                  </td>
-                  <td>{formatDateTime(assessment.submission_date)}</td>
-                  <td>{assessment.score || "Not graded"}</td>
-                  <td>{assessment.feedback || "No feedback yet"}</td>
-                </tr>
-              );
-            })
+            sortedAssessments.map((assessment, index) => (
+              <tr key={assessment._id || index}>
+                <td>
+                  <div className="align-status">
+                    <span className="assessment-name">
+                      {assessment.assessment_name}
+                    </span>
+                    <span className="assignment_type-status">
+                      {assessment.assignment_type}
+                    </span>
+                  </div>
+                </td>
+                <td>{formatDateTime(assessment.submission?.submitted_at)}</td>
+                <td>{assessment.submission?.score || "Not graded"}</td>
+                <td>{assessment.submission?.feedback || "No feedback yet"}</td>
+                <td>
+                  {assessment.submission?.file_url ? (
+                    <IconButton
+                      onClick={() =>
+                        handleViewPDF(
+                          assessment.submission.file_url,
+                          assessment._id
+                        )
+                      }
+                      color="primary"
+                      title="View PDF"
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                  ) : (
+                    <span className="text-muted">No PDF available</span>
+                  )}
+                </td>
+              </tr>
+            ))
           ) : (
             <tr>
-              <td colSpan="4" className="text-center">
+              <td colSpan="5" className="text-center">
                 No submissions found
               </td>
             </tr>
           )}
         </MDBTableBody>
       </MDBTable>
-      {!hasGradingPermission && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          You don't have permission to grade this assessment.
-        </Alert>
-      )}
-      {hasGradingPermission && (
-        <IconButton
-          onClick={handleSubmitScores}
-          sx={{
-            backgroundColor: "#8B5F34",
-            color: "white",
-            "&:hover": {
-              backgroundColor: "#6B4A2A",
-            },
-          }}
-        >
-          <SendIcon />
-        </IconButton>
-      )}
+
+      <Dialog
+        open={showPDFViewer}
+        onClose={handleClosePDFViewer}
+        maxWidth="xl"
+        fullWidth
+        PaperProps={{
+          sx: {
+            height: "90vh",
+            maxHeight: "90vh",
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 0, height: "100%" }}>
+          {pdfUrl && submissionInfo && (
+            <PDFReviewer
+              fileUrl={pdfUrl}
+              submissionId={submissionInfo.submission_id}
+              submissionInfo={submissionInfo}
+              onClose={handleClosePDFViewer}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 }

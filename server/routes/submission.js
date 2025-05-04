@@ -146,7 +146,7 @@ router.post(
 router.get(
   "/pdf/:filename",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+
   async (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(__dirname, "../../server/uploads", filename);

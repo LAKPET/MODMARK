@@ -13,6 +13,9 @@ import { stringAvatar } from "../../../controls/Avatar";
 
 function Navber() {
   const username = localStorage.getItem("Username");
+  const firstName = localStorage.getItem("FirstName");
+  const lastName = localStorage.getItem("LastName");
+  const role = localStorage.getItem("UserRole");
   const navigate = useNavigate(); // Use navigate for redirection
   const location = useLocation(); // Get the current path
   const { id, assessmentId } = useParams(); // Get the id and assessmentId from the URL
@@ -165,8 +168,13 @@ function Navber() {
         </Navbar.Collapse>
         <Navbar.Collapse className="justify-content-end">
           <Navbar.Text className="d-flex align-items-center">
-            <span>Signed in as: </span>
+            {/* <span>Signed in as: </span> */}
             <Avatar {...stringAvatar(username || "Guest")} className="ms-2" />
+            <div className="ms-2">
+              User: {firstName} {lastName}
+              <br />
+              role: {role}
+            </div>
             <HorizontalRuleIcon className="icon-line" />
           </Navbar.Text>
           <Navbar.Text>

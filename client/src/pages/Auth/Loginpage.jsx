@@ -90,6 +90,8 @@ function Loginpage() {
         setLoading(false);
         const { token, user } = result.data;
         localStorage.setItem("authToken", token);
+        localStorage.setItem("FirstName", user.first_name);
+        localStorage.setItem("LastName", user.last_name);
         localStorage.setItem("Username", user.username);
         localStorage.setItem("UserRole", user.role);
         localStorage.setItem("UserId", user.id);

@@ -81,10 +81,7 @@ router.post(
               .json({ message: "Total weight of graders must not exceed 1" });
           }
         }
-      } else if (
-        teamgrading_type &&
-        (!graders || graders.length === 0)
-      ) {
+      } else if (teamgrading_type && (!graders || graders.length === 0)) {
         // Require graders for team grading unless handled differently
         // return res.status(400).json({ message: "Graders are required for team grading." });
         // Or assign the creator as default grader? Let's assume creator is default if none provided for now.
@@ -193,7 +190,7 @@ router.post(
 router.get(
   "/",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+
   async (req, res) => {
     try {
       const assessments = await Assessment.find()
@@ -234,7 +231,7 @@ router.get(
 router.get(
   "/:id",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+
   async (req, res) => {
     const { id } = req.params;
 
