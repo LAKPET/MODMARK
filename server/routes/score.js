@@ -848,12 +848,12 @@ router.post(
   }
 );
 
-router.post(
+router.get(
   "/assessment/finalscore",
   verifyToken,
   checkAdminOrProfessorOrTeacherAssistant,
   async (req, res) => {
-    const { assessment_id, submission_id } = req.body;
+    const { assessment_id, submission_id } = req.query; // เปลี่ยนจาก req.body เป็น req.query
 
     try {
       // Find the final score based on assessment_id and submission_id
