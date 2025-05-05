@@ -475,46 +475,47 @@ router.get(
         }
         return res.status(200).json({
           assessments_statistics: [],
-          overall_statistics: { max_score: 0, min_score: 0, mean_score: 0 },
+          overall_statistics: { overall_mean: 0 },
+          Myscore: 0,
         });
       }
 
-      let allScoresInSection = [];
+      let overallMean = 0;
+      let totalAssessmentMeans = 0;
+      let studentTotalScore = 0;
+
       const statistics = await Promise.all(
         assessments.map(async (assessment) => {
           let scores = [];
           let maxPossibleScore = assessment.rubric_id?.score || 0;
 
           // Fetch submissions and scores
-          const submissions = await Submission.find({
+          const submissions = await StudentScore.find({
             assessment_id: assessment._id,
-          }).select("score grading_status").lean();
+          }).select("score student_id").lean();
 
           const submissionCount = submissions.length;
-          const gradedCount = submissions.filter(
-            (submission) => submission.grading_status === "already"
-          ).length;
+          const gradedCount = submissions.filter((submission) => submission.score !== null).length;
 
           scores = submissions.map((submission) => submission.score ?? 0);
-          allScoresInSection.push(...scores);
 
-          if (!scores.length) {
-            return {
-              assessment_id: assessment._id,
-              assessment_name: assessment.assessment_name,
-              max_possible_score: maxPossibleScore,
-              submission_count: submissionCount,
-              graded_count: gradedCount,
-              max_score: 0,
-              min_score: 0,
-              mean_score: 0,
-            };
-          }
-
-          const maxScore = Math.max(...scores);
-          const minScore = Math.min(...scores);
+          // Calculate statistics for this assessment
+          const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
+          const minScore = scores.length > 0 ? Math.min(...scores) : 0;
           const meanScore =
-            scores.reduce((sum, score) => sum + score, 0) / scores.length;
+            scores.length > 0
+              ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+              : 0;
+
+          totalAssessmentMeans += meanScore;
+
+          // Add student's score for this assessment if available
+          const studentSubmission = submissions.find(
+            (submission) => submission.student_id.toString() === req.user.id
+          );
+          if (studentSubmission) {
+            studentTotalScore += studentSubmission.score ?? 0;
+          }
 
           return {
             assessment_id: assessment._id,
@@ -529,28 +530,24 @@ router.get(
         })
       );
 
-      // Calculate overall statistics for the section
-      let overallMax = 0;
-      let overallMin = 0;
-      let overallMean = 0;
-      if (allScoresInSection.length > 0) {
-        overallMax = Math.max(...allScoresInSection);
-        overallMin = Math.min(...allScoresInSection);
-        overallMean =
-          allScoresInSection.reduce((sum, score) => sum + score, 0) /
-          allScoresInSection.length;
-      }
+      // Calculate overall mean as the average of all assessment means
+      overallMean =
+        assessments.length > 0
+          ? parseFloat((totalAssessmentMeans / assessments.length).toFixed(2))
+          : 0;
 
-      const overallStatistics = {
-        max_score: overallMax,
-        min_score: overallMin,
-        mean_score: parseFloat(overallMean.toFixed(2)), // Format mean score
-        total_graded_scores: allScoresInSection.length,
-      };
+      // Calculate Myscore as the average score of the logged-in student
+      const Myscore =
+        assessments.length > 0
+          ? parseFloat((studentTotalScore / assessments.length).toFixed(2))
+          : 0;
 
       res.status(200).json({
         assessments_statistics: statistics,
-        overall_statistics: overallStatistics,
+        overall_statistics: {
+          overall_mean: overallMean,
+        },
+        Myscore,
       });
     } catch (error) {
       console.error("Error fetching statistics for section:", error);
