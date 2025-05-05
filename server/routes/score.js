@@ -851,7 +851,7 @@ router.post(
 router.get(
   "/assessment/finalscore",
   verifyToken,
-  checkAdminOrProfessorOrTeacherAssistant,
+
   async (req, res) => {
     const { assessment_id, submission_id } = req.query; // เปลี่ยนจาก req.body เป็น req.query
 
@@ -890,11 +890,9 @@ router.get(
       }).populate("rubric_id", "rubric_name description criteria");
 
       if (!rawScore) {
-        return res
-          .status(404)
-          .json({
-            message: "RawScore not found for this submission and professor",
-          });
+        return res.status(404).json({
+          message: "RawScore not found for this submission and professor",
+        });
       }
 
       res.status(200).json({

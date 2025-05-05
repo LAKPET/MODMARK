@@ -38,6 +38,7 @@ const CommentsPanel = ({
   const [editReplyText, setEditReplyText] = useState("");
   const apiUrl = import.meta.env.VITE_API_URL;
   const currentUserId = localStorage.getItem("UserId");
+  const userRole = localStorage.getItem("UserRole"); // Get user role
 
   const handleEditReply = (reply) => {
     setEditingReply(reply._id);
@@ -123,36 +124,61 @@ const CommentsPanel = ({
                     borderBottomLeftRadius: "4px",
                   }}
                 />
-                <IconButton
-                  size="small"
-                  onClick={() => onDeleteHighlight(highlight)}
-                  sx={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                    color: "#666",
-                    "&:hover": {
-                      color: "#d32f2f",
-                    },
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => onToggleReplyInput(highlight.id)}
-                  sx={{
-                    position: "absolute",
-                    right: 40,
-                    top: 8,
-                    color: "#666",
-                    "&:hover": {
-                      color: "#1976d2",
-                    },
-                  }}
-                >
-                  <ReplyIcon fontSize="small" />
-                </IconButton>
+                {userRole !== "student" && (
+                  // Show delete icon for non-students
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      right: 8,
+                      top: 8,
+                      display: "flex",
+                      gap: 1, // Add spacing between icons
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() => onToggleReplyInput(highlight.id)}
+                      sx={{
+                        color: "#666",
+                        "&:hover": {
+                          color: "#1976d2",
+                        },
+                      }}
+                    >
+                      <ReplyIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => onDeleteHighlight(highlight)}
+                      sx={{
+                        color: "#666",
+                        "&:hover": {
+                          color: "#d32f2f",
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                )}
+                {userRole === "student" && (
+                  // Show reply icon for students
+                  <IconButton
+                    size="small"
+                    onClick={() => onToggleReplyInput(highlight.id)}
+                    sx={{
+                      position: "absolute",
+                      right: 8,
+                      top: 8,
+                      color: "#666",
+                      "&:hover": {
+                        color: "#1976d2",
+                      },
+                    }}
+                  >
+                    <ReplyIcon fontSize="small" />
+                  </IconButton>
+                )}
                 <Box
                   sx={{
                     display: "flex",

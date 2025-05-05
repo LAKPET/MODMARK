@@ -26,6 +26,8 @@ const ScorePanel = ({
 }) => {
   const navigate = useNavigate();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [studentScores, setStudentScores] = useState(null); // State to store student scores
+  const userRole = localStorage.getItem("UserRole"); // Get user role
   const currentProfessorId = localStorage.getItem("UserId");
 
   // Add useEffect to log the comparison
@@ -118,8 +120,79 @@ const ScorePanel = ({
 
   const { total, maxPossible } = calculateTotalScore();
 
-  const isStudent = !currentProfessorId && !hasGradingPermission;
+  useEffect(() => {
+    const fetchStudentScore = async () => {
+      const token = localStorage.getItem("authToken");
 
+      if (userRole === "student") {
+        try {
+          const response = await axios.get(
+            `http://localhost:5001/score/assessment/finalscore`,
+            {
+              params: {
+                assessment_id: submissionInfo.assessment_id,
+                submission_id: submissionId,
+              },
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          console.log("Student Score Data:", response.data);
+          setStudentScores(response.data.finalScore.score); // Store scores in state
+        } catch (err) {
+          console.error("Error fetching student score:", err);
+        }
+      }
+    };
+
+    fetchStudentScore();
+  }, [submissionInfo, submissionId, userRole]);
+
+  if (userRole === "student" && studentScores) {
+    // Calculate total score for the student
+    const totalScore = Object.values(studentScores).reduce(
+      (sum, score) => sum + score,
+      0
+    );
+
+    return (
+      <Paper
+        elevation={3}
+        sx={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: "#fff",
+          borderRadius: 0,
+          m: 0,
+          p: 2,
+          overflow: "auto",
+          borderLeft: "1px solid #e0e0e0",
+        }}
+      >
+        <Typography variant="h6" sx={{ color: "#8B5F34", mb: 2 }}>
+          Final Scores
+        </Typography>
+        {rubric?.criteria.map((criterion) => (
+          <Box key={criterion._id} sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+              {criterion.name}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#666" }}>
+              Score: {studentScores[criterion._id] || 0}
+            </Typography>
+            <Divider sx={{ mt: 1 }} />
+          </Box>
+        ))}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" sx={{ color: "#8B5F34" }}>
+            Total Score: {totalScore}
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  }
+
+  // Existing UI for professors or other roles
   return (
     <>
       <Paper
@@ -151,14 +224,14 @@ const ScorePanel = ({
           </Typography>
         </Box>
 
-        {!isStudent && gradingStatus === "already" && (
+        {gradingStatus === "already" && (
           <Alert severity="info" sx={{ mb: 2 }}>
             This assessment has already been graded. You can update the scores
             if needed.
           </Alert>
         )}
 
-        {!isStudent && !hasGradingPermission && (
+        {!hasGradingPermission && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             You don't have permission to grade this assessment.
           </Alert>
