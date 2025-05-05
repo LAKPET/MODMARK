@@ -103,6 +103,15 @@ const PDFReviewer = ({
 
   const handleContextMenu = (event) => {
     event.preventDefault();
+
+    const userRole = localStorage.getItem("UserRole"); // Get user role
+
+    // Prevent context menu for students
+    if (userRole === "student") {
+      console.warn("Students are not allowed to add comments.");
+      return; // Exit the function
+    }
+
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
       setMousePosition({ x: event.clientX, y: event.clientY });
@@ -119,6 +128,14 @@ const PDFReviewer = ({
   };
 
   const handleAddHighlight = async () => {
+    const userRole = localStorage.getItem("UserRole"); // Get user role
+
+    // Prevent students from adding comments
+    if (userRole === "student") {
+      console.warn("Students are not allowed to add comments.");
+      return; // Exit the function
+    }
+
     const selection = window.getSelection();
     if (!selection || !selection.toString().trim()) return;
 
@@ -800,7 +817,7 @@ const PDFReviewer = ({
         activeHighlightIds.forEach((id) => {
           fetchCommentsForHighlight(id);
         });
-      }, 5000);
+      }, 4000);
 
       setPollingInterval(interval);
     }
