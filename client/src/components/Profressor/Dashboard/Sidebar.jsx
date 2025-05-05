@@ -6,6 +6,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import GroupIcon from "@mui/icons-material/Group";
 import SettingsIcon from "@mui/icons-material/Settings";
+import CreditScoreIcon from "@mui/icons-material/CreditScore";
 import "../../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
@@ -60,6 +61,16 @@ function Sidebar() {
         >
           <AssessmentIcon className="me-2" />
           <span>Assessment</span>
+        </Nav.Link>
+        <Nav.Link
+          as={NavLink}
+          to={`/score/${id}`}
+          className={`text-white mb-3 sidebar-link d-flex align-items-center ${
+            isActive(`/score/${id}`) ? "active" : ""
+          }`}
+        >
+          <CreditScoreIcon className="me-2" />
+          <span>Score</span>
         </Nav.Link>
         <Nav.Link
           as={NavLink}

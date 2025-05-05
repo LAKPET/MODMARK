@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import Login from "../pages/Auth/Loginpage";
 import Register from "../pages/Auth/Registerpage";
 import ProfessorCoursepage from "../pages/Profressor/Coursepage";
@@ -18,10 +18,13 @@ import StudentAssessmentpage from "../pages/Student/Assessmentpage";
 import StudentScoreAndFeedbackpage from "../pages/Student/ScoreAndFeedbackpage";
 import RoutePreserver from "./RoutePreserver";
 import Viewassessmentfile from "../components/Profressor/ScoreAndFeedback/Viewassessmentfile"; // นำเข้า Viewassessmentfile
-// import AssessmentDetailPage from "../pages/Student/AssessmentDetailPage";
+import AssessmentDetailPage from "../pages/Student/AssessmentDetailPage";
+import Scorepage from "../pages/Profressor/Scorepage";
 
 function AppRoutes() {
   const navigate = useNavigate();
+  const { sectionId, assessmentId } = useParams();
+  console.log("sectionId:", sectionId, "assessmentId:", assessmentId);
   return (
     <>
       <RoutePreserver />
@@ -58,6 +61,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute requiredRole={["professor", "ta"]}>
               <Assessmentpage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/score/:id"
+          element={
+            <ProtectedRoute requiredRole={["professor", "ta"]}>
+              <Scorepage />
             </ProtectedRoute>
           }
         />
@@ -110,6 +121,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/student/assessment/:id/assessment-details/:assessmentId"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <AssessmentDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/student/score-feedback/:id"
           element={
             <ProtectedRoute requiredRole="student">
@@ -125,14 +144,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* <Route
-          path="/student/assessment/:id/details/:assessmentId"
-          element={
-            <ProtectedRoute requiredRole="student">
-              <AssessmentDetailPage />
-            </ProtectedRoute>
-          }
-        /> */}
+
         <Route
           path="/dashboard/admin/*"
           element={
