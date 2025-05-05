@@ -110,6 +110,8 @@ function Navber() {
       return "Dashboard";
     } else if (location.pathname.includes("/assessment")) {
       return "Assessment";
+    } else if (location.pathname.includes("/score")) {
+      return "Score";
     } else if (location.pathname.includes("/team")) {
       return "Team";
     } else if (location.pathname.includes("/setting")) {

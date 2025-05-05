@@ -11,22 +11,22 @@ export const validateRegistrationForm = (formData) => {
   // Firstname validation
   if (!formData.firstname) {
     errors.firstname = "Firstname is required";
-  } else if (formData.firstname.length < 2) {
-    errors.firstname = "Firstname must be at least 2 characters";
+  } else if (formData.firstname.length < 3) {
+    errors.firstname = "Firstname must be at least 3 characters";
   }
 
   // Lastname validation
   if (!formData.lastname) {
     errors.lastname = "Lastname is required";
-  } else if (formData.lastname.length < 2) {
-    errors.lastname = "Lastname must be at least 2 characters";
+  } else if (formData.lastname.length < 3) {
+    errors.lastname = "Lastname must be at least 3 characters";
   }
 
   // Email validation
   if (!formData.email) {
     errors.email = "Email is required";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    errors.email = "Please enter a valid email address";
+    errors.email = "Please enter a valid email address Example: a@a.com";
   }
 
   // Username validation

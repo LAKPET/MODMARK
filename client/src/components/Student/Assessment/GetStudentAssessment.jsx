@@ -301,17 +301,17 @@ export default function GetStudentAssessment() {
 
         <MDBTableBody>
           {sortedAssessments.length > 0 ? (
-            sortedAssessments.map((assessment, index) => (
-              <tr key={assessment._id || index}>
-                <td>
-                  <div className="align-status">
-                    <span className="assessment-name">
-                      {assessment.assessment_name}
-                    </span>
-                    <span className="assignment_type-status">
-                      {assessment.assignment_type}
-                    </span>
-                  </div>
+            sortedAssessments.map((assessment) => (
+              <tr key={assessment._id}>
+                <td
+                  className="clickable"
+                  onClick={() =>
+                    navigate(
+                      `/student/assessment/${id}/assessment-details/${assessment._id}`
+                    )
+                  }
+                >
+                  {assessment.assessment_name}
                 </td>
                 <td>{formatDateTime(assessment.publish_date)}</td>
                 <td>{formatDateTime(assessment.due_date)}</td>

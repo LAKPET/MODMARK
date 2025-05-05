@@ -19,6 +19,7 @@ function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" }); // State สำหรับ Modal error
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -56,17 +57,20 @@ function Register() {
         setShowModal(true);
       })
       .catch((err) => {
-        if (err.response?.data?.message) {
-          setErrors({ submit: err.response.data.message });
-        } else {
-          setErrors({ submit: "Registration failed. Please try again." });
-        }
+        const errorMessage =
+          err.response?.data?.message ||
+          "Registration failed. Please try again.";
+        setErrorModal({ open: true, message: errorMessage }); // แสดง Modal error
       });
   };
 
   const handleModalClose = () => {
     setShowModal(false);
     navigate("/login");
+  };
+
+  const handleErrorModalClose = () => {
+    setErrorModal({ open: false, message: "" }); // ปิด Modal error
   };
 
   return (
@@ -237,7 +241,7 @@ function Register() {
 
               {errors.submit && (
                 <div
-                  className="text-danger mb-4 text-center"
+                  className="text-danger mb-4 text-left"
                   style={{ fontSize: "0.875rem" }}
                 >
                   {errors.submit}
@@ -273,6 +277,15 @@ function Register() {
         handleClose={handleModalClose}
         title="Registration Successful"
         description="Your account has been created successfully. You can now login with your credentials."
+        type="success" // กำหนดประเภทเป็น success
+      />
+
+      <ModalComponent
+        open={errorModal.open}
+        handleClose={handleErrorModalClose}
+        title="Registration Error"
+        description={errorModal.message}
+        type="error" // กำหนดประเภทเป็น error
       />
     </MDBContainer>
   );

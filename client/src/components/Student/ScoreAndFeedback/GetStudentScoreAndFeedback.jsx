@@ -6,7 +6,8 @@ import axios from "axios";
 import "../../../assets/Styles/Assessment/Getassessment.css";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
-import { formatDateTime } from "../../../utils/FormatDateTime"; // นำเข้า formatDateTime
+import SwapVertIcon from "@mui/icons-material/SwapVert";
+import { formatDateTime } from "../../../utils/FormatDateTime";
 
 export default function GetStudentScoreAndFeedback() {
   const { id } = useParams();
@@ -16,7 +17,9 @@ export default function GetStudentScoreAndFeedback() {
   const [scoreData, setScoreData] = useState([]);
   const [statisticsData, setStatisticsData] = useState([]);
   const [submissionData, setSubmissionData] = useState([]);
-  const [selectedSubmission, setSelectedSubmission] = useState(null); // State สำหรับเก็บข้อมูล submission ที่เลือก
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [selectedSubmission, setSelectedSubmission] = useState(null); // Define selectedSubmission state
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -63,6 +66,23 @@ export default function GetStudentScoreAndFeedback() {
     fetchData();
   }, [id]);
 
+  const handleSort = (column) => {
+    const newOrder =
+      sortColumn === column && sortOrder === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortOrder(newOrder);
+
+    const sortedData = [...scoreData].sort((a, b) => {
+      if (newOrder === "asc") {
+        return a[column] > b[column] ? 1 : -1;
+      } else {
+        return a[column] < b[column] ? 1 : -1;
+      }
+    });
+
+    setScoreData(sortedData);
+  };
+
   if (loading) {
     return (
       <Backdrop
@@ -92,7 +112,7 @@ export default function GetStudentScoreAndFeedback() {
       min_score: stats?.min_score || 0,
       mean_score: stats?.mean_score || 0,
       submission_date: submission?.submitted_at
-        ? formatDateTime(submission.submitted_at) // ใช้ formatDateTime
+        ? formatDateTime(submission.submitted_at)
         : "N/A",
       pdf_link: submission?.file_url
         ? `${apiUrl}/files/${submission.file_url}`
@@ -101,11 +121,11 @@ export default function GetStudentScoreAndFeedback() {
   });
 
   const handleViewPDF = (submission) => {
-    setSelectedSubmission(submission); // เก็บข้อมูล submission ที่เลือก
+    setSelectedSubmission(submission); // Set the selected submission
   };
 
   const handleClosePDF = () => {
-    setSelectedSubmission(null); // ปิด PDF Viewer
+    setSelectedSubmission(null); // Clear the selected submission
   };
 
   return (
@@ -120,19 +140,40 @@ export default function GetStudentScoreAndFeedback() {
           fileUrl={selectedSubmission.pdf_link}
           submissionId={selectedSubmission._id}
           assessmentId={selectedSubmission.assessment_id}
-          rubricId={selectedSubmission.rubric_id} // ใช้ rubric_id
+          rubricId={selectedSubmission.rubric_id}
           onClose={handleClosePDF}
         />
       ) : (
         <MDBTable className="table-hover">
           <MDBTableHead>
             <tr className="fw-bold">
-              <th>Assessment Name</th>
-              <th>Score Received</th>
-              <th>Max</th>
-              <th>Min</th>
-              <th>Mean</th>
-              <th>Submission Date</th>
+              <th
+                onClick={() => handleSort("assessment_name")}
+                className="sortable"
+              >
+                Assessment Name <SwapVertIcon />
+              </th>
+              <th
+                onClick={() => handleSort("student_score")}
+                className="sortable"
+              >
+                Score Received <SwapVertIcon />
+              </th>
+              <th onClick={() => handleSort("max_score")} className="sortable">
+                Max <SwapVertIcon />
+              </th>
+              <th onClick={() => handleSort("min_score")} className="sortable">
+                Min <SwapVertIcon />
+              </th>
+              <th onClick={() => handleSort("mean_score")} className="sortable">
+                Mean <SwapVertIcon />
+              </th>
+              <th
+                onClick={() => handleSort("submission_date")}
+                className="sortable"
+              >
+                Submission Date <SwapVertIcon />
+              </th>
               <th>Actions</th>
             </tr>
           </MDBTableHead>
