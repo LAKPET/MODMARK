@@ -92,11 +92,54 @@ router.post(
         let finalScore = await FinalScore.findOne({ submission_id });
 
         if (finalScore) {
+          // Update existing FinalScore
           finalScore.score = scores;
           finalScore.total_score = totalRawScore;
-          finalScore.status = "graded";
+
+          // Ensure the current grader is in grading_status_by
+          const graderExists = finalScore.grading_status_by.some(
+            (grader) => grader.grader_id.toString() === req.user.id
+          );
+
+          if (!graderExists) {
+            finalScore.grading_status_by.push({
+              grader_id: req.user.id,
+              role: req.user.role, // Assuming role is available in req.user
+              status: "already",
+            });
+          } else {
+            // Update grading_status_by for the current grader
+            finalScore.grading_status_by = finalScore.grading_status_by.map(
+              (grader) => {
+                if (grader.grader_id.toString() === req.user.id) {
+                  return { ...grader, status: "already" };
+                }
+                return grader;
+              }
+            );
+          }
+
+          // Check if all graders have completed grading
+          const allGraded = finalScore.grading_status_by.every(
+            (grader) => grader.status === "already"
+          );
+
+          // Update the overall status if all graders are done
+          if (allGraded) {
+            finalScore.status = "graded";
+          }
+
           await finalScore.save();
         } else {
+          // Create new FinalScore
+          const gradingStatusBy = [
+            {
+              grader_id: req.user.id,
+              role: req.user.role, // Assuming role is available in req.user
+              status: "already",
+            },
+          ];
+
           finalScore = new FinalScore({
             student_id: req.body.student_id,
             group_id: req.body.group_id,
@@ -105,8 +148,10 @@ router.post(
             rubric_id: rubricId,
             score: scores,
             total_score: totalRawScore,
-            status: "graded",
+            status: "graded", // Set to graded since this grader has completed grading
+            grading_status_by: gradingStatusBy,
           });
+
           await finalScore.save();
         }
 
@@ -169,7 +214,7 @@ router.post(
 
       // Case 2: Individual assignment graded by multiple professors
       if (
-        assessment.assignment_type !== "individual" ||
+        assessment.assignment_type === "individual" &&
         assessment.teamgrading_type
       ) {
         // 2. Find the rubric
@@ -230,10 +275,22 @@ router.post(
           console.log("RawScore created successfully!");
         }
 
-        // 6. Fetch all RawScores for this submission
+        // 6. Fetch all graders for this assessment
+        const graders = await GroupMember.find({
+          assessment_id,
+          role: { $in: ["professor", "ta"] },
+        });
+
+        if (!graders || graders.length === 0) {
+          return res.status(404).json({
+            message: "No graders found for this assessment",
+          });
+        }
+
+        // 7. Fetch all RawScores for this submission
         const rawScores = await RawScore.find({ submission_id });
 
-        // 7. Fetch GroupMember to calculate weight
+        // 8. Fetch GroupMember to calculate weight
         const groupMembersForWeight = await GroupMember.find({ assessment_id }); // เปลี่ยนชื่อจาก groupMembers
 
         if (!groupMembersForWeight || groupMembersForWeight.length === 0) {
@@ -262,7 +319,7 @@ router.post(
 
         console.log("Weight Map:", weightMap);
 
-        // 8. Aggregate scores from RawScore using weight
+        // 9. Aggregate scores from RawScore using weight
         const criteriaScores = {};
         let totalScore = 0; // Final aggregated score
         console.log("Starting aggregation of RawScores...");
@@ -320,18 +377,60 @@ router.post(
           );
         }
 
-        // 9. Save or update FinalScore
+        // 10. Save or update FinalScore
         let finalScore = await FinalScore.findOne({ submission_id });
 
         if (finalScore) {
           // Update existing FinalScore
           finalScore.score = finalScores; // Use finalScores here
           finalScore.total_score = totalScore;
-          finalScore.status = "graded";
+
+          // Ensure all graders are in grading_status_by
+          graders.forEach((grader) => {
+            const graderExists = finalScore.grading_status_by.some(
+              (g) => g.grader_id.toString() === grader.user_id.toString()
+            );
+
+            if (!graderExists) {
+              finalScore.grading_status_by.push({
+                grader_id: grader.user_id,
+                role: grader.role,
+                status: "pending",
+              });
+            }
+          });
+
+          // Update grading_status_by for the current grader
+          finalScore.grading_status_by = finalScore.grading_status_by.map(
+            (grader) => {
+              if (grader.grader_id.toString() === req.user.id) {
+                return { ...grader, status: "already" };
+              }
+              return grader;
+            }
+          );
+
+          // Check if all graders have completed grading
+          const allGraded = finalScore.grading_status_by.every(
+            (grader) => grader.status === "already"
+          );
+
+          // Update the overall status if all graders are done
+          if (allGraded) {
+            finalScore.status = "graded";
+          }
+
           await finalScore.save();
           console.log("FinalScore updated successfully!");
         } else {
           // Create new FinalScore
+          const gradingStatusBy = graders.map((grader) => ({
+            grader_id: grader.user_id,
+            role: grader.role,
+            status:
+              grader.user_id.toString() === req.user.id ? "already" : "pending",
+          }));
+
           finalScore = new FinalScore({
             student_id: req.body.student_id,
             group_id: req.body.group_id,
@@ -340,36 +439,48 @@ router.post(
             rubric_id: rubricId,
             score: finalScores, // Use finalScores here
             total_score: totalScore,
-            status: "graded",
+            status: gradingStatusBy.every(
+              (grader) => grader.status === "already"
+            )
+              ? "graded"
+              : "pending",
+            grading_status_by: gradingStatusBy,
           });
+
           await finalScore.save();
           console.log("FinalScore created successfully!");
         }
 
-        // 10. Save or update StudentScore
-        let studentScore = await StudentScore.findOne({ submission_id });
+        // 11. Save or update StudentScore
+        if (finalScore.status === "graded") {
+          let studentScore = await StudentScore.findOne({ submission_id });
 
-        if (studentScore) {
-          // Update existing StudentScore
-          studentScore.score = totalScore;
-          studentScore.section_id = assessment.section_id; // Add section_id
-          await studentScore.save();
-          console.log("StudentScore updated successfully!");
+          if (studentScore) {
+            // Update existing StudentScore
+            studentScore.score = totalScore;
+            studentScore.section_id = assessment.section_id; // Add section_id
+            await studentScore.save();
+            console.log("StudentScore updated successfully!");
+          } else {
+            // Create new StudentScore
+            studentScore = new StudentScore({
+              student_id: req.body.student_id,
+              assessment_id,
+              submission_id,
+              group_id: req.body.group_id,
+              section_id: assessment.section_id, // Add section_id
+              score: totalScore,
+            });
+            await studentScore.save();
+            console.log("StudentScore created successfully!");
+          }
         } else {
-          // Create new StudentScore
-          studentScore = new StudentScore({
-            student_id: req.body.student_id,
-            assessment_id,
-            submission_id,
-            group_id: req.body.group_id,
-            section_id: assessment.section_id, // Add section_id
-            score: totalScore,
-          });
-          await studentScore.save();
-          console.log("StudentScore created successfully!");
+          console.log(
+            `FinalScore is not graded yet. Skipping StudentScore creation or update.`
+          );
         }
 
-        // 11. Update grading status in Submission
+        // 12. Update grading status in Submission
         const submission = await Submission.findById(submission_id);
         if (submission) {
           // Update the grading_status_by for the current professor
@@ -402,12 +513,11 @@ router.post(
             message: "Scores submitted successfully!",
             rawScore,
             finalScore,
-            studentScore,
           });
         }
       }
 
-      // Case 3: Group assignment graded by a single professor
+      // Case 3: Group assignment graded by multiple professors
       if (
         assessment.assignment_type === "group" &&
         !assessment.teamgrading_type
@@ -464,15 +574,72 @@ router.post(
           await rawScore.save();
         }
 
-        // 6. Save or update FinalScore
+        // 6. Fetch all graders for this assessment
+        const graders = await GroupMember.find({
+          assessment_id,
+          role: { $in: ["professor", "ta"] },
+        });
+
+        if (!graders || graders.length === 0) {
+          return res.status(404).json({
+            message: "No graders found for this assessment",
+          });
+        }
+
+        // 7. Save or update FinalScore
         let finalScore = await FinalScore.findOne({ submission_id });
 
         if (finalScore) {
+          // Update existing FinalScore
           finalScore.score = scores;
           finalScore.total_score = totalRawScore;
-          finalScore.status = "graded";
+
+          // Ensure all graders are in grading_status_by
+          graders.forEach((grader) => {
+            const graderExists = finalScore.grading_status_by.some(
+              (g) => g.grader_id.toString() === grader.user_id.toString()
+            );
+
+            if (!graderExists) {
+              finalScore.grading_status_by.push({
+                grader_id: grader.user_id,
+                role: grader.role,
+                status: "pending",
+              });
+            }
+          });
+
+          // Update grading_status_by for the current grader
+          finalScore.grading_status_by = finalScore.grading_status_by.map(
+            (grader) => {
+              if (grader.grader_id.toString() === req.user.id) {
+                return { ...grader, status: "already" };
+              }
+              return grader;
+            }
+          );
+
+          // Check if all graders have completed grading
+          const allGraded = finalScore.grading_status_by.every(
+            (grader) => grader.status === "already"
+          );
+
+          // Update the overall status if all graders are done
+          if (allGraded) {
+            finalScore.status = "graded";
+          }
+
           await finalScore.save();
+          console.log("FinalScore updated successfully!");
         } else {
+          // Create new FinalScore
+          const gradingStatusBy = graders.map((grader) => ({
+            grader_id: grader.user_id,
+            role: grader.role,
+            status:
+              grader.user_id.toString() === req.user.id ? "already" : "pending",
+          }));
+
           finalScore = new FinalScore({
             student_id: req.body.student_id,
             group_id: req.body.group_id,
@@ -481,67 +648,81 @@ router.post(
             rubric_id: rubricId,
             score: scores,
             total_score: totalRawScore,
-            status: "graded",
+            status: gradingStatusBy.every(
+              (grader) => grader.status === "already"
+            )
+              ? "graded"
+              : "pending",
+            grading_status_by: gradingStatusBy,
           });
+
           await finalScore.save();
+          console.log("FinalScore created successfully!");
         }
 
-        // 7. Distribute FinalScore to group members
-        const groupMembersForDistribution = await GroupMember.find({
-          group_id: req.body.group_id,
-        }); // เปลี่ยนชื่อจาก groupMembers
-        console.log("Group Members:", groupMembersForDistribution);
+        // 8. Distribute FinalScore to group members if graded
+        if (finalScore.status === "graded") {
+          const groupMembersForDistribution = await GroupMember.find({
+            group_id: req.body.group_id,
+          });
 
-        for (const member of groupMembersForDistribution) {
-          if (!member.user_id) {
-            console.error(`Missing user_id for group member: ${member}`);
-            continue; // Skip if user_id is missing
-          }
+          for (const member of groupMembersForDistribution) {
+            if (!member.user_id) {
+              console.error(`Missing user_id for group member: ${member}`);
+              continue; // Skip if user_id is missing
+            }
 
-          try {
-            let studentScore = await StudentScore.findOne({
-              student_id: member.user_id, // Use user_id as student_id
-              submission_id,
-            });
-
-            if (studentScore) {
-              studentScore.score = totalRawScore;
-              studentScore.section_id = assessment.section_id; // Add section_id
-              await studentScore.save();
-              console.log(
-                `StudentScore updated for student_id: ${member.user_id}`,
-                {
-                  student_id: member.user_id,
-                  score: studentScore.score,
-                  submission_id: studentScore.submission_id,
-                }
-              );
-            } else {
-              studentScore = new StudentScore({
-                student_id: member.user_id, // Use user_id as student_id
-                assessment_id,
+            try {
+              let studentScore = await StudentScore.findOne({
+                student_id: member.user_id,
                 submission_id,
-                group_id: req.body.group_id,
-                section_id: assessment.section_id, // Add section_id
-                score: totalRawScore,
               });
-              await studentScore.save();
-              console.log(
-                `StudentScore created for student_id: ${member.user_id}`,
-                {
+
+              if (studentScore) {
+                studentScore.score = finalScore.total_score; // Use FinalScore's total_score
+                studentScore.section_id = assessment.section_id; // Add section_id
+                await studentScore.save();
+                console.log(
+                  `StudentScore updated for student_id: ${member.user_id}`,
+                  {
+                    student_id: member.user_id,
+                    score: studentScore.score,
+                    submission_id: studentScore.submission_id,
+                  }
+                );
+              } else {
+                studentScore = new StudentScore({
                   student_id: member.user_id,
-                  score: studentScore.score,
-                  submission_id: studentScore.submission_id,
-                }
+                  assessment_id,
+                  submission_id,
+                  group_id: req.body.group_id,
+                  section_id: assessment.section_id, // Add section_id
+                  score: finalScore.total_score, // Use FinalScore's total_score
+                });
+                await studentScore.save();
+                console.log(
+                  `StudentScore created for student_id: ${member.user_id}`,
+                  {
+                    student_id: member.user_id,
+                    score: studentScore.score,
+                    submission_id: studentScore.submission_id,
+                  }
+                );
+              }
+            } catch (error) {
+              console.error(
+                `Error processing user_id: ${member.user_id}`,
+                error
               );
             }
-          } catch (error) {
-            console.error(`Error processing user_id: ${member.user_id}`, error);
-            // Handle error แต่ไม่ส่ง Response ซ้ำ
           }
+        } else {
+          console.log(
+            `FinalScore is not graded yet. Skipping StudentScore creation or update.`
+          );
         }
 
-        // 8. Update grading status in Submission
+        // 9. Update grading status in Submission
         const submission = await Submission.findById(submission_id);
         if (submission) {
           // Update the grading_status_by for the current professor
@@ -635,179 +816,155 @@ router.post(
           await rawScore.save();
         }
 
-        // 6. Fetch all RawScores for this submission
-        const rawScores = await RawScore.find({ submission_id });
-
-        // 7. Fetch GroupMember to calculate weight
-        const groupMembersForWeight = await GroupMember.find({ assessment_id }); // เปลี่ยนชื่อจาก groupMembers
-
-        if (!groupMembersForWeight || groupMembersForWeight.length === 0) {
-          console.error(
-            "No GroupMember data found for the given group_id and assessment_id."
-          );
-        }
-
-        // Filter roles to include only professor or ta
-        const weightMap = groupMembersForWeight.reduce((map, member) => {
-          if (["professor", "ta"].includes(member.role)) {
-            map[member.user_id.toString()] = member.weight || 1; // Default weight is 1
-          }
-          return map;
-        }, {});
-
-        console.log("Weight Map:", weightMap);
-
-        // 8. Aggregate scores from RawScore using weight
-        const criteriaScores = {};
-        let totalScore = 0; // Final aggregated score
-        console.log("Starting aggregation of RawScores...");
-        rawScores.forEach((rawScore) => {
-          console.log(
-            `Processing RawScore for professor_id: ${rawScore.professor_id}`
-          );
-          const scoreObject = Object.fromEntries(rawScore.score);
-          const weight = weightMap[rawScore.professor_id.toString()] || 1; // Default weight is 1
-          console.log(
-            `Weight for professor_id ${rawScore.professor_id}: ${weight}`
-          );
-
-          Object.entries(scoreObject).forEach(([criteriaId, score]) => {
-            const weightedScore = score * weight; // Apply weight to the score
-            console.log(
-              `Adding weighted score for criteriaId: ${criteriaId}, score: ${score}, weighted score: ${weightedScore}`
-            );
-            if (!criteriaScores[criteriaId]) {
-              criteriaScores[criteriaId] = [];
-            }
-            criteriaScores[criteriaId].push(weightedScore);
-          });
+        // 6. Fetch all graders for this assessment
+        const graders = await GroupMember.find({
+          assessment_id,
+          role: { $in: ["professor", "ta"] },
         });
 
-        console.log(
-          "Aggregated Criteria Scores before calculating total:",
-          criteriaScores
-        );
-
-        // Calculate total score per criteria
-        const finalScores = {}; // Declare finalScores here
-        for (const [criteriaId, scores] of Object.entries(criteriaScores)) {
-          const totalCriteriaScore = scores.reduce(
-            (sum, score) => sum + score,
-            0
-          );
-          console.log(
-            `Total score for criteriaId: ${criteriaId}, scores: ${scores}, totalCriteriaScore: ${totalCriteriaScore}`
-          );
-          finalScores[criteriaId] = totalCriteriaScore; // Assign to finalScores
-          totalScore += totalCriteriaScore;
+        if (!graders || graders.length === 0) {
+          return res.status(404).json({
+            message: "No graders found for this assessment",
+          });
         }
 
-        console.log("Final Scores after aggregation:", finalScores);
-        console.log(
-          "Final aggregated totalScore after calculation:",
-          totalScore
-        );
-
-        // Ensure totalScore is consistent
-        if (totalScore !== 37) {
-          console.error(
-            `Mismatch in totalScore calculation. Expected: 37, Got: ${totalScore}`
-          );
-        }
-
-        // 9. Distribute FinalScore to group members
-        const groupMembersForDistribution = await GroupMember.find({
-          group_id: req.body.group_id,
-        }); // เปลี่ยนชื่อจาก groupMembers
-        console.log(
-          "Group Members fetched for score distribution:",
-          groupMembersForDistribution
-        );
-
-        if (
-          !groupMembersForDistribution ||
-          groupMembersForDistribution.length === 0
-        ) {
-          console.error("No GroupMember data found for the given group_id.");
-        }
-
-        for (const member of groupMembersForDistribution) {
-          if (!member.user_id) {
-            console.error(`Missing user_id for group member: ${member}`);
-            continue; // Skip if user_id is missing
-          }
-
-          try {
-            console.log(`Distributing score to student_id: ${member.user_id}`);
-            let studentScore = await StudentScore.findOne({
-              student_id: member.user_id,
-              submission_id,
-            });
-
-            if (studentScore) {
-              console.log(
-                `Existing StudentScore found for student_id: ${member.user_id}, current score: ${studentScore.score}`
-              );
-              studentScore.score = totalScore; // Assign FinalScore's totalScore
-              studentScore.section_id = assessment.section_id; // Add section_id
-              await studentScore.save();
-              console.log(
-                `StudentScore updated for student_id: ${member.user_id}`,
-                {
-                  student_id: member.user_id,
-                  score: studentScore.score,
-                  submission_id: studentScore.submission_id,
-                }
-              );
-            } else {
-              console.log(
-                `No existing StudentScore found for student_id: ${member.user_id}. Creating new StudentScore.`
-              );
-              studentScore = new StudentScore({
-                student_id: member.user_id,
-                assessment_id,
-                submission_id,
-                group_id: req.body.group_id,
-                section_id: assessment.section_id, // Add section_id
-                score: totalScore, // Assign FinalScore's totalScore
-              });
-              await studentScore.save();
-              console.log(
-                `StudentScore created for student_id: ${member.user_id}`,
-                {
-                  student_id: member.user_id,
-                  score: studentScore.score,
-                  submission_id: studentScore.submission_id,
-                }
-              );
-            }
-          } catch (error) {
-            console.error(`Error processing user_id: ${member.user_id}`, error);
-          }
-        }
-
-        // 10. Save or update FinalScore
+        // 7. Save or update FinalScore
         let finalScore = await FinalScore.findOne({ submission_id });
 
         if (finalScore) {
-          finalScore.total_score = totalScore;
-          finalScore.status = "graded";
+          // Update existing FinalScore
+          finalScore.score = scores;
+          finalScore.total_score = totalRawScore;
+
+          // Ensure all graders are in grading_status_by
+          graders.forEach((grader) => {
+            const graderExists = finalScore.grading_status_by.some(
+              (g) => g.grader_id.toString() === grader.user_id.toString()
+            );
+
+            if (!graderExists) {
+              finalScore.grading_status_by.push({
+                grader_id: grader.user_id,
+                role: grader.role,
+                status: "pending",
+              });
+            }
+          });
+
+          // Update grading_status_by for the current grader
+          finalScore.grading_status_by = finalScore.grading_status_by.map(
+            (grader) => {
+              if (grader.grader_id.toString() === req.user.id) {
+                return { ...grader, status: "already" };
+              }
+              return grader;
+            }
+          );
+
+          // Check if all graders have completed grading
+          const allGraded = finalScore.grading_status_by.every(
+            (grader) => grader.status === "already"
+          );
+
+          // Update the overall status if all graders are done
+          if (allGraded) {
+            finalScore.status = "graded";
+          }
+
           await finalScore.save();
+          console.log("FinalScore updated successfully!");
         } else {
+          // Create new FinalScore
+          const gradingStatusBy = graders.map((grader) => ({
+            grader_id: grader.user_id,
+            role: grader.role,
+            status:
+              grader.user_id.toString() === req.user.id ? "already" : "pending",
+          }));
+
           finalScore = new FinalScore({
             student_id: req.body.student_id,
             group_id: req.body.group_id,
             assessment_id,
             submission_id,
             rubric_id: rubricId,
-            score: criteriaScores,
-            total_score: totalScore,
-            status: "graded",
+            score: scores,
+            total_score: totalRawScore,
+            status: gradingStatusBy.every(
+              (grader) => grader.status === "already"
+            )
+              ? "graded"
+              : "pending",
+            grading_status_by: gradingStatusBy,
           });
+
           await finalScore.save();
+          console.log("FinalScore created successfully!");
         }
 
-        // 11. Update grading status in Submission
+        // 8. Distribute FinalScore to group members if graded
+        if (finalScore.status === "graded") {
+          const groupMembersForDistribution = await GroupMember.find({
+            group_id: req.body.group_id,
+          });
+
+          for (const member of groupMembersForDistribution) {
+            if (!member.user_id) {
+              console.error(`Missing user_id for group member: ${member}`);
+              continue; // Skip if user_id is missing
+            }
+
+            try {
+              let studentScore = await StudentScore.findOne({
+                student_id: member.user_id,
+                submission_id,
+              });
+
+              if (studentScore) {
+                studentScore.score = finalScore.total_score; // Use FinalScore's total_score
+                studentScore.section_id = assessment.section_id; // Add section_id
+                await studentScore.save();
+                console.log(
+                  `StudentScore updated for student_id: ${member.user_id}`,
+                  {
+                    student_id: member.user_id,
+                    score: studentScore.score,
+                    submission_id: studentScore.submission_id,
+                  }
+                );
+              } else {
+                studentScore = new StudentScore({
+                  student_id: member.user_id,
+                  assessment_id,
+                  submission_id,
+                  group_id: req.body.group_id,
+                  section_id: assessment.section_id, // Add section_id
+                  score: finalScore.total_score, // Use FinalScore's total_score
+                });
+                await studentScore.save();
+                console.log(
+                  `StudentScore created for student_id: ${member.user_id}`,
+                  {
+                    student_id: member.user_id,
+                    score: studentScore.score,
+                    submission_id: studentScore.submission_id,
+                  }
+                );
+              }
+            } catch (error) {
+              console.error(
+                `Error processing user_id: ${member.user_id}`,
+                error
+              );
+            }
+          }
+        } else {
+          console.log(
+            `FinalScore is not graded yet. Skipping StudentScore creation or update.`
+          );
+        }
+
+        // 9. Update grading status in Submission
         const submission = await Submission.findById(submission_id);
         if (submission) {
           // Update the grading_status_by for the current professor
