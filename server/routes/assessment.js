@@ -475,49 +475,54 @@ router.get(
         }
         return res.status(200).json({
           assessments_statistics: [],
-          overall_statistics: { max_score: 0, min_score: 0, mean_score: 0 },
+          overall_statistics: { overall_mean: 0 },
+          Myscore: 0,
         });
       }
 
-      let allScoresInSection = [];
+      let overallMean = 0;
+      let totalAssessmentMeans = 0;
+      let studentTotalScore = 0;
+
       const statistics = await Promise.all(
         assessments.map(async (assessment) => {
           let scores = [];
           let maxPossibleScore = assessment.rubric_id?.score || 0;
 
-          // Fetch scores from StudentScore
-          const studentScores = await StudentScore.find({
+          // Fetch submissions and scores
+          const submissions = await StudentScore.find({
             assessment_id: assessment._id,
-          })
-            .select("score")
-            .lean();
+          }).select("score student_id").lean();
 
-          scores = studentScores.map((ss) => ss.score ?? 0);
+          const submissionCount = submissions.length;
+          const gradedCount = submissions.filter((submission) => submission.score !== null).length;
 
-          allScoresInSection.push(...scores); // Collect scores for overall calculation
+          scores = submissions.map((submission) => submission.score ?? 0);
 
-          if (!scores.length) {
-            return {
-              assessment_id: assessment._id,
-              assessment_name: assessment.assessment_name,
-              max_possible_score: maxPossibleScore,
-              count: 0,
-              max_score: 0,
-              min_score: 0,
-              mean_score: 0,
-            };
-          }
-
-          const maxScore = Math.max(...scores);
-          const minScore = Math.min(...scores);
+          // Calculate statistics for this assessment
+          const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
+          const minScore = scores.length > 0 ? Math.min(...scores) : 0;
           const meanScore =
-            scores.reduce((sum, score) => sum + score, 0) / scores.length;
+            scores.length > 0
+              ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+              : 0;
+
+          totalAssessmentMeans += meanScore;
+
+          // Add student's score for this assessment if available
+          const studentSubmission = submissions.find(
+            (submission) => submission.student_id.toString() === req.user.id
+          );
+          if (studentSubmission) {
+            studentTotalScore += studentSubmission.score ?? 0;
+          }
 
           return {
             assessment_id: assessment._id,
             assessment_name: assessment.assessment_name,
             max_possible_score: maxPossibleScore,
-            count: scores.length,
+            submission_count: submissionCount,
+            graded_count: gradedCount,
             max_score: maxScore,
             min_score: minScore,
             mean_score: parseFloat(meanScore.toFixed(2)), // Format mean score
@@ -525,28 +530,24 @@ router.get(
         })
       );
 
-      // Calculate overall statistics for the section
-      let overallMax = 0;
-      let overallMin = 0;
-      let overallMean = 0;
-      if (allScoresInSection.length > 0) {
-        overallMax = Math.max(...allScoresInSection);
-        overallMin = Math.min(...allScoresInSection);
-        overallMean =
-          allScoresInSection.reduce((sum, score) => sum + score, 0) /
-          allScoresInSection.length;
-      }
+      // Calculate overall mean as the average of all assessment means
+      overallMean =
+        assessments.length > 0
+          ? parseFloat((totalAssessmentMeans / assessments.length).toFixed(2))
+          : 0;
 
-      const overallStatistics = {
-        max_score: overallMax,
-        min_score: overallMin,
-        mean_score: parseFloat(overallMean.toFixed(2)), // Format mean score
-        total_graded_scores: allScoresInSection.length,
-      };
+      // Calculate Myscore as the average score of the logged-in student
+      const Myscore =
+        assessments.length > 0
+          ? parseFloat((studentTotalScore / assessments.length).toFixed(2))
+          : 0;
 
       res.status(200).json({
         assessments_statistics: statistics,
-        overall_statistics: overallStatistics,
+        overall_statistics: {
+          overall_mean: overallMean,
+        },
+        Myscore,
       });
     } catch (error) {
       console.error("Error fetching statistics for section:", error);
@@ -785,6 +786,37 @@ router.delete(
     } catch (error) {
       console.error("Error deleting assessment:", error);
       res.status(500).json({ message: "Error deleting assessment", error });
+    }
+  }
+);
+
+// Get all student scores with optional filters via URL parameters
+router.get(
+  "/student_score/:section_id/:assessment_id",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { section_id, assessment_id } = req.params; // Extract parameters from URL
+
+      // Build the filter object dynamically
+      const filter = { section_id };
+      if (assessment_id) {
+        filter.assessment_id = assessment_id;
+      }
+
+      const scores = await StudentScore.find(filter)
+        .populate("student_id", "personal_num first_name last_name email") // Populate student details
+        .populate("assessment_id", "assessment_name") // Populate assessment details
+        .select("student_id group_id section_id submission_id score") // Select relevant fields
+        .lean();
+
+      res.status(200).json(scores);
+    } catch (error) {
+      console.error("Error fetching student scores:", error);
+      res.status(500).json({
+        message: "Error fetching student scores",
+        error: error.message,
+      });
     }
   }
 );

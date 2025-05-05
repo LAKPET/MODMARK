@@ -115,6 +115,7 @@ router.post(
 
         if (studentScore) {
           studentScore.score = totalRawScore;
+          studentScore.section_id = assessment.section_id; // Add section_id
           await studentScore.save();
         } else {
           studentScore = new StudentScore({
@@ -122,6 +123,7 @@ router.post(
             assessment_id,
             submission_id,
             group_id: req.body.group_id,
+            section_id: assessment.section_id, // Add section_id
             score: totalRawScore,
           });
           await studentScore.save();
@@ -350,6 +352,7 @@ router.post(
         if (studentScore) {
           // Update existing StudentScore
           studentScore.score = totalScore;
+          studentScore.section_id = assessment.section_id; // Add section_id
           await studentScore.save();
           console.log("StudentScore updated successfully!");
         } else {
@@ -359,6 +362,7 @@ router.post(
             assessment_id,
             submission_id,
             group_id: req.body.group_id,
+            section_id: assessment.section_id, // Add section_id
             score: totalScore,
           });
           await studentScore.save();
@@ -502,6 +506,7 @@ router.post(
 
             if (studentScore) {
               studentScore.score = totalRawScore;
+              studentScore.section_id = assessment.section_id; // Add section_id
               await studentScore.save();
               console.log(
                 `StudentScore updated for student_id: ${member.user_id}`,
@@ -517,6 +522,7 @@ router.post(
                 assessment_id,
                 submission_id,
                 group_id: req.body.group_id,
+                section_id: assessment.section_id, // Add section_id
                 score: totalRawScore,
               });
               await studentScore.save();
@@ -743,6 +749,7 @@ router.post(
                 `Existing StudentScore found for student_id: ${member.user_id}, current score: ${studentScore.score}`
               );
               studentScore.score = totalScore; // Assign FinalScore's totalScore
+              studentScore.section_id = assessment.section_id; // Add section_id
               await studentScore.save();
               console.log(
                 `StudentScore updated for student_id: ${member.user_id}`,
@@ -761,6 +768,7 @@ router.post(
                 assessment_id,
                 submission_id,
                 group_id: req.body.group_id,
+                section_id: assessment.section_id, // Add section_id
                 score: totalScore, // Assign FinalScore's totalScore
               });
               await studentScore.save();
