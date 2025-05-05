@@ -485,23 +485,26 @@ router.get(
           let scores = [];
           let maxPossibleScore = assessment.rubric_id?.score || 0;
 
-          // Fetch scores from StudentScore
-          const studentScores = await StudentScore.find({
+          // Fetch submissions and scores
+          const submissions = await Submission.find({
             assessment_id: assessment._id,
-          })
-            .select("score")
-            .lean();
+          }).select("score grading_status").lean();
 
-          scores = studentScores.map((ss) => ss.score ?? 0);
+          const submissionCount = submissions.length;
+          const gradedCount = submissions.filter(
+            (submission) => submission.grading_status === "already"
+          ).length;
 
-          allScoresInSection.push(...scores); // Collect scores for overall calculation
+          scores = submissions.map((submission) => submission.score ?? 0);
+          allScoresInSection.push(...scores);
 
           if (!scores.length) {
             return {
               assessment_id: assessment._id,
               assessment_name: assessment.assessment_name,
               max_possible_score: maxPossibleScore,
-              count: 0,
+              submission_count: submissionCount,
+              graded_count: gradedCount,
               max_score: 0,
               min_score: 0,
               mean_score: 0,
@@ -517,7 +520,8 @@ router.get(
             assessment_id: assessment._id,
             assessment_name: assessment.assessment_name,
             max_possible_score: maxPossibleScore,
-            count: scores.length,
+            submission_count: submissionCount,
+            graded_count: gradedCount,
             max_score: maxScore,
             min_score: minScore,
             mean_score: parseFloat(meanScore.toFixed(2)), // Format mean score
@@ -785,6 +789,37 @@ router.delete(
     } catch (error) {
       console.error("Error deleting assessment:", error);
       res.status(500).json({ message: "Error deleting assessment", error });
+    }
+  }
+);
+
+// Get all student scores with optional filters via URL parameters
+router.get(
+  "/student_score/:section_id/:assessment_id",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { section_id, assessment_id } = req.params; // Extract parameters from URL
+
+      // Build the filter object dynamically
+      const filter = { section_id };
+      if (assessment_id) {
+        filter.assessment_id = assessment_id;
+      }
+
+      const scores = await StudentScore.find(filter)
+        .populate("student_id", "personal_num first_name last_name email") // Populate student details
+        .populate("assessment_id", "assessment_name") // Populate assessment details
+        .select("student_id group_id section_id submission_id score") // Select relevant fields
+        .lean();
+
+      res.status(200).json(scores);
+    } catch (error) {
+      console.error("Error fetching student scores:", error);
+      res.status(500).json({
+        message: "Error fetching student scores",
+        error: error.message,
+      });
     }
   }
 );
