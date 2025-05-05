@@ -490,12 +490,33 @@ router.get(
           let maxPossibleScore = assessment.rubric_id?.score || 0;
 
           // Fetch submissions and scores
-          const submissions = await StudentScore.find({
+          const submissions = await Submission.find({
             assessment_id: assessment._id,
-          }).select("score student_id").lean();
+          }).select("grading_status grading_status_by").lean();
 
           const submissionCount = submissions.length;
-          const gradedCount = submissions.filter((submission) => submission.score !== null).length;
+
+          // Count submissions graded by the current professor
+          const gradedByProfessor = submissions.filter((submission) =>
+            submission.grading_status_by.some(
+              (grader) =>
+                grader.grader_id.toString() === req.user.id &&
+                grader.status === "already"
+            )
+          ).length;
+
+          // Count submissions not yet graded by the current professor
+          const notGradedByProfessor = submissions.filter((submission) =>
+            submission.grading_status_by.some(
+              (grader) =>
+                grader.grader_id.toString() === req.user.id &&
+                grader.status === "pending"
+            )
+          ).length;
+
+          const gradedCount = submissions.filter(
+            (submission) => submission.grading_status === "already"
+          ).length;
 
           scores = submissions.map((submission) => submission.score ?? 0);
 
@@ -511,7 +532,7 @@ router.get(
 
           // Add student's score for this assessment if available
           const studentSubmission = submissions.find(
-            (submission) => submission.student_id.toString() === req.user.id
+            (submission) => submission.student_id?.toString() === req.user.id
           );
           if (studentSubmission) {
             studentTotalScore += studentSubmission.score ?? 0;
@@ -523,6 +544,8 @@ router.get(
             max_possible_score: maxPossibleScore,
             submission_count: submissionCount,
             graded_count: gradedCount,
+            graded_by_professor: gradedByProfessor,
+            not_graded_by_professor: notGradedByProfessor,
             max_score: maxScore,
             min_score: minScore,
             mean_score: parseFloat(meanScore.toFixed(2)), // Format mean score
