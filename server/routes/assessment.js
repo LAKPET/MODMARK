@@ -484,43 +484,17 @@ router.get(
       let totalAssessmentMeans = 0;
       let studentTotalScore = 0;
 
+      // ส่วนที่ 1: ส่งสถิติ max, min, mean
       const statistics = await Promise.all(
         assessments.map(async (assessment) => {
-          let scores = [];
-          let maxPossibleScore = assessment.rubric_id?.score || 0;
-
-          // Fetch submissions and scores
-          const submissions = await Submission.find({
+          const submissions = await StudentScore.find({
             assessment_id: assessment._id,
-          }).select("grading_status grading_status_by").lean();
+          }).select("score student_id").lean();
 
-          const submissionCount = submissions.length;
+          const scores = submissions
+            .map((submission) => submission.score)
+            .filter((score) => score !== undefined && score !== null);
 
-          // Count submissions graded by the current professor
-          const gradedByProfessor = submissions.filter((submission) =>
-            submission.grading_status_by.some(
-              (grader) =>
-                grader.grader_id.toString() === req.user.id &&
-                grader.status === "already"
-            )
-          ).length;
-
-          // Count submissions not yet graded by the current professor
-          const notGradedByProfessor = submissions.filter((submission) =>
-            submission.grading_status_by.some(
-              (grader) =>
-                grader.grader_id.toString() === req.user.id &&
-                grader.status === "pending"
-            )
-          ).length;
-
-          const gradedCount = submissions.filter(
-            (submission) => submission.grading_status === "already"
-          ).length;
-
-          scores = submissions.map((submission) => submission.score ?? 0);
-
-          // Calculate statistics for this assessment
           const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
           const minScore = scores.length > 0 ? Math.min(...scores) : 0;
           const meanScore =
@@ -530,22 +504,10 @@ router.get(
 
           totalAssessmentMeans += meanScore;
 
-          // Add student's score for this assessment if available
-          const studentSubmission = submissions.find(
-            (submission) => submission.student_id?.toString() === req.user.id
-          );
-          if (studentSubmission) {
-            studentTotalScore += studentSubmission.score ?? 0;
-          }
-
           return {
             assessment_id: assessment._id,
             assessment_name: assessment.assessment_name,
-            max_possible_score: maxPossibleScore,
-            submission_count: submissionCount,
-            graded_count: gradedCount,
-            graded_by_professor: gradedByProfessor,
-            not_graded_by_professor: notGradedByProfessor,
+            max_possible_score: assessment.rubric_id?.score || 0,
             max_score: maxScore,
             min_score: minScore,
             mean_score: parseFloat(meanScore.toFixed(2)), // Format mean score
@@ -553,20 +515,76 @@ router.get(
         })
       );
 
-      // Calculate overall mean as the average of all assessment means
+      // ส่วนที่ 2: คำนวณ overallMean และ Myscore
       overallMean =
         assessments.length > 0
           ? parseFloat((totalAssessmentMeans / assessments.length).toFixed(2))
           : 0;
 
-      // Calculate Myscore as the average score of the logged-in student
+      const studentSubmissions = await StudentScore.find({
+        section_id,
+        student_id: req.user.id,
+      }).select("score");
+
+      studentTotalScore = studentSubmissions.reduce(
+        (sum, submission) => sum + (submission.score || 0),
+        0
+      );
+
       const Myscore =
         assessments.length > 0
           ? parseFloat((studentTotalScore / assessments.length).toFixed(2))
           : 0;
 
+      // ส่วนที่ 3: นับจำนวน submission และงานที่อาจารย์ตรวจแล้ว
+      const submissionStatistics = await Promise.all(
+        assessments.map(async (assessment) => {
+          const submissions = await Submission.find({
+            assessment_id: assessment._id,
+          }).select("grading_status grading_status_by").lean();
+
+          const submissionCount = submissions.length;
+
+          const gradedByProfessor = submissions.filter((submission) =>
+            submission.grading_status_by.some(
+              (grader) =>
+                grader.grader_id.toString() === req.user.id &&
+                grader.status === "already"
+            )
+          ).length;
+
+          const notGradedByProfessor = submissions.filter((submission) =>
+            submission.grading_status_by.some(
+              (grader) =>
+                grader.grader_id.toString() === req.user.id &&
+                grader.status === "pending"
+            )
+          ).length;
+
+          return {
+            assessment_id: assessment._id,
+            submission_count: submissionCount,
+            graded_by_professor: gradedByProfessor,
+            not_graded_by_professor: notGradedByProfessor,
+          };
+        })
+      );
+
+      // รวมผลลัพธ์จากทั้ง 3 ส่วน
+      const combinedStatistics = statistics.map((stat) => {
+        const submissionStat = submissionStatistics.find(
+          (subStat) => subStat.assessment_id.toString() === stat.assessment_id.toString()
+        );
+        return {
+          ...stat,
+          submission_count: submissionStat?.submission_count || 0,
+          graded_by_professor: submissionStat?.graded_by_professor || 0,
+          not_graded_by_professor: submissionStat?.not_graded_by_professor || 0,
+        };
+      });
+
       res.status(200).json({
-        assessments_statistics: statistics,
+        assessments_statistics: combinedStatistics,
         overall_statistics: {
           overall_mean: overallMean,
         },
