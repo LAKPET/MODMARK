@@ -1,8 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const cloudinary = require("./cloudinaryConfig");
-const { storageType } = require("./config");
+const bucket = require("./firebaseConfig"); // Import Firebase bucket
 
 // ตั้งค่า Local Storage
 const localStorage = multer.diskStorage({
@@ -12,19 +11,25 @@ const localStorage = multer.diskStorage({
   },
 });
 
-// ฟังก์ชันอัปโหลดไฟล์ (เลือก Local หรือ Cloud)
+// ฟังก์ชันอัปโหลดไฟล์ (ใช้ Firebase อย่างเดียว)
 const uploadFile = async (file) => {
-  if (storageType === "local") {
-    return `/uploads/${file.filename}`; // ใช้ไฟล์ Local
-  } else if (storageType === "cloud") {
-    return await uploadToCloudinary(file); // ใช้ Cloud
-  }
+  return await uploadToFirebase(file); // ใช้ Firebase Cloud
 };
 
-// อัปโหลดไปยัง Cloudinary
-const uploadToCloudinary = async (file) => {
-  const result = await cloudinary.uploader.upload(file.path);
-  return result.secure_url; // URL ของไฟล์ที่อัปโหลด
+// อัปโหลดไปยัง Firebase Cloud Storage
+const uploadToFirebase = async (file) => {
+  // เพิ่มโฟลเดอร์ PDF ในชื่อไฟล์
+  const firebaseFileName = `PDF/${Date.now()}_${file.originalname}`;
+  const fileUpload = bucket.file(firebaseFileName);
+
+  await fileUpload.save(fs.readFileSync(file.path), {
+    metadata: { contentType: file.mimetype },
+  });
+
+  // ลบไฟล์ Local หลังจากอัปโหลด
+  fs.unlinkSync(file.path);
+
+  return `https://storage.googleapis.com/${bucket.name}/${firebaseFileName}`;
 };
 
 // Export Middleware & ฟังก์ชันอัปโหลด
