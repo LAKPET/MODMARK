@@ -100,8 +100,17 @@ export default function Getoverviewscore() {
             <th onClick={() => handleSort("mean_score")} className="sortable">
               Mean Score <SwapVertIcon />
             </th>
-            <th onClick={() => handleSort("count")} className="sortable">
+            <th
+              onClick={() => handleSort("grading_complete")}
+              className="sortable"
+            >
               Grading Complete <SwapVertIcon />
+            </th>
+            <th
+              onClick={() => handleSort("submissions_complete")}
+              className="sortable"
+            >
+              Submissions Complete <SwapVertIcon />
             </th>
           </tr>
         </MDBTableHead>
@@ -113,7 +122,8 @@ export default function Getoverviewscore() {
                 <td>{stat.max_score}</td>
                 <td>{stat.min_score}</td>
                 <td>{stat.mean_score}</td>
-                <td>{stat.count}</td>
+                <td>{stat.graded_by_professor}</td>
+                <td>{stat.submission_count}</td>
               </tr>
             ))
           ) : (

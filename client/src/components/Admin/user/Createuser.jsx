@@ -6,7 +6,8 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import axios from "axios";
-import ModalComponent from "../../../controls/modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal";
+import { validateCreateUserForm } from "../../../utils/FormValidation";
 import "../../../assets/Styles/Admin/Createuser.css";
 
 export default function Createuser({ show, handleClose, refreshUsers }) {
@@ -17,17 +18,38 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [errors, setErrors] = useState({});
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const formData = {
+      personalNum,
+      firstname,
+      lastname,
+      email,
+      username,
+      password,
+      role,
+    };
+
+    const { isValid, errors: validationErrors } =
+      validateCreateUserForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     const token = localStorage.getItem("authToken");
     axios
       .post(
         `${apiUrl}/users/create`,
         {
-          personal_num: parseInt(personalNum, 10), // Convert to integer
+          personal_num: parseInt(personalNum, 10),
           first_name: firstname,
           last_name: lastname,
           username,
@@ -42,9 +64,24 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
       .then(() => {
         handleClose();
         refreshUsers();
-        setShowSuccessModal(true); // Show success modal
+        setShowSuccessModal(true);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        setErrorModal({
+          open: true,
+          message:
+            err.response?.data?.message ||
+            "Failed to create user. Please try again.",
+        });
+      });
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setErrorModal({ open: false, message: "" });
   };
 
   return (
@@ -58,61 +95,127 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
             <Form.Group className="mt-2 mb-4" controlId="formPersonalNum">
               <MDBInput
                 label="Personal Number"
+                placeholder="e.g. 234"
                 id="formPersonalNum"
                 type="text"
                 value={personalNum}
                 onChange={(e) => setPersonalNum(e.target.value)}
+                invalid={!!errors.personalNum}
+                className={errors.personalNum ? "border-danger" : ""}
               />
+              {errors.personalNum && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.personalNum}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mt-2 mb-4" controlId="formFirstname">
               <MDBInput
                 label="Firstname"
+                placeholder="Firstname must be at least 3 characters"
                 id="formFirstname"
                 type="text"
                 value={firstname}
                 onChange={(e) => setFirstname(e.target.value)}
+                invalid={!!errors.firstname}
+                className={errors.firstname ? "border-danger" : ""}
               />
+              {errors.firstname && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.firstname}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formLastname">
               <MDBInput
                 label="Lastname"
+                placeholder="Lastname must be at least 3 characters"
                 id="formLastname"
                 type="text"
                 value={lastname}
                 onChange={(e) => setLastname(e.target.value)}
+                invalid={!!errors.lastname}
+                className={errors.lastname ? "border-danger" : ""}
               />
+              {errors.lastname && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.lastname}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formEmail">
               <MDBInput
                 label="Email"
+                placeholder="e.g. exemple@exemple.com"
                 id="formEmail"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                invalid={!!errors.email}
+                className={errors.email ? "border-danger" : ""}
               />
+              {errors.email && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.email}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formUsername">
               <MDBInput
                 label="Username"
+                placeholder="Username must be at least 3 characters"
                 id="formUsername"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                invalid={!!errors.username}
+                className={errors.username ? "border-danger" : ""}
               />
+              {errors.username && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.username}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formPassword">
               <MDBInput
                 label="Password"
+                placeholder="Password must be at least 6 characters"
                 id="formPassword"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                invalid={!!errors.password}
+                className={errors.password ? "border-danger" : ""}
               />
+              {errors.password && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.password}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formRole">
@@ -124,19 +227,29 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
                   value={role}
                   label="Role"
                   onChange={(e) => setRole(e.target.value)}
+                  error={!!errors.role}
                 >
                   <MenuItem value="student">Student</MenuItem>
                   <MenuItem value="professor">Professor</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
                 </Select>
+                {errors.role && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.role}
+                  </div>
+                )}
               </FormControl>
             </Form.Group>
-            <div className=" mb-3  line-with-text">
+
+            <div className="mb-3 line-with-text">
               <span>or</span>
             </div>
 
             <MDBFile
-              className=" mb-4"
+              className="mb-4"
               label="You can import user by csv file"
               id="customFile"
             />
@@ -151,9 +264,18 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
 
       <ModalComponent
         open={showSuccessModal}
-        handleClose={() => setShowSuccessModal(false)}
+        handleClose={handleSuccessModalClose}
         title="Create User"
         description="The user has been successfully created."
+        type="success"
+      />
+
+      <ModalComponent
+        open={errorModal.open}
+        handleClose={handleErrorModalClose}
+        title="Create User Error"
+        description={errorModal.message}
+        type="error"
       />
     </>
   );

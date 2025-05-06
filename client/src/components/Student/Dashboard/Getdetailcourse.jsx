@@ -79,6 +79,7 @@ export default function CourseDetail() {
     max_score: 0,
     min_score: 0,
     mean_score: 0,
+    Myscore: 0,
   });
   const [scoreData, setScoreData] = useState([]); // State สำหรับเก็บคะแนน
 
@@ -331,7 +332,10 @@ export default function CourseDetail() {
           `${apiUrl}/assessment/statistics/${sectionId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setOverallStatistics(response.data.overall_statistics);
+        setOverallStatistics({
+          ...response.data.overall_statistics,
+          Myscore: response.data.Myscore,
+        });
       } catch (error) {
         console.error("Error fetching overall statistics:", error);
       }
@@ -466,23 +470,15 @@ export default function CourseDetail() {
                 <h5 className="card-title">Overall Score</h5>
                 <div className="mt-3">
                   <div className="d-flex justify-content-between mb-2">
-                    <span>max</span>
-                    <span>{overallStatistics.max_score}</span>
-                  </div>
-                  <hr className="bg-white my-2" style={{ opacity: 0.5 }} />
-                  <div className="d-flex justify-content-between mb-2">
-                    <span>min</span>
-                    <span>{overallStatistics.min_score}</span>
-                  </div>
-                  <hr className="bg-white my-2" style={{ opacity: 0.5 }} />
-                  <div className="d-flex justify-content-between mb-2">
                     <span>mean</span>
-                    <span>{overallStatistics.mean_score}</span>
+                    <span>{overallStatistics.overall_mean}</span>
                   </div>
                   <hr className="bg-white my-2" style={{ opacity: 0.5 }} />
                   <div className="d-flex justify-content-between mb-2">
                     <span>My score</span>
-                    <span style={{ color: "#FF6B6B" }}>56</span>
+                    <span style={{ color: "#FF6B6B" }}>
+                      {overallStatistics.Myscore}
+                    </span>
                   </div>
                 </div>
               </div>

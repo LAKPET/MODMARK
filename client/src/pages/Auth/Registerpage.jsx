@@ -117,6 +117,7 @@ function Register() {
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Personal Number"
+                  placeholder="e.g. 234"
                   id="form1"
                   type="text"
                   value={personalNum}
@@ -138,6 +139,7 @@ function Register() {
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Firstname"
+                  placeholder="Firstname must be at least 3 characters"
                   id="form2"
                   type="text"
                   value={firstname}
@@ -159,6 +161,7 @@ function Register() {
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Lastname"
+                  placeholder="Lastname must be at least 3 characters"
                   id="form3"
                   type="text"
                   value={lastname}
@@ -180,6 +183,7 @@ function Register() {
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Email"
+                  placeholder="e.g. exemple@exemple.com"
                   id="form4"
                   type="email"
                   value={email}
@@ -201,6 +205,7 @@ function Register() {
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Username"
+                  placeholder="Username must be at least 3 characters"
                   id="form5"
                   type="text"
                   value={username}
@@ -222,6 +227,7 @@ function Register() {
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Password"
+                  placeholder="Password must be at least 6 characters"
                   id="form6"
                   type="password"
                   value={password}

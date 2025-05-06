@@ -148,6 +148,7 @@ function Loginpage() {
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Email address"
+                  placeholder="e.g. exemple@exemple.com"
                   id="form1"
                   type="email"
                   onChange={(e) => setEmail(e.target.value)}

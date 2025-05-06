@@ -20,16 +20,16 @@ export default function ModalComponent({
         {/* แสดง Icon ตามประเภท */}
         <div className="text-center mb-3">
           {type === "error" ? (
-            <HighlightOffIcon style={{ fontSize: "4rem", color: "red" }} />
+            <HighlightOffIcon style={{ fontSize: "5.5rem", color: "red" }} />
           ) : (
-            <TaskAltIcon style={{ fontSize: "4rem", color: "green" }} />
+            <TaskAltIcon style={{ fontSize: "6rem", color: "green" }} />
           )}
         </div>
         <Typography
           id="modal-title"
-          variant="h6"
+          variant="h5"
           component="h2"
-          className="text-center"
+          className="text-center "
         >
           {title}
         </Typography>
@@ -38,7 +38,7 @@ export default function ModalComponent({
         </Typography>
         <div className="button-layout">
           <Button className="mt-3 custom-btn" onClick={handleClose}>
-            ตกลง
+            done
           </Button>
         </div>
       </Box>
