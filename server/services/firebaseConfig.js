@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 
 // ใช้ path ตรงไปยังไฟล์ Service Account Key
-const serviceAccount = require("D:/Project/MODMARK/modmark-79380-firebase-adminsdk-fbsvc-01eddb138f.json");
+const serviceAccount = require(process.env.FIREBASE_PATH);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
