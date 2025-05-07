@@ -104,7 +104,9 @@ export default function GetStudentScoreAndFeedback() {
       (stat) => stat.assessment_id === score.assessment_id
     );
     const submission = submissionData.find(
-      (sub) => sub.assessment_id._id === score.assessment_id
+      (sub) =>
+        sub.assessment_id._id === score.assessment_id &&
+        sub.student_id._id === localStorage.getItem("UserId") // ตรวจสอบ student_id._id
     );
     return {
       ...score,
