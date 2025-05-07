@@ -61,7 +61,7 @@ router.post(
         return res.status(400).json({ message: "Group name is required" });
       }
 
-      const file_url = await uploadFile(req.file);
+      const file_url = await uploadFile(req.file); // Upload to Firebase
       const membersArray =
         typeof members === "string" ? JSON.parse(members) : members;
 
@@ -123,7 +123,7 @@ router.post(
         section_id: new mongoose.Types.ObjectId(section_id),
         group_id: newGroup._id,
         student_id: req.user.id,
-        file_url: req.file.filename,
+        file_url, // Save Firebase file URL
         file_type,
         status: "submit",
         grading_status_by: gradingStatusBy,
@@ -277,8 +277,8 @@ router.put(
 
       // Update file if a new file is uploaded
       if (req.file) {
-        const file_url = await uploadFile(req.file);
-        submission.file_url = req.file.filename; // เก็บเฉพาะชื่อไฟล์
+        const file_url = await uploadFile(req.file); // Upload to Firebase
+        submission.file_url = file_url; // Save Firebase file URL
       }
 
       submission.file_type = file_type || submission.file_type;
@@ -309,14 +309,11 @@ router.delete(
         return res.status(404).json({ message: "Submission not found" });
       }
 
-      // Delete file from local storage if using local storage
-      if (submission.file_url.startsWith("/server/uploads/")) {
-        const filePath = path.join(__dirname, "../../", submission.file_url);
-        fs.unlink(filePath, (err) => {
-          if (err) {
-            console.error("Error deleting file:", err);
-          }
-        });
+      // Delete file from Firebase if using Firebase storage
+      if (submission.file_url.startsWith("https://storage.googleapis.com")) {
+        const fileName = submission.file_url.split("/").pop();
+        const file = bucket.file(fileName);
+        await file.delete(); // Delete file from Firebase
       }
 
       // Delete related group members
