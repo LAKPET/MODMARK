@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 const bucket = require("./firebaseConfig"); // Import Firebase bucket
+const { getSignedUrl } = require("@google-cloud/storage"); // Import getSignedUrl
 
 // ตั้งค่า Local Storage
 const localStorage = multer.diskStorage({
@@ -11,29 +12,61 @@ const localStorage = multer.diskStorage({
   },
 });
 
-// ฟังก์ชันอัปโหลดไฟล์ (ใช้ Firebase อย่างเดียว)
-const uploadFile = async (file) => {
-  return await uploadToFirebase(file); // ใช้ Firebase Cloud
+// Upload File Function
+const uploadFile = async(file) => {
+  try {
+    if (!file) return "";
+
+    // ใช้ชื่อไฟล์ที่กำหนดเอง หรือสร้างชื่อไฟล์ใหม่
+    const fileName = `PDF/${new Date().getTime()}_${file.originalname}`;
+
+    const fileUpload = bucket.file(fileName);
+    await fileUpload.save(fs.readFileSync(file.path), {
+      metadata: { contentType: file.mimetype },
+    });
+
+    // ลบไฟล์ Local หลังจากอัปโหลด
+    fs.unlinkSync(file.path);
+
+    return fileName; // คืนค่าชื่อไฟล์ที่อัปโหลด
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    return "";
+  }
 };
 
-// อัปโหลดไปยัง Firebase Cloud Storage
-const uploadToFirebase = async (file) => {
-  // เพิ่มโฟลเดอร์ PDF ในชื่อไฟล์
-  const firebaseFileName = `PDF/${Date.now()}_${file.originalname}`;
-  const fileUpload = bucket.file(firebaseFileName);
+const fetchFileFromStorage = async(path) => {
+  try {
+    let filePath;
+    if (path.startsWith("/")) filePath = path.split("/")[1];
+    else filePath = path;
+    const file = bucket.file(filePath);
 
-  await fileUpload.save(fs.readFileSync(file.path), {
-    metadata: { contentType: file.mimetype },
-  });
+    // ตรวจสอบว่าไฟล์มีอยู่หรือไม่
+    const [exists] = await file.exists();
+    if (!exists) {
+      console.error("File not found in storage:", path);
+      return "";
+    }
 
-  // ลบไฟล์ Local หลังจากอัปโหลด
-  fs.unlinkSync(file.path);
+    // สร้าง Signed URL สำหรับการเข้าถึงไฟล์
+    const [url] = await file.getSignedUrl({
+      action: "read",
+      expires: Date.now() + 60 * 60 * 1000, // ลิงก์หมดอายุใน 1 ชั่วโมง
+    });
 
-  return `https://storage.googleapis.com/${bucket.name}/${firebaseFileName}`;
+    console.log(url);
+
+    return url;
+  } catch (error) {
+    console.error("Error fetching file from storage:", error);
+    return "";
+  }
 };
 
 // Export Middleware & ฟังก์ชันอัปโหลด
 module.exports = {
   upload: multer({ storage: localStorage }), // Middleware อัปโหลดไฟล์
   uploadFile,
+  fetchFileFromStorage
 };

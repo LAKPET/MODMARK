@@ -11,7 +11,7 @@ const {
   checkAdminOrProfessorOrStudent,
   checkAdminOrProfessorOrTeacherAssistant,
 } = require("./middleware");
-const { upload, uploadFile } = require("../services/storageService");
+const { upload, uploadFile, fetchFileFromStorage } = require("../services/storageService");
 const fs = require("fs");
 const path = require("path");
 const scoreRoutes = require("./score");
@@ -61,7 +61,9 @@ router.post(
         return res.status(400).json({ message: "Group name is required" });
       }
 
-      const file_url = await uploadFile(req.file); // Upload to Firebase
+      // อัปโหลดไฟล์ไปยัง Firebase และรับ URL
+      const file_url = await uploadFile(req.file);
+
       const membersArray =
         typeof members === "string" ? JSON.parse(members) : members;
 
@@ -103,21 +105,18 @@ router.post(
         await newGroupMember.save();
       }
 
-      // Fetch professors related to the section or assessment
       // Fetch professors and teaching assistants related to the section or assessment
       const graders = await mongoose.model("GroupMember").find({
         assessment_id,
-        role: { $in: ["professor", "ta"] }, // Include both professors and TAs
+        role: { $in: ["professor", "ta"] },
       });
 
-      // Create grading_status_by array with professors and TAs
-      const gradingStatusBy = graders.map((graders) => ({
-        grader_id: graders.user_id, // Changed to a more generic name
-        role: graders.role, // Include role for clarity
+      const gradingStatusBy = graders.map((grader) => ({
+        grader_id: grader.user_id,
+        role: grader.role,
         status: "pending",
       }));
 
-      // Add grading_status_by to the submission
       const newSubmission = new Submission({
         assessment_id: new mongoose.Types.ObjectId(assessment_id),
         section_id: new mongoose.Types.ObjectId(section_id),
@@ -143,21 +142,25 @@ router.post(
 );
 
 // Serve PDF files
-router.get(
-  "/pdf/:filename",
+router.post(
+  "/pdf/file",
   verifyToken,
-
   async (req, res) => {
-    const { filename } = req.params;
-    const filePath = path.join(__dirname, "../../server/uploads", filename);
+    const { filename } = req.body;
 
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-      if (err) {
+    try {
+      // ดึง URL ของไฟล์จาก Firebase Storage
+      const fileUrl = await fetchFileFromStorage(filename);
+      if (!fileUrl) {
         return res.status(404).json({ message: "File not found" });
       }
 
-      res.sendFile(filePath);
-    });
+      // ส่ง URL กลับไปให้ client
+      res.status(200).json({ fileUrl });
+    } catch (error) {
+      console.error("Error fetching file from storage:", error);
+      res.status(500).json({ message: "Error fetching file from storage" });
+    }
   }
 );
 
@@ -268,17 +271,16 @@ router.put(
         return res.status(404).json({ message: "Submission not found" });
       }
 
-      // Update group name
       const group = await Group.findById(submission.group_id);
       if (group_name) {
         group.group_name = group_name;
         await group.save();
       }
 
-      // Update file if a new file is uploaded
       if (req.file) {
-        const file_url = await uploadFile(req.file); // Upload to Firebase
-        submission.file_url = file_url; // Save Firebase file URL
+        // อัปโหลดไฟล์ใหม่ไปยัง Firebase และอัปเดต URL
+        const file_url = await uploadFile(req.file);
+        submission.file_url = file_url;
       }
 
       submission.file_type = file_type || submission.file_type;
