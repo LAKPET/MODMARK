@@ -5,16 +5,50 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
+import Button from "@mui/material/Button";
+import { styled } from "@mui/material/styles";
 import "../../../assets/Styles/Dashboard/GetDetail.css";
 import { formatDateTime } from "../../../utils/FormatDateTime";
+import GroupSubmitModal from "../Dashboard/GroupSubmitModal";
+
+const StyledButton = styled(Button)(({ isSubmitted }) => ({
+  color: "white",
+  backgroundColor: isSubmitted ? "#71F275" : "#5c90d2",
+  fontSize: "0.875rem",
+  textTransform: "none",
+  minWidth: "140px",
+  "&:hover": {
+    backgroundColor: isSubmitted ? "#60d164" : "#4a7ab0",
+  },
+}));
+
+const GroupButton = styled(Button)({
+  color: "white",
+  backgroundColor: "#5c90d2",
+  fontSize: "0.875rem",
+  textTransform: "none",
+  minWidth: "140px",
+  "&:hover": {
+    backgroundColor: "#4a7ab0",
+  },
+  "&:disabled": {
+    backgroundColor: "#ccc",
+  },
+});
 
 export default function GetAssessmentDetail() {
-  const { id, assessmentId } = useParams(); // Assessment ID from the route
-
+  const { id, assessmentId } = useParams();
   const navigate = useNavigate();
+
   const [assessmentDetails, setAssessmentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [groupFile, setGroupFile] = useState(null);
+  const [groupName, setGroupName] = useState("");
+  const [groupMembersData, setGroupMembersData] = useState([]);
+  const [groupLoading, setGroupLoading] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -30,9 +64,7 @@ export default function GetAssessmentDetail() {
         const response = await axios.get(
           `${apiUrl}/assessment/${assessmentId}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
@@ -47,6 +79,78 @@ export default function GetAssessmentDetail() {
 
     fetchAssessmentDetails();
   }, [id, apiUrl, navigate]);
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      alert("Only PDF files are allowed!");
+      return;
+    }
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("assessment_id", assessmentId);
+      formData.append("file_type", "pdf");
+      formData.append("section_id", id);
+
+      const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (uploadRes.ok) {
+        alert("File uploaded successfully!");
+      } else {
+        alert("File upload failed.");
+      }
+    } catch (error) {
+      console.error("File upload error:", error);
+      alert("An error occurred during file upload.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleGroupSubmit = async (selectedMembers) => {
+    if (!groupFile) return;
+
+    try {
+      setGroupLoading(true);
+      const token = localStorage.getItem("authToken");
+      const formData = new FormData();
+      formData.append("file", groupFile);
+      formData.append("assessment_id", assessmentId);
+      formData.append("group_name", groupName);
+      formData.append(
+        "members",
+        JSON.stringify(selectedMembers.map((id) => ({ user_id: id })))
+      );
+      formData.append("file_type", "pdf");
+      formData.append("section_id", id);
+
+      const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (uploadRes.ok) {
+        alert("Group file uploaded successfully!");
+      } else {
+        alert("Group file upload failed.");
+      }
+    } catch (error) {
+      console.error("Group upload error:", error);
+      alert("An error occurred during group submission.");
+    } finally {
+      setGroupLoading(false);
+      setGroupModalOpen(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -81,13 +185,45 @@ export default function GetAssessmentDetail() {
             </p>
           </div>
         </Col>
-        <Col md={4} className="text-end">
-          <button
-            className="btn btn-primary"
-            onClick={() => navigate(`/student/submit-assessment/${id}`)}
+        <Col
+          md={4}
+          className="text-end d-flex flex-column gap-2 align-items-end"
+        >
+          <StyledButton
+            component="label"
+            disabled={uploading || groupLoading}
+            onClick={async () => {
+              if (assessmentDetails.assignment_type === "group") {
+                setGroupModalOpen(true);
+                setGroupFile(null);
+                setGroupLoading(true);
+                const token = localStorage.getItem("authToken");
+                const membersRes = await axios.get(
+                  `${apiUrl}/section/students/${id}`,
+                  {
+                    headers: { Authorization: `Bearer ${token}` },
+                  }
+                );
+                setGroupMembersData(membersRes.data);
+                setGroupLoading(false);
+              }
+            }}
           >
-            ส่งงาน
-          </button>
+            {uploading || groupLoading
+              ? "Processing..."
+              : assessmentDetails.assignment_type === "group"
+                ? "Create Group"
+                : "Submission"}
+            {assessmentDetails.assignment_type !== "group" && (
+              <input
+                id="file-upload"
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                hidden
+              />
+            )}
+          </StyledButton>
         </Col>
       </Row>
 
@@ -159,6 +295,17 @@ export default function GetAssessmentDetail() {
           </MDBTable>
         </Col>
       </Row>
+
+      <GroupSubmitModal
+        open={groupModalOpen}
+        onClose={() => setGroupModalOpen(false)}
+        onSubmit={handleGroupSubmit}
+        loading={groupLoading}
+        setFile={setGroupFile}
+        setGroupName={setGroupName}
+        groupMembersData={groupMembersData}
+        setGroupMembersData={setGroupMembersData}
+      />
     </Container>
   );
 }

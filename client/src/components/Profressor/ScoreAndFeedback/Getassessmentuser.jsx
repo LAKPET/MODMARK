@@ -113,6 +113,11 @@ export default function Getassessmentuser() {
     return members.map((member) => member.user_id.personal_num).join("\n");
   };
 
+  // Add this function to calculate submission status
+  const getSubmissionStatus = (submissionDate, dueDate) => {
+    return new Date(submissionDate) > new Date(dueDate) ? "late" : "on time";
+  };
+
   if (loading) {
     return (
       <Backdrop
@@ -218,7 +223,43 @@ export default function Getassessmentuser() {
                     <td style={{ whiteSpace: "pre-line" }}>
                       {formatGroupMemberEmails(submission.group_members || [])}
                     </td>
-                    <td>{formatDateTime(submission.submitted_at)}</td>
+                    <td>
+                      {formatDateTime(submission.submitted_at)}{" "}
+                      <span
+                        className="status-badge"
+                        style={{
+                          backgroundColor: "transparent", // ไม่มีพื้นหลัง
+                          color:
+                            getSubmissionStatus(
+                              submission.submitted_at,
+                              submission.assessment_id.due_date
+                            ) === "late"
+                              ? "#FFA500" // สีส้ม
+                              : "#3b82f6",
+                          border:
+                            getSubmissionStatus(
+                              submission.submitted_at,
+                              submission.assessment_id.due_date
+                            ) === "late"
+                              ? "1px solid #FFA500" // สีส้ม
+                              : "1px solid #3b82f6",
+                          padding: "1px 4px",
+                          borderRadius: "4px",
+                          fontSize: "10px",
+                          fontWeight: "600",
+                          display: "inline-block",
+                          textTransform: "capitalize",
+                          marginLeft: "8px",
+                          minWidth: "50px", // กำหนดความกว้างขั้นต่ำให้เท่ากัน
+                          textAlign: "center", // จัดข้อความให้อยู่ตรงกลาง
+                        }}
+                      >
+                        {getSubmissionStatus(
+                          submission.submitted_at,
+                          submission.assessment_id.due_date
+                        )}
+                      </span>
+                    </td>
                     <td>
                       <span
                         className="status-badge"
@@ -254,7 +295,43 @@ export default function Getassessmentuser() {
                     <td>{submission.student_id.first_name}</td>
                     <td>{submission.student_id.last_name}</td>
                     <td>{submission.student_id.email}</td>
-                    <td>{formatDateTime(submission.submitted_at)}</td>
+                    <td>
+                      {formatDateTime(submission.submitted_at)}{" "}
+                      <span
+                        className="status-badge"
+                        style={{
+                          backgroundColor: "transparent", // ไม่มีพื้นหลัง
+                          color:
+                            getSubmissionStatus(
+                              submission.submitted_at,
+                              submission.assessment_id.due_date
+                            ) === "late"
+                              ? "#FFA500" // สีส้ม
+                              : "#3b82f6",
+                          border:
+                            getSubmissionStatus(
+                              submission.submitted_at,
+                              submission.assessment_id.due_date
+                            ) === "late"
+                              ? "1px solid #FFA500" // สีส้ม
+                              : "1px solid #3b82f6",
+                          padding: "1px 4px",
+                          borderRadius: "4px",
+                          fontSize: "10px",
+                          fontWeight: "600",
+                          display: "inline-block",
+                          textTransform: "capitalize",
+                          marginLeft: "8px",
+                          minWidth: "50px", // กำหนดความกว้างขั้นต่ำให้เท่ากัน
+                          textAlign: "center", // จัดข้อความให้อยู่ตรงกลาง
+                        }}
+                      >
+                        {getSubmissionStatus(
+                          submission.submitted_at,
+                          submission.assessment_id.due_date
+                        )}
+                      </span>
+                    </td>
                     <td>
                       <span
                         className="status-badge"
