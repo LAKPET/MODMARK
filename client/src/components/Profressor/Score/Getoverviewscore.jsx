@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container } from "react-bootstrap";
+import { Container, Row, Col } from "react-bootstrap";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -11,6 +11,7 @@ export default function Getoverviewscore() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [statisticsData, setStatisticsData] = useState([]);
+  const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortColumn, setSortColumn] = useState(null);
@@ -19,7 +20,7 @@ export default function Getoverviewscore() {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    const fetchStatistics = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("authToken");
@@ -27,25 +28,32 @@ export default function Getoverviewscore() {
           throw new Error("No token found. Please log in.");
         }
 
-        const response = await axios.get(
-          `${apiUrl}/assessment/statistics/${id}`,
+        // Fetch course details
+        const courseResponse = await axios.get(
+          `${apiUrl}/course/details/${id}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
+        setCourseDetails(courseResponse.data);
 
-        setStatisticsData(response.data.assessments_statistics);
+        // Fetch statistics data
+        const statisticsResponse = await axios.get(
+          `${apiUrl}/assessment/statistics/${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setStatisticsData(statisticsResponse.data.assessments_statistics);
       } catch (err) {
-        console.error("Error fetching statistics:", err);
+        console.error("Error fetching data:", err);
         setError("Failed to load data.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStatistics();
+    fetchData();
   }, [id, apiUrl]);
 
   const handleSort = (column) => {
@@ -86,9 +94,21 @@ export default function Getoverviewscore() {
 
   return (
     <Container className="mt-4">
-      <h2 className="mb-4 fw-semibold d-flex align-items-center">
-        Overview of Scores
-      </h2>
+      <Row className="pb-3 mb-4">
+        <Col md={8}>
+          <h2 className="mb-0 fw-semibold d-flex align-items-center">
+            {courseDetails?.course_number}
+            <span className="vertical-line bg-dark mx-3"></span>
+            <span className="fw-normal fs-5">
+              {courseDetails?.semester_term} / {courseDetails?.semester_year}
+            </span>
+          </h2>
+          <div className="d-flex align-items-center">
+            <p className="text-muted p-1 mb-0">{courseDetails?.course_name}</p>
+            <span className="text-muted p-1">{`Section ${courseDetails?.section_number}`}</span>
+          </div>
+        </Col>
+      </Row>
       <MDBTable className="table-hover">
         <MDBTableHead>
           <tr className="fw-bold">
