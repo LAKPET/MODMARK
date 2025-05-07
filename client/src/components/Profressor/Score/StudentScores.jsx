@@ -140,7 +140,9 @@ export default function StudentScores() {
   return (
     <Container className="mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Student Scores</h2>
+        <h2 className="fw-semibold d-flex align-items-center">
+          Student Scores
+        </h2>
         <Button
           className="custom-btn"
           onClick={handleExportToExcel}

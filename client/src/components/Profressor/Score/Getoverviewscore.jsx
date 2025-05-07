@@ -86,7 +86,9 @@ export default function Getoverviewscore() {
 
   return (
     <Container className="mt-4">
-      <h2 className="mb-4">Overview of Scores</h2>
+      <h2 className="mb-4 fw-semibold d-flex align-items-center">
+        Overview of Scores
+      </h2>
       <MDBTable className="table-hover">
         <MDBTableHead>
           <tr className="fw-bold">
