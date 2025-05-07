@@ -4,6 +4,7 @@ import { TextField, IconButton } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ClearIcon from "@mui/icons-material/Clear";
 import axios from "axios";
+import { validateRubricForm } from "../../../utils/FormValidation";
 
 export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
   const [rubric, setRubric] = useState({
@@ -20,6 +21,7 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
       details: [{ description: "", score: "" }],
     },
   ]);
+  const [errors, setErrors] = useState({});
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -140,6 +142,12 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
       };
       return updated;
     });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`detail_${rowIndex}_${colIndex}`];
+      return newErrors;
+    });
   };
 
   const updateCellScore = (rowIndex, colIndex, value) => {
@@ -151,6 +159,13 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
       };
       return updated;
     });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`score_${rowIndex}_${colIndex}`];
+      delete newErrors[`score_order_${rowIndex}`];
+      return newErrors;
+    });
   };
 
   const updateCriteria = (rowIndex, value) => {
@@ -158,6 +173,12 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
       const updated = [...prev];
       updated[rowIndex].criteria = value;
       return updated;
+    });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`criteria_${rowIndex}`];
+      return newErrors;
     });
   };
 
@@ -167,10 +188,32 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
       updated[rowIndex].criteria_weight = value;
       return updated;
     });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`weight_${rowIndex}`];
+      delete newErrors.total_weight;
+      return newErrors;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const formData = {
+      name: rubric.rubric_name,
+      description: rubric.description,
+      score: rubric.score,
+      rows: rows,
+    };
+
+    const { isValid, errors: validationErrors } = validateRubricForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     const formattedRubric = {
       title: rubric.rubric_name,
       description: rubric.description,
@@ -214,8 +257,12 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
               name="rubric_name"
               value={rubric.rubric_name}
               onChange={handleChange}
-              required
+              isInvalid={!!errors.name}
+              placeholder="at least 3 characters"
             />
+            <Form.Control.Feedback type="invalid">
+              {errors.name}
+            </Form.Control.Feedback>
           </Form.Group>
           <Form.Group controlId="formDescription">
             <Form.Label>Description</Form.Label>
@@ -224,8 +271,12 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
               name="description"
               value={rubric.description}
               onChange={handleChange}
-              required
+              isInvalid={!!errors.description}
+              placeholder="at least 10 characters"
             />
+            <Form.Control.Feedback type="invalid">
+              {errors.description}
+            </Form.Control.Feedback>
           </Form.Group>
           <Form.Group controlId="formScore">
             <Form.Label>Score</Form.Label>
@@ -234,15 +285,23 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
               name="score"
               value={rubric.score}
               onChange={handleChange}
-              required
+              isInvalid={!!errors.score}
+              placeholder="Max score"
             />
+            <Form.Control.Feedback type="invalid">
+              {errors.score}
+            </Form.Control.Feedback>
           </Form.Group>
 
           <div className="rubric-container">
             <table className="rubric-table">
               <thead>
                 <tr>
-                  <th></th>
+                  <th>
+                    {errors.total_weight && (
+                      <div className="text-danger">{errors.total_weight}</div>
+                    )}
+                  </th>
                   {columns.map((col, colIndex) => (
                     <th key={colIndex} className="rubric-header">
                       {columns.length > 1 && (
@@ -275,21 +334,30 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
                             updateCriteriaWeight(rowIndex, e.target.value)
                           }
                           size="small"
-                          inputProps={{
-                            style: { textAlign: "center", width: "100px" },
-                          }}
+                          inputProps={{ style: { textAlign: "center" } }}
+                          error={!!errors[`weight_${rowIndex}`]}
+                          helperText={errors[`weight_${rowIndex}`]}
+                          placeholder="Weight"
                         />
                         <span className="pts-label"> pts</span>
                       </div>
                       <textarea
                         rows={3}
                         value={row.criteria}
-                        placeholder="Criteria"
+                        placeholder="Criteria (min 3 chars)"
                         onChange={(e) =>
                           updateCriteria(rowIndex, e.target.value)
                         }
-                        className="criteria-input"
+                        className={`criteria-input ${errors[`criteria_${rowIndex}`] ? "error" : ""}`}
                       />
+                      {errors[`criteria_${rowIndex}`] && (
+                        <div
+                          className="text-danger"
+                          style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                        >
+                          {errors[`criteria_${rowIndex}`]}
+                        </div>
+                      )}
                     </td>
                     {row.details.map((cell, colIndex) => (
                       <td key={colIndex} className="rubric-cell">
@@ -305,21 +373,33 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
                               )
                             }
                             size="small"
-                            inputProps={{
-                              style: { textAlign: "center", width: "100px" },
-                            }}
+                            inputProps={{ style: { textAlign: "center" } }}
+                            error={!!errors[`score_${rowIndex}_${colIndex}`]}
+                            helperText={errors[`score_${rowIndex}_${colIndex}`]}
+                            placeholder="Score"
                           />
                           <span className="pts-label"> pts</span>
                         </div>
                         <textarea
                           rows={3}
                           value={cell.description}
-                          placeholder="Description"
+                          placeholder="Description (min 3 chars)"
                           onChange={(e) =>
                             updateCell(rowIndex, colIndex, e.target.value)
                           }
-                          className="rubric-input"
+                          className={`rubric-input ${errors[`detail_${rowIndex}_${colIndex}`] ? "error" : ""}`}
                         />
+                        {errors[`detail_${rowIndex}_${colIndex}`] && (
+                          <div
+                            className="text-danger"
+                            style={{
+                              fontSize: "0.875rem",
+                              marginTop: "0.25rem",
+                            }}
+                          >
+                            {errors[`detail_${rowIndex}_${colIndex}`]}
+                          </div>
+                        )}
                       </td>
                     ))}
                     <td>
@@ -341,6 +421,18 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
                 </tr>
               </tbody>
             </table>
+            {rows.map(
+              (row, rowIndex) =>
+                errors[`score_order_${rowIndex}`] && (
+                  <div
+                    key={`order_${rowIndex}`}
+                    className="text-danger text-center mt-2"
+                    style={{ fontSize: "0.875rem" }}
+                  >
+                    {errors[`score_order_${rowIndex}`]}
+                  </div>
+                )
+            )}
           </div>
 
           <div className="d-flex justify-content-end">

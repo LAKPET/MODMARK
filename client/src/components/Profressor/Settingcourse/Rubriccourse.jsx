@@ -5,10 +5,11 @@ import { TextField, IconButton } from "@mui/material";
 import ListRubric from "./Listrubric";
 import AddIcon from "@mui/icons-material/Add";
 import ClearIcon from "@mui/icons-material/Clear";
-import ModalComponent from "../../../controls/modal"; // Import ModalComponent
-import InputFileUpload from "../../../controls/InputFileUpload"; // Import InputFileUpload component
+import ModalComponent from "../../../controls/Modal";
+import InputFileUpload from "../../../controls/InputFileUpload";
 import "../../../assets/Styles/Settingcourse/Rubrictable.css";
-import * as XLSX from "xlsx"; // Import xlsx library
+import * as XLSX from "xlsx";
+import { validateRubricForm } from "../../../utils/FormValidation";
 
 const RubricMain = () => {
   const id = useParams();
@@ -17,8 +18,10 @@ const RubricMain = () => {
   console.log(id);
 
   const [showListRubric, setShowListRubric] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
-  const fileInputRef = useRef(null); // Reference for file input
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [errors, setErrors] = useState({});
+  const fileInputRef = useRef(null);
 
   const handleListRubric = () => {
     setShowListRubric(true);
@@ -42,6 +45,7 @@ const RubricMain = () => {
 
   const handleChange = (e) => {
     setRubric({ ...rubric, [e.target.name]: e.target.value });
+    setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
   };
 
   const addColumn = () => {
@@ -109,6 +113,12 @@ const RubricMain = () => {
       };
       return updated;
     });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`detail_${rowIndex}_${colIndex}`];
+      return newErrors;
+    });
   };
 
   const updateCellScore = (rowIndex, colIndex, value) => {
@@ -120,6 +130,13 @@ const RubricMain = () => {
       };
       return updated;
     });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`score_${rowIndex}_${colIndex}`];
+      delete newErrors[`score_order_${rowIndex}`];
+      return newErrors;
+    });
   };
 
   const updateCriteria = (rowIndex, value) => {
@@ -128,6 +145,12 @@ const RubricMain = () => {
       updated[rowIndex].criteria = value;
       return updated;
     });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`criteria_${rowIndex}`];
+      return newErrors;
+    });
   };
 
   const updateCriteriaWeight = (rowIndex, value) => {
@@ -135,6 +158,13 @@ const RubricMain = () => {
       const updated = [...prev];
       updated[rowIndex].criteria_weight = value;
       return updated;
+    });
+    // Clear error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`weight_${rowIndex}`];
+      delete newErrors.total_weight;
+      return newErrors;
     });
   };
 
@@ -195,6 +225,20 @@ const RubricMain = () => {
   };
 
   const handleSubmit = async () => {
+    const formData = {
+      name: rubric.name,
+      description: rubric.description,
+      score: rubric.score,
+      rows: rows,
+    };
+
+    const { isValid, errors: validationErrors } = validateRubricForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     const formattedRubric = {
       title: rubric.name,
       description: rubric.description,
@@ -213,10 +257,6 @@ const RubricMain = () => {
       section_id: id.id,
     };
 
-    console.log(
-      "Formatted Rubric Data:",
-      JSON.stringify(formattedRubric, null, 2)
-    );
     const token = localStorage.getItem("authToken");
     try {
       const response = await fetch(`${apiUrl}/rubric/create`, {
@@ -233,8 +273,7 @@ const RubricMain = () => {
       }
 
       const data = await response.json();
-      console.log("Success:", data);
-      setShowSuccessModal(true); // Show success modal
+      setShowSuccessModal(true);
 
       // Clear all fields
       setRubric({
@@ -251,14 +290,26 @@ const RubricMain = () => {
           details: [{ description: "", score: "" }],
         },
       ]);
+      setErrors({});
 
       // Clear file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     } catch (error) {
-      console.error("Error:", error);
+      setErrorModal({
+        open: true,
+        message: error.message || "Failed to create rubric. Please try again.",
+      });
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setErrorModal({ open: false, message: "" });
   };
 
   return showListRubric ? (
@@ -290,6 +341,9 @@ const RubricMain = () => {
               value={rubric.name}
               onChange={handleChange}
               inputProps={{ style: { textAlign: "center" } }}
+              error={!!errors.name}
+              helperText={errors.name}
+              placeholder="at least 3 characters"
             />
           </Form.Group>
         </Col>
@@ -306,6 +360,9 @@ const RubricMain = () => {
               value={rubric.description}
               onChange={handleChange}
               inputProps={{ style: { textAlign: "center" } }}
+              error={!!errors.description}
+              helperText={errors.description}
+              placeholder="at least 10 characters"
             />
           </Form.Group>
         </Col>
@@ -322,6 +379,9 @@ const RubricMain = () => {
               value={rubric.score}
               onChange={handleChange}
               inputProps={{ style: { textAlign: "center" } }}
+              error={!!errors.score}
+              helperText={errors.score}
+              placeholder="Max score"
             />
           </Form.Group>
         </Col>
@@ -336,7 +396,11 @@ const RubricMain = () => {
         <table className="rubric-table">
           <thead>
             <tr>
-              <th></th>
+              <th>
+                {errors.total_weight && (
+                  <div className="text-danger">{errors.total_weight}</div>
+                )}
+              </th>
               {columns.map((col, colIndex) => (
                 <th key={colIndex} className="rubric-header">
                   {columns.length > 1 && (
@@ -370,16 +434,27 @@ const RubricMain = () => {
                       }
                       size="small"
                       inputProps={{ style: { textAlign: "center" } }}
+                      error={!!errors[`weight_${rowIndex}`]}
+                      helperText={errors[`weight_${rowIndex}`]}
+                      placeholder="Weight"
                     />
                     <span className="pts-label"> pts</span>
                   </div>
                   <textarea
                     rows={3}
                     value={row.criteria}
-                    placeholder="Criteria"
+                    placeholder="Criteria (min 3 chars)"
                     onChange={(e) => updateCriteria(rowIndex, e.target.value)}
-                    className="criteria-input"
+                    className={`criteria-input ${errors[`criteria_${rowIndex}`] ? "error" : ""}`}
                   />
+                  {errors[`criteria_${rowIndex}`] && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors[`criteria_${rowIndex}`]}
+                    </div>
+                  )}
                 </td>
                 {row.details.map((cell, colIndex) => (
                   <td key={colIndex} className="rubric-cell">
@@ -392,18 +467,29 @@ const RubricMain = () => {
                         }
                         size="small"
                         inputProps={{ style: { textAlign: "center" } }}
+                        error={!!errors[`score_${rowIndex}_${colIndex}`]}
+                        helperText={errors[`score_${rowIndex}_${colIndex}`]}
+                        placeholder="Score"
                       />
                       <span className="pts-label"> pts</span>
                     </div>
                     <textarea
                       rows={3}
                       value={cell.description}
-                      placeholder="Description"
+                      placeholder="Description (min 3 chars)"
                       onChange={(e) =>
                         updateCell(rowIndex, colIndex, e.target.value)
                       }
-                      className="rubric-input"
+                      className={`rubric-input ${errors[`detail_${rowIndex}_${colIndex}`] ? "error" : ""}`}
                     />
+                    {errors[`detail_${rowIndex}_${colIndex}`] && (
+                      <div
+                        className="text-danger"
+                        style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                      >
+                        {errors[`detail_${rowIndex}_${colIndex}`]}
+                      </div>
+                    )}
                   </td>
                 ))}
                 <td>
@@ -422,13 +508,34 @@ const RubricMain = () => {
             </tr>
           </tbody>
         </table>
+        {rows.map(
+          (row, rowIndex) =>
+            errors[`score_order_${rowIndex}`] && (
+              <div
+                key={`order_${rowIndex}`}
+                className="text-danger text-center mt-2"
+                style={{ fontSize: "0.875rem" }}
+              >
+                {errors[`score_order_${rowIndex}`]}
+              </div>
+            )
+        )}
       </div>
 
       <ModalComponent
         open={showSuccessModal}
-        handleClose={() => setShowSuccessModal(false)}
+        handleClose={handleSuccessModalClose}
         title="Add Rubric"
         description="The rubric has been successfully added."
+        type="success"
+      />
+
+      <ModalComponent
+        open={errorModal.open}
+        handleClose={handleErrorModalClose}
+        title="Add Rubric Error"
+        description={errorModal.message}
+        type="error"
       />
     </Container>
   );

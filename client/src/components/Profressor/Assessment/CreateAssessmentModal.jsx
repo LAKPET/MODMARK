@@ -15,6 +15,8 @@ import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
+import { validateCreateAssessmentForm } from "../../../utils/FormValidation";
+
 export default function CreateAssessmentModal({
   show,
   handleClose,
@@ -34,6 +36,8 @@ export default function CreateAssessmentModal({
   const [rubrics, setRubrics] = useState([]);
   const [rubric, setRubric] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [errors, setErrors] = useState({});
   const apiUrl = import.meta.env.VITE_API_URL;
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 5,
@@ -54,10 +58,31 @@ export default function CreateAssessmentModal({
     setWeights({});
     setRubric("");
     setActiveTab("assessmentDetail");
+    setErrors({});
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const formData = {
+      assessmentName,
+      assessmentDescription,
+      assessmentType,
+      gradingType,
+      publishDate,
+      dueDate,
+      rubric,
+      weights,
+    };
+
+    const { isValid, errors: validationErrors } =
+      validateCreateAssessmentForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     const token = localStorage.getItem("authToken");
 
     const requestData = {
@@ -96,10 +121,12 @@ export default function CreateAssessmentModal({
         }
       })
       .catch((err) => {
-        console.error(
-          "Error occurred:",
-          err.response ? err.response.data : err
-        );
+        setErrorModal({
+          open: true,
+          message:
+            err.response?.data?.message ||
+            "Failed to create assessment. Please try again.",
+        });
       });
   };
 
@@ -190,6 +217,14 @@ export default function CreateAssessmentModal({
     fetchRubrics();
   }, [id]); // เพิ่ม `id` เป็น dependency
 
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setErrorModal({ open: false, message: "" });
+  };
+
   return (
     <>
       <Modal show={show} onHide={handleClose} className="custom-modal">
@@ -227,7 +262,18 @@ export default function CreateAssessmentModal({
                   type="text"
                   value={assessmentName}
                   onChange={(e) => setAssessmentName(e.target.value)}
+                  invalid={!!errors.assessmentName}
+                  className={errors.assessmentName ? "border-danger" : ""}
+                  placeholder="Assessment name must be at least 3 characters"
                 />
+                {errors.assessmentName && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.assessmentName}
+                  </div>
+                )}
               </Form.Group>
 
               <Form.Group
@@ -240,7 +286,20 @@ export default function CreateAssessmentModal({
                   type="text"
                   value={assessmentDescription}
                   onChange={(e) => setAssessmentDescription(e.target.value)}
+                  invalid={!!errors.assessmentDescription}
+                  className={
+                    errors.assessmentDescription ? "border-danger" : ""
+                  }
+                  placeholder="Description must be at least 10 characters"
                 />
+                {errors.assessmentDescription && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.assessmentDescription}
+                  </div>
+                )}
               </Form.Group>
 
               <Form.Group className="mb-4" controlId="formAssessmentType">
@@ -254,10 +313,19 @@ export default function CreateAssessmentModal({
                     value={assessmentType}
                     label="Assessment Type"
                     onChange={(e) => setAssessmentType(e.target.value)}
+                    error={!!errors.assessmentType}
                   >
                     <MenuItem value="individual">Individual</MenuItem>
                     <MenuItem value="group">Group</MenuItem>
                   </Select>
+                  {errors.assessmentType && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors.assessmentType}
+                    </div>
+                  )}
                 </FormControl>
               </Form.Group>
 
@@ -272,10 +340,19 @@ export default function CreateAssessmentModal({
                     value={gradingType}
                     label="Grading Type"
                     onChange={(e) => setGradingType(e.target.value)}
+                    error={!!errors.gradingType}
                   >
                     <MenuItem value={false}>Individual</MenuItem>
                     <MenuItem value={true}>Team</MenuItem>
                   </Select>
+                  {errors.gradingType && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors.gradingType}
+                    </div>
+                  )}
                 </FormControl>
               </Form.Group>
 
@@ -309,6 +386,14 @@ export default function CreateAssessmentModal({
                       }}
                     />
                   </Paper>
+                  {errors.weights && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors.weights}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -321,7 +406,17 @@ export default function CreateAssessmentModal({
                       type="datetime-local"
                       value={publishDate}
                       onChange={(e) => setPublishDate(e.target.value)}
+                      invalid={!!errors.publishDate}
+                      className={errors.publishDate ? "border-danger" : ""}
                     />
+                    {errors.publishDate && (
+                      <div
+                        className="text-danger"
+                        style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                      >
+                        {errors.publishDate}
+                      </div>
+                    )}
                   </Form.Group>
                 </Col>
                 <Col>
@@ -332,7 +427,17 @@ export default function CreateAssessmentModal({
                       type="datetime-local"
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
+                      invalid={!!errors.dueDate}
+                      className={errors.dueDate ? "border-danger" : ""}
                     />
+                    {errors.dueDate && (
+                      <div
+                        className="text-danger"
+                        style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                      >
+                        {errors.dueDate}
+                      </div>
+                    )}
                   </Form.Group>
                 </Col>
               </Row>
@@ -352,6 +457,7 @@ export default function CreateAssessmentModal({
                     label="Select Rubric"
                     value={rubric}
                     onChange={(e) => setRubric(e.target.value)}
+                    error={!!errors.rubric}
                   >
                     {rubrics.map((r) => (
                       <MenuItem key={r._id} value={r._id}>
@@ -359,6 +465,14 @@ export default function CreateAssessmentModal({
                       </MenuItem>
                     ))}
                   </Select>
+                  {errors.rubric && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors.rubric}
+                    </div>
+                  )}
                 </FormControl>
               </Form.Group>
 
@@ -444,9 +558,18 @@ export default function CreateAssessmentModal({
 
       <ModalComponent
         open={showSuccessModal}
-        handleClose={() => setShowSuccessModal(false)}
+        handleClose={handleSuccessModalClose}
         title="Create Assessment"
         description="The assessment has been successfully created."
+        type="success"
+      />
+
+      <ModalComponent
+        open={errorModal.open}
+        handleClose={handleErrorModalClose}
+        title="Create Assessment Error"
+        description={errorModal.message}
+        type="error"
       />
     </>
   );

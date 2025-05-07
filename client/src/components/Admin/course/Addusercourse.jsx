@@ -6,19 +6,22 @@ import * as XLSX from "xlsx";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
-import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal";
+import { validateAddUserCourseForm } from "../../../utils/FormValidation";
 
 export default function AddUserCourse({
   show,
   handleClose,
   Id,
   refreshCourses,
-  onSuccess, // Add onSuccess prop
+  onSuccess,
 }) {
   const [userId, setUserId] = useState("");
   const [excelData, setExcelData] = useState([]);
   const [role, setRole] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [errors, setErrors] = useState({});
   const [personalNum, setPersonalNum] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
@@ -51,6 +54,23 @@ export default function AddUserCourse({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const formData = {
+      role,
+      personalNum,
+      firstname,
+      lastname,
+      email,
+    };
+
+    const { isValid, errors: validationErrors } =
+      validateAddUserCourseForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     const token = localStorage.getItem("authToken");
 
     let usersToAdd = [];
@@ -92,7 +112,10 @@ export default function AddUserCourse({
           professors: usersToAdd,
         };
       } else {
-        console.error("Invalid role selected.");
+        setErrorModal({
+          open: true,
+          message: "Invalid role selected.",
+        });
         return;
       }
 
@@ -104,8 +127,8 @@ export default function AddUserCourse({
         console.log("Success:", response.data);
         handleClose();
         refreshCourses();
-        onSuccess(); // Call onSuccess function
-        setShowSuccessModal(true); // Show success modal
+        onSuccess();
+        setShowSuccessModal(true);
         // Reset form fields
         setPersonalNum("");
         setFirstname("");
@@ -113,11 +136,28 @@ export default function AddUserCourse({
         setEmail("");
         setExcelData([]);
       } catch (error) {
-        console.error("Request failed:", error);
+        setErrorModal({
+          open: true,
+          message:
+            error.response?.data?.message ||
+            "Failed to add user(s). Please try again.",
+        });
       }
     } else {
-      console.error("No data provided.");
+      setErrorModal({
+        open: true,
+        message:
+          "No data provided. Please enter user details or upload a file.",
+      });
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setErrorModal({ open: false, message: "" });
   };
 
   const fetchUserData = async () => {
@@ -161,12 +201,21 @@ export default function AddUserCourse({
                 value={role}
                 onChange={handleRoleChange}
                 fullWidth
+                error={!!errors.role}
               >
                 <MenuItem value="student">Student</MenuItem>
                 <MenuItem value="professor">Professor</MenuItem>
                 <MenuItem value="ta">TA</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
+              {errors.role && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.role}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mt-2 mb-4" controlId="formPersonalNum">
@@ -176,7 +225,18 @@ export default function AddUserCourse({
                 type="text"
                 value={personalNum}
                 onChange={(e) => setPersonalNum(e.target.value)}
+                invalid={!!errors.personalNum}
+                className={errors.personalNum ? "border-danger" : ""}
+                placeholder="e.g. 234"
               />
+              {errors.personalNum && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.personalNum}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mt-2 mb-4" controlId="formFirstname">
@@ -186,7 +246,18 @@ export default function AddUserCourse({
                 type="text"
                 value={firstname}
                 onChange={(e) => setFirstname(e.target.value)}
+                invalid={!!errors.firstname}
+                className={errors.firstname ? "border-danger" : ""}
+                placeholder="Firstname must be at least 3 characters"
               />
+              {errors.firstname && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.firstname}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formLastname">
@@ -196,7 +267,18 @@ export default function AddUserCourse({
                 type="text"
                 value={lastname}
                 onChange={(e) => setLastname(e.target.value)}
+                invalid={!!errors.lastname}
+                className={errors.lastname ? "border-danger" : ""}
+                placeholder="Lastname must be at least 3 characters"
               />
+              {errors.lastname && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.lastname}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formEmail">
@@ -206,7 +288,18 @@ export default function AddUserCourse({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                invalid={!!errors.email}
+                className={errors.email ? "border-danger" : ""}
+                placeholder="e.g. example@example.com"
               />
+              {errors.email && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.email}
+                </div>
+              )}
             </Form.Group>
 
             <div className="mb-3 line-with-text">
@@ -238,9 +331,18 @@ export default function AddUserCourse({
 
       <ModalComponent
         open={showSuccessModal}
-        handleClose={() => setShowSuccessModal(false)}
+        handleClose={handleSuccessModalClose}
         title="Add User"
         description="The user has been successfully added."
+        type="success"
+      />
+
+      <ModalComponent
+        open={errorModal.open}
+        handleClose={handleErrorModalClose}
+        title="Add User Error"
+        description={errorModal.message}
+        type="error"
       />
     </>
   );

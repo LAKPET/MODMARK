@@ -15,6 +15,7 @@ import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
+import { validateCreateAssessmentForm } from "../../../utils/FormValidation";
 
 export default function EditAssessmentModal({
   show,
@@ -37,6 +38,7 @@ export default function EditAssessmentModal({
   const [rubric, setRubric] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
   const [loading, setLoading] = useState(true); // State for loading
+  const [errors, setErrors] = useState({});
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const formatDateTimeLocal = (isoString) => {
@@ -89,6 +91,12 @@ export default function EditAssessmentModal({
 
   const handleWeightChange = (id, value) => {
     setWeights((prev) => ({ ...prev, [id]: parseFloat(value) || 0 }));
+    // Clear weight error when updating
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.weights;
+      return newErrors;
+    });
   };
 
   const resetForm = () => {
@@ -101,10 +109,31 @@ export default function EditAssessmentModal({
     setWeights({});
     setRubric("");
     setActiveTab("assessmentDetail");
+    setErrors({});
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const formData = {
+      assessmentName,
+      assessmentDescription,
+      assessmentType,
+      gradingType,
+      publishDate,
+      dueDate,
+      rubric,
+      weights,
+    };
+
+    const { isValid, errors: validationErrors } =
+      validateCreateAssessmentForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     const token = localStorage.getItem("authToken");
 
     const requestData = {
@@ -284,7 +313,17 @@ export default function EditAssessmentModal({
                   type="text"
                   value={assessmentName}
                   onChange={(e) => setAssessmentName(e.target.value)}
+                  invalid={!!errors.assessmentName}
+                  placeholder="at least 3 characters"
                 />
+                {errors.assessmentName && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.assessmentName}
+                  </div>
+                )}
               </Form.Group>
 
               <Form.Group
@@ -297,7 +336,17 @@ export default function EditAssessmentModal({
                   type="text"
                   value={assessmentDescription}
                   onChange={(e) => setAssessmentDescription(e.target.value)}
+                  invalid={!!errors.assessmentDescription}
+                  placeholder="at least 10 characters"
                 />
+                {errors.assessmentDescription && (
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                  >
+                    {errors.assessmentDescription}
+                  </div>
+                )}
               </Form.Group>
 
               <Form.Group className="mb-4" controlId="formAssessmentType">
@@ -311,10 +360,19 @@ export default function EditAssessmentModal({
                     value={assessmentType}
                     label="Assessment Type"
                     onChange={(e) => setAssessmentType(e.target.value)}
+                    error={!!errors.assessmentType}
                   >
                     <MenuItem value="individual">Individual</MenuItem>
                     <MenuItem value="group">Group</MenuItem>
                   </Select>
+                  {errors.assessmentType && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors.assessmentType}
+                    </div>
+                  )}
                 </FormControl>
               </Form.Group>
 
@@ -329,10 +387,19 @@ export default function EditAssessmentModal({
                     value={gradingType}
                     label="Grading Type"
                     onChange={(e) => setGradingType(e.target.value)}
+                    error={!!errors.gradingType}
                   >
                     <MenuItem value={false}>Individual</MenuItem>
                     <MenuItem value={true}>Team</MenuItem>
                   </Select>
+                  {errors.gradingType && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors.gradingType}
+                    </div>
+                  )}
                 </FormControl>
               </Form.Group>
 
@@ -347,6 +414,14 @@ export default function EditAssessmentModal({
                       sx={{ border: 0 }}
                     />
                   </Paper>
+                  {errors.weights && (
+                    <div
+                      className="text-danger text-center mt-2"
+                      style={{ fontSize: "0.875rem" }}
+                    >
+                      {errors.weights}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -359,7 +434,16 @@ export default function EditAssessmentModal({
                       type="datetime-local"
                       value={publishDate}
                       onChange={(e) => setPublishDate(e.target.value)}
+                      invalid={!!errors.publishDate}
                     />
+                    {errors.publishDate && (
+                      <div
+                        className="text-danger"
+                        style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                      >
+                        {errors.publishDate}
+                      </div>
+                    )}
                   </Form.Group>
                 </Col>
                 <Col>
@@ -370,7 +454,16 @@ export default function EditAssessmentModal({
                       type="datetime-local"
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
+                      invalid={!!errors.dueDate}
                     />
+                    {errors.dueDate && (
+                      <div
+                        className="text-danger"
+                        style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                      >
+                        {errors.dueDate}
+                      </div>
+                    )}
                   </Form.Group>
                 </Col>
               </Row>
@@ -390,6 +483,7 @@ export default function EditAssessmentModal({
                     label="Select Rubric"
                     value={rubric}
                     onChange={(e) => setRubric(e.target.value)}
+                    error={!!errors.rubric}
                   >
                     {rubrics.map((r) => (
                       <MenuItem key={r._id} value={r._id}>
@@ -397,6 +491,14 @@ export default function EditAssessmentModal({
                       </MenuItem>
                     ))}
                   </Select>
+                  {errors.rubric && (
+                    <div
+                      className="text-danger"
+                      style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                    >
+                      {errors.rubric}
+                    </div>
+                  )}
                 </FormControl>
               </Form.Group>
 

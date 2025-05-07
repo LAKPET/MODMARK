@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { MDBInput } from "mdb-react-ui-kit";
 import axios from "axios";
-import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal";
+import { validateEditCourseForm } from "../../../utils/FormValidation";
 
 export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [courseNumber, setCourseNumber] = useState("");
@@ -10,7 +11,9 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [semesterTerm, setSemesterTerm] = useState("");
   const [semesterYear, setSemesterYear] = useState("");
   const [courseName, setCourseName] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [errors, setErrors] = useState({});
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -32,12 +35,32 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
       setSemesterYear(course.semester_year);
       setCourseName(course.course_name);
     } catch (err) {
-      console.error("Failed to fetch course details:", err);
+      setErrorModal({
+        open: true,
+        message: "Failed to fetch course details. Please try again.",
+      });
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const formData = {
+      courseNumber,
+      sectionName,
+      semesterTerm,
+      semesterYear,
+      courseName,
+    };
+
+    const { isValid, errors: validationErrors } =
+      validateEditCourseForm(formData);
+
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+
     const token = localStorage.getItem("authToken");
     axios
       .put(
@@ -56,9 +79,24 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
       .then(() => {
         handleClose();
         refreshCourses();
-        setShowSuccessModal(true); // Show success modal
+        setShowSuccessModal(true);
       })
-      .catch((err) => console.error("Failed to update course:", err));
+      .catch((err) => {
+        setErrorModal({
+          open: true,
+          message:
+            err.response?.data?.message ||
+            "Failed to update course. Please try again.",
+        });
+      });
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleErrorModalClose = () => {
+    setErrorModal({ open: false, message: "" });
   };
 
   return (
@@ -76,7 +114,18 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
                 type="text"
                 value={courseNumber}
                 onChange={(e) => setCourseNumber(e.target.value)}
+                invalid={!!errors.courseNumber}
+                className={errors.courseNumber ? "border-danger" : ""}
+                placeholder="e.g. CPE 123"
               />
+              {errors.courseNumber && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.courseNumber}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formSectionName">
@@ -86,7 +135,18 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
                 type="text"
                 value={sectionName}
                 onChange={(e) => setSectionName(e.target.value)}
+                invalid={!!errors.sectionName}
+                className={errors.sectionName ? "border-danger" : ""}
+                placeholder="e.g. 1"
               />
+              {errors.sectionName && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.sectionName}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formSemesterTerm">
@@ -96,7 +156,18 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
                 type="text"
                 value={semesterTerm}
                 onChange={(e) => setSemesterTerm(e.target.value)}
+                invalid={!!errors.semesterTerm}
+                className={errors.semesterTerm ? "border-danger" : ""}
+                placeholder="1 or 2"
               />
+              {errors.semesterTerm && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.semesterTerm}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formSemesterYear">
@@ -106,7 +177,18 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
                 type="text"
                 value={semesterYear}
                 onChange={(e) => setSemesterYear(e.target.value)}
+                invalid={!!errors.semesterYear}
+                className={errors.semesterYear ? "border-danger" : ""}
+                placeholder="e.g. 2024"
               />
+              {errors.semesterYear && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.semesterYear}
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formCourseName">
@@ -116,7 +198,18 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
                 type="text"
                 value={courseName}
                 onChange={(e) => setCourseName(e.target.value)}
+                invalid={!!errors.courseName}
+                className={errors.courseName ? "border-danger" : ""}
+                placeholder="Course name must be at least 3 characters"
               />
+              {errors.courseName && (
+                <div
+                  className="text-danger"
+                  style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}
+                >
+                  {errors.courseName}
+                </div>
+              )}
             </Form.Group>
 
             <div className="d-flex justify-content-end">
@@ -130,9 +223,18 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
 
       <ModalComponent
         open={showSuccessModal}
-        handleClose={() => setShowSuccessModal(false)}
+        handleClose={handleSuccessModalClose}
         title="Update Course"
         description="The course details have been successfully updated."
+        type="success"
+      />
+
+      <ModalComponent
+        open={errorModal.open}
+        handleClose={handleErrorModalClose}
+        title="Update Course Error"
+        description={errorModal.message}
+        type="error"
       />
     </>
   );
