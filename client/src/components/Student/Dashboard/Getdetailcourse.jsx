@@ -50,6 +50,37 @@ const StyledButton = styled(Button)(({ isSubmitted }) => ({
   },
 }));
 
+const ScoreBar = ({ score, maxScore = 100, label }) => {
+  const percentage = (score / maxScore) * 100;
+  return (
+    <div className="mb-3">
+      <div className="d-flex justify-content-between mb-1">
+        <span>{label}</span>
+        <span>{score}</span>
+      </div>
+      <div
+        className="score-bar-container"
+        style={{
+          width: "100%",
+          height: "20px",
+          backgroundColor: "#e9ecef",
+          borderRadius: "10px",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${percentage}%`,
+            height: "100%",
+            backgroundColor: label === "My Score" ? "#FF6B6B" : "#8B5F34",
+            transition: "width 0.3s ease-in-out",
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
 export default function CourseDetail() {
   const { id: sectionId } = useParams();
   const navigate = useNavigate();
@@ -468,18 +499,67 @@ export default function CourseDetail() {
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
                 <h5 className="card-title">Overall Score</h5>
-                <div className="mt-3">
-                  <div className="d-flex justify-content-between mb-2">
-                    <span>mean</span>
-                    <span>{overallStatistics.overall_mean}</span>
-                  </div>
-                  <hr className="bg-white my-2" style={{ opacity: 0.5 }} />
-                  <div className="d-flex justify-content-between mb-2">
-                    <span>My score</span>
-                    <span style={{ color: "#FF6B6B" }}>
-                      {overallStatistics.Myscore}
+                <div className="mt-3 ">
+                  <ScoreBar
+                    score={overallStatistics.Myscore}
+                    label="My Score"
+                  />
+                  <ScoreBar
+                    score={overallStatistics.overall_mean}
+                    label="Mean Score"
+                  />
+                </div>
+                <div className="text-center mt-4 text-muted">
+                  {overallStatistics.Myscore >
+                  overallStatistics.overall_mean ? (
+                    <span>
+                      Your score is {overallStatistics.Myscore}, which is{" "}
+                      <span className="text-success">higher</span> than the
+                      average by{" "}
+                      {(
+                        overallStatistics.Myscore -
+                        overallStatistics.overall_mean
+                      ).toFixed(2)}{" "}
+                      points or (
+                      <span className="text-success">
+                        {(
+                          ((overallStatistics.Myscore -
+                            overallStatistics.overall_mean) /
+                            overallStatistics.overall_mean) *
+                          100
+                        ).toFixed(1)}
+                        %
+                      </span>
+                      ).
                     </span>
-                  </div>
+                  ) : overallStatistics.Myscore <
+                    overallStatistics.overall_mean ? (
+                    <span>
+                      Your score is {overallStatistics.Myscore}, which is{" "}
+                      <span className="text-warning">lower</span> than the
+                      average by{" "}
+                      {(
+                        overallStatistics.overall_mean -
+                        overallStatistics.Myscore
+                      ).toFixed(2)}{" "}
+                      points or (
+                      <span className="text-warning">
+                        {(
+                          ((overallStatistics.overall_mean -
+                            overallStatistics.Myscore) /
+                            overallStatistics.overall_mean) *
+                          100
+                        ).toFixed(1)}
+                        %
+                      </span>
+                      ).
+                    </span>
+                  ) : (
+                    <span>
+                      Your score is {overallStatistics.Myscore}, which is{" "}
+                      <span className="text-info">equal</span> to the average.
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
