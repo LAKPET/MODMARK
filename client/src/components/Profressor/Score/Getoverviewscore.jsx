@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Container } from "react-bootstrap";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 
 export default function Getoverviewscore() {
-  const { id } = useParams(); // Get the section ID from the route
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [statisticsData, setStatisticsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,7 +22,7 @@ export default function Getoverviewscore() {
     const fetchStatistics = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("authToken"); // Get the token from localStorage
+        const token = localStorage.getItem("authToken");
         if (!token) {
           throw new Error("No token found. Please log in.");
         }
@@ -30,7 +31,7 @@ export default function Getoverviewscore() {
           `${apiUrl}/assessment/statistics/${id}`,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Include the token in the request headers
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -62,6 +63,10 @@ export default function Getoverviewscore() {
     });
 
     setStatisticsData(sortedData);
+  };
+
+  const handleRowClick = (assessmentId) => {
+    navigate(`/score/${id}/student-scores/${assessmentId}`);
   };
 
   if (loading) {
@@ -117,7 +122,12 @@ export default function Getoverviewscore() {
         <MDBTableBody>
           {statisticsData.length > 0 ? (
             statisticsData.map((stat) => (
-              <tr key={stat.assessment_id}>
+              <tr
+                key={stat.assessment_id}
+                onClick={() => handleRowClick(stat.assessment_id)}
+                style={{ cursor: "pointer" }}
+                className="hover-row"
+              >
                 <td>{stat.assessment_name}</td>
                 <td>{stat.max_score}</td>
                 <td>{stat.min_score}</td>
@@ -128,7 +138,7 @@ export default function Getoverviewscore() {
             ))
           ) : (
             <tr>
-              <td colSpan="5" className="text-center">
+              <td colSpan="6" className="text-center">
                 No data available
               </td>
             </tr>

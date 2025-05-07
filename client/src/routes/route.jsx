@@ -20,6 +20,7 @@ import RoutePreserver from "./RoutePreserver";
 import Viewassessmentfile from "../components/Profressor/ScoreAndFeedback/Viewassessmentfile"; // นำเข้า Viewassessmentfile
 import AssessmentDetailPage from "../pages/Student/AssessmentDetailPage";
 import Scorepage from "../pages/Profressor/Scorepage";
+import Scorestudentpage from "../pages/Profressor/Scorestudentpage";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -69,6 +70,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute requiredRole={["professor", "ta"]}>
               <Scorepage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/score/:id/student-scores/:assessmentId"
+          element={
+            <ProtectedRoute requiredRole={["professor", "ta"]}>
+              <Scorestudentpage />
             </ProtectedRoute>
           }
         />
