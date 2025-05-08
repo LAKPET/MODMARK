@@ -90,7 +90,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/professor/viewassessment/:id/:fileUrl/:assessmentId"
+          path="/professor/viewassessment/:id/PDF/:fileUrl/:assessmentId"
           element={
             <ProtectedRoute requiredRole={["professor", "ta"]}>
               <Viewassessmentpage />

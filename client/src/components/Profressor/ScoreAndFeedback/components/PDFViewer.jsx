@@ -1,7 +1,5 @@
-import React from "react";
-import { Worker, Viewer } from "@react-pdf-viewer/core";
-import { highlightPlugin } from "@react-pdf-viewer/highlight";
-import { selectionModePlugin } from "@react-pdf-viewer/selection-mode";
+import React, { useState } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
 import {
   Box,
   Paper,
@@ -10,135 +8,65 @@ import {
   Tooltip,
 } from "@mui/material";
 import CommentIcon from "@mui/icons-material/Comment";
-import DeleteIcon from "@mui/icons-material/Delete";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
 
-import "@react-pdf-viewer/core/lib/styles/index.css";
-import "@react-pdf-viewer/highlight/lib/styles/index.css";
-
+import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 const PDFViewer = ({
   fileUrl,
   currentPage,
   scale,
   onPageChange,
-  onHighlightClick,
-  onHighlightDelete,
   commentIcons,
   onCommentIconClick,
-  onDeleteHighlight,
   onContextMenu,
   onPanelChange,
-  showHoverIcons = true,
   activePanel = "scores",
 }) => {
-  const highlightPluginInstance = highlightPlugin({
-    onHighlightClick,
-    onHighlightDelete,
-    renderHighlightContent: (props) => (
-      <div
-        style={{
-          background: props.highlight.highlight_color || "#ffeb3b",
-          padding: "2px 4px",
-          borderRadius: "2px",
-          position: "relative",
-        }}
-      >
-        {props.highlight.content.text}
-        <IconButton
-          size="small"
-          style={{
-            position: "absolute",
-            right: -8,
-            top: -8,
-            backgroundColor: "#fff",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDeleteHighlight(props.highlight);
-          }}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
-      </div>
-    ),
-    onTextLayerRender: (e) => {
-      if (e.textLayer) {
-        e.textLayer.style.opacity = "1";
-      }
+  const [numPages, setNumPages] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const pdfOptions = {
+    cMapUrl: "https://unpkg.com/pdfjs-dist@3.4.120/cmaps/",
+    cMapPacked: true,
+    httpHeaders: {
+      "Access-Control-Allow-Origin": "*",
     },
-    shouldHandleEvent: (event) => {
-      return event.type === "mouseup";
-    },
-  });
-
-  const selectionModePluginInstance = selectionModePlugin({
-    onTextSelection: (selectedText) => {
-      if (selectedText && selectedText.trim()) {
-        // Handle text selection
-      }
-    },
-  });
+  };
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+    setLoading(false);
+    onPageChange(1); // Set the initial page to 1
+  };
 
   const renderCommentIcons = () => {
     return commentIcons
       .filter((icon) => icon.pageIndex === currentPage - 1)
-      .map((icon) => {
-        const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
-
-        // Find the current page element by checking which one is visible in the viewport
-        let currentPageElement = null;
-        for (let i = 0; i < pdfPages.length; i++) {
-          const pageRect = pdfPages[i].getBoundingClientRect();
-          const viewportHeight = window.innerHeight;
-
-          // Check if the page is visible in the viewport
-          if (
-            pageRect.top <= viewportHeight / 2 &&
-            pageRect.bottom >= viewportHeight / 2
-          ) {
-            currentPageElement = pdfPages[i];
-            break;
-          }
-        }
-
-        // If we couldn't find the page element, use the first one as fallback
-        if (!currentPageElement && pdfPages.length > 0) {
-          currentPageElement = pdfPages[0];
-        }
-
-        const pdfPageRect = currentPageElement?.getBoundingClientRect();
-
-        const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
-        const iconY = icon.position.y;
-
-        return (
-          <Tooltip key={icon.id} title={icon.comment} placement="left" arrow>
-            <IconButton
-              size="small"
+      .map((icon) => (
+        <Tooltip key={icon.id} title={icon.comment} placement="left" arrow>
+          <IconButton
+            size="small"
+            sx={{
+              position: "absolute",
+              left: `${icon.position.x}px`,
+              top: `${icon.position.y}px`,
+              backgroundColor: "#fff",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+              "&:hover": {
+                backgroundColor: "#f5f5f5",
+              },
+              zIndex: 1000,
+              transform: "translate(0, -50%)",
+            }}
+            onClick={() => onCommentIconClick(icon)}
+          >
+            <CommentIcon
               sx={{
-                position: "absolute",
-                left: `${iconX}px`,
-                top: `${iconY}px`,
-                backgroundColor: "#fff",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                "&:hover": {
-                  backgroundColor: "#f5f5f5",
-                },
-                zIndex: 1000,
-                transform: "translate(0, -50%)",
+                color: icon.highlight_color || "#1976d2",
               }}
-              onClick={() => onCommentIconClick(icon)}
-            >
-              <CommentIcon
-                sx={{
-                  color: icon.highlight_color || "#1976d2",
-                }}
-              />
-            </IconButton>
-          </Tooltip>
-        );
-      });
+            />
+          </IconButton>
+        </Tooltip>
+      ));
   };
 
   return (
@@ -219,44 +147,37 @@ const PDFViewer = ({
             <CommentIcon />
           </IconButton>
         </Box>
-        <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
-          <Viewer
-            fileUrl={fileUrl}
-            plugins={[highlightPluginInstance, selectionModePluginInstance]}
-            onPageChange={(e) => onPageChange(e.currentPage + 1)}
-            defaultScale={scale}
-            theme={{
-              theme: "dark",
+        {loading && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
             }}
-            onDocumentLoad={(e) => {
-              if (e.doc) {
-                e.doc.getPage(1).then((page) => {
-                  const textLayer = document.querySelector(
-                    ".rpv-core__text-layer"
-                  );
-                  if (textLayer) {
-                    textLayer.style.opacity = "1";
-                  }
-                });
-              }
-            }}
-            scrollMode={1}
-            layoutMode={1}
-            renderLoader={(percentages) => (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <CircularProgress />
-              </div>
-            )}
+          >
+            <CircularProgress />
+          </Box>
+        )}
+        <Document
+          file={{
+            url: fileUrl,
+            httpHeaders: {
+              "Access-Control-Allow-Origin": "*",
+            },
+          }}
+          onLoadSuccess={onDocumentLoadSuccess}
+          loading={<CircularProgress />}
+          error={<div>Error loading PDF. Please try again.</div>}
+          options={pdfOptions}
+        >
+          <Page
+            pageNumber={currentPage}
+            scale={scale}
+            onLoadSuccess={() => setLoading(false)}
+            error={<div>Error loading page {currentPage}</div>}
           />
-        </Worker>
+        </Document>
         {renderCommentIcons()}
       </Box>
     </Paper>

@@ -42,15 +42,23 @@ export default function Viewassessmentfile() {
         setAllSubmissions(submissionsResponse.data);
 
         // Find the specific submission that matches our fileUrl
-        const submission = submissionsResponse.data.find(
-          (sub) => sub.file_url === fileUrl
+        const decodedFileUrl = decodeURIComponent(`PDF/${fileUrl}`);
+        console.log("Decoded fileUrl with prefix:", decodedFileUrl);
+        console.log(
+          "API response file_urls:",
+          submissionsResponse.data.map((sub) => sub.file_url)
         );
 
-        console.log("Found submission:", submission);
+        const submission = submissionsResponse.data.find(
+          (sub) => decodeURIComponent(sub.file_url) === decodedFileUrl
+        );
 
         if (!submission) {
-          throw new Error("Submission not found");
+          console.error("Submission not found. File URL:", fileUrl);
+          throw new Error("Submission not found. Please check the file URL.");
         }
+
+        console.log("Found submission:", submission);
 
         // Find the index of the current submission
         const submissionIndex = submissionsResponse.data.findIndex(
@@ -68,24 +76,25 @@ export default function Viewassessmentfile() {
         };
         console.log("PDF request data:", pdfRequestData);
 
-        // Fetch PDF directly from the uploads directory
-        const pdfResponse = await axios.get(
-          `${apiUrl}/submission/pdf/${submission.file_url}`,
+        // Extract filename from file_url
+        const filename = submission.file_url;
+        console.log("Extracted filename:", filename);
+
+        // Send filename to the new API to get the file URL
+        const fileResponse = await axios.post(
+          "http://localhost:5001/submission/pdf/file",
+          { filename },
           {
             headers: { Authorization: `Bearer ${token}` },
-            responseType: "arraybuffer",
           }
         );
 
-        if (!pdfResponse.data || pdfResponse.data.byteLength === 0) {
-          throw new Error("Empty PDF file received.");
+        if (!fileResponse.data || !fileResponse.data.fileUrl) {
+          throw new Error("Failed to retrieve file URL.");
         }
 
-        // Create a blob from the array buffer
-        const pdfBlob = new Blob([pdfResponse.data], {
-          type: "application/pdf",
-        });
-        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const pdfUrl = fileResponse.data.fileUrl;
+        console.log("Retrieved PDF URL:", pdfUrl);
         setPdfUrl(pdfUrl);
 
         // Set the submission info with the complete data
