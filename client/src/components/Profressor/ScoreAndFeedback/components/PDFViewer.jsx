@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import {
   Box,
@@ -11,7 +11,10 @@ import CommentIcon from "@mui/icons-material/Comment";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
 
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+import "react-pdf/dist/esm/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
 const PDFViewer = ({
   fileUrl,
   currentPage,
@@ -25,13 +28,25 @@ const PDFViewer = ({
 }) => {
   const [numPages, setNumPages] = useState(null);
   const [loading, setLoading] = useState(true);
-  const pdfOptions = {
-    cMapUrl: "https://unpkg.com/pdfjs-dist@3.4.120/cmaps/",
-    cMapPacked: true,
-    httpHeaders: {
-      "Access-Control-Allow-Origin": "*",
-    },
-  };
+
+  // Memoize the options object
+  const pdfOptions = useMemo(
+    () => ({
+      cMapUrl: "https://unpkg.com/pdfjs-dist@3.4.120/cmaps/",
+      cMapPacked: true,
+      standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/standard_fonts/`,
+    }),
+    []
+  );
+
+  // Memoize the file object
+  const file = useMemo(
+    () => ({
+      url: `http://localhost:5001/pdf?url=${encodeURIComponent(fileUrl)}`,
+    }),
+    [fileUrl]
+  );
+
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
     setLoading(false);
@@ -75,13 +90,16 @@ const PDFViewer = ({
       sx={{
         flex: 1,
         overflow: "hidden",
-        backgroundColor: "#fff",
+        backgroundColor: "#000000", // Set background color for the entire container
         position: "relative",
         borderRadius: 0,
-        m: 0,
+        m: "auto", // Center horizontally and vertically
         p: 0,
-        pl: 0,
-        width: "70%",
+        width: "70%", // Set width to 70% of the container
+        height: "100%", // Adjust height as needed
+        display: "flex",
+        justifyContent: "center", // Center content horizontally
+        alignItems: "center", // Center content vertically
       }}
       onContextMenu={onContextMenu}
     >
@@ -90,16 +108,17 @@ const PDFViewer = ({
           position: "relative",
           width: "100%",
           height: "100%",
-          m: 0,
-          p: 0,
-          pl: 0,
+          overflowY: "auto", // Enable vertical scrolling
+          display: "flex",
+          justifyContent: "center", // Center PDF horizontally
+          alignItems: "flex-start", // Align PDF at the top
         }}
       >
         <Box
           sx={{
-            position: "absolute",
-            top: 0,
-            right: 15,
+            position: "fixed",
+            top: 48,
+            right: "432px",
             display: "flex",
             flexDirection: "column",
             gap: 1,
@@ -160,23 +179,22 @@ const PDFViewer = ({
           </Box>
         )}
         <Document
-          file={{
-            url: fileUrl,
-            httpHeaders: {
-              "Access-Control-Allow-Origin": "*",
-            },
-          }}
+          file={file}
           onLoadSuccess={onDocumentLoadSuccess}
           loading={<CircularProgress />}
           error={<div>Error loading PDF. Please try again.</div>}
           options={pdfOptions}
         >
-          <Page
-            pageNumber={currentPage}
-            scale={scale}
-            onLoadSuccess={() => setLoading(false)}
-            error={<div>Error loading page {currentPage}</div>}
-          />
+          {/* Render all pages */}
+          {Array.from(new Array(numPages), (el, index) => (
+            <Page
+              key={`page_${index + 1}`}
+              pageNumber={index + 1}
+              scale={scale}
+              onLoadSuccess={() => setLoading(false)}
+              error={<div>Error loading page {index + 1}</div>}
+            />
+          ))}
         </Document>
         {renderCommentIcons()}
       </Box>

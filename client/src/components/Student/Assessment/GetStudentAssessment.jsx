@@ -180,7 +180,7 @@ export default function GetStudentAssessment() {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("assessment_id", assessmentId);
-        formData.append("group_name", groupName); // ใช้ groupName ที่กรอกใน Modal
+        formData.append("group_name", "individual"); // Fix group name to "individual"
         formData.append("members", JSON.stringify([{ user_id: userId }]));
         formData.append("file_type", "pdf");
         formData.append("section_id", id);
