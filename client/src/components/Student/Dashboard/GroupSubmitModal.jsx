@@ -14,15 +14,16 @@ import TableRow from "@mui/material/TableRow";
 import Checkbox from "@mui/material/Checkbox";
 import { styled } from "@mui/material/styles";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
-
+import { MDBBtn } from "mdb-react-ui-kit";
 const SubmitButton = styled(Button)(({ theme }) => ({
   color: "white",
-  backgroundColor: "#F27171",
+  backgroundColor: "#754D25",
   fontSize: "0.875rem",
   textTransform: "none",
-  borderRadius: "8px",
+  borderRadius: "5px",
+  padding: "6px 20px",
   "&:hover": {
-    backgroundColor: "#d16060",
+    backgroundColor: "#754D25",
   },
   "&:disabled": {
     backgroundColor: "#ccc",
@@ -44,12 +45,14 @@ const GroupSubmitModal = ({
   const [dragActive, setDragActive] = useState(false);
   const [localFile, setLocalFile] = useState(file || null);
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState(""); // State for search query
   const inputRef = useRef();
 
   useEffect(() => {
-    // Reset selected members when modal opens
+    // Reset selected members and search query when modal opens
     if (open) {
       setSelectedMembers([]);
+      setSearchQuery("");
     }
   }, [open]);
 
@@ -97,7 +100,6 @@ const GroupSubmitModal = ({
     );
   };
 
-  // ส่งเฉพาะ user_id ที่เลือกไปตอน submit
   const handleSubmit = () => {
     if (onSubmit && localFile && selectedMembers.length > 0) {
       onSubmit(selectedMembers);
@@ -105,6 +107,19 @@ const GroupSubmitModal = ({
       alert("Please select at least one member.");
     }
   };
+
+  // Filter members based on search query
+  const filteredMembers = groupMembersData.filter((m) => {
+    const personalNum = m.personal_num ? String(m.personal_num) : ""; // แปลง personal_num เป็น string
+    const studentId = m.student_id ? String(m.student_id) : ""; // แปลง student_id เป็น string
+    return (
+      m.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      personalNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      studentId.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -197,6 +212,7 @@ const GroupSubmitModal = ({
               <TextField
                 label="Group Name"
                 fullWidth
+                size="small"
                 margin="dense"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
@@ -205,25 +221,77 @@ const GroupSubmitModal = ({
               <TextField
                 label="Type"
                 fullWidth
+                size="small"
                 margin="dense"
                 value="Group"
                 disabled
                 style={{ flex: 1, marginTop: 0 }}
               />
             </div>
-            <div style={{ marginTop: 8, fontWeight: 600 }}>Member</div>
-            <TableContainer style={{ maxHeight: 120, marginTop: 8 }}>
-              <Table size="small">
+            <div
+              style={{
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 8,
+              }}
+            >
+              <TextField
+                label="Search Member"
+                variant="outlined"
+                size="small"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: "50%" }}
+              />
+            </div>
+            <div style={{ fontWeight: 600, marginTop: 10 }}>Member</div>
+            <TableContainer style={{ maxHeight: 200, marginTop: 8 }}>
+              <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell padding="checkbox"></TableCell>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
+                    <TableCell
+                      padding="checkbox"
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        backgroundColor: "#fff",
+                        zIndex: 1,
+                      }}
+                    ></TableCell>
+                    <TableCell
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        backgroundColor: "#fff",
+                        zIndex: 1,
+                      }}
+                    >
+                      ID
+                    </TableCell>
+                    <TableCell
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        backgroundColor: "#fff",
+                        zIndex: 1,
+                      }}
+                    >
+                      Name
+                    </TableCell>
+                    <TableCell
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        backgroundColor: "#fff",
+                        zIndex: 1,
+                      }}
+                    >
+                      Email
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {groupMembersData.map((m, idx) => (
+                  {filteredMembers.map((m, idx) => (
                     <TableRow key={m.student_id || idx}>
                       <TableCell padding="checkbox">
                         <Checkbox
@@ -245,9 +313,17 @@ const GroupSubmitModal = ({
         </div>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} variant="outlined" disabled={uploading}>
+        <MDBBtn
+          outline
+          onClick={onClose}
+          disabled={uploading}
+          style={{
+            color: "#CDC9C9",
+            borderColor: "#CDC9C9",
+          }}
+        >
           Cancel
-        </Button>
+        </MDBBtn>
         <SubmitButton onClick={handleSubmit} disabled={uploading || !localFile}>
           Submit
         </SubmitButton>

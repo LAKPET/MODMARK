@@ -93,6 +93,11 @@ export default function GetAssessmentDetail() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("assessment_id", assessmentId);
+      formData.append("group_name", "individual"); // Fix group name to "individual"
+      formData.append(
+        "members",
+        JSON.stringify([{ user_id: localStorage.getItem("UserId") }])
+      );
       formData.append("file_type", "pdf");
       formData.append("section_id", id);
 
@@ -102,10 +107,11 @@ export default function GetAssessmentDetail() {
         body: formData,
       });
 
+      const result = await uploadRes.json();
       if (uploadRes.ok) {
         alert("File uploaded successfully!");
       } else {
-        alert("File upload failed.");
+        alert(result.message || "File upload failed.");
       }
     } catch (error) {
       console.error("File upload error:", error);
@@ -116,7 +122,10 @@ export default function GetAssessmentDetail() {
   };
 
   const handleGroupSubmit = async (selectedMembers) => {
-    if (!groupFile) return;
+    if (!groupFile || !groupName) {
+      alert("Please provide a group name and select a file.");
+      return;
+    }
 
     try {
       setGroupLoading(true);
@@ -124,7 +133,7 @@ export default function GetAssessmentDetail() {
       const formData = new FormData();
       formData.append("file", groupFile);
       formData.append("assessment_id", assessmentId);
-      formData.append("group_name", groupName);
+      formData.append("group_name", groupName); // ใช้ groupName ที่กรอกใน Modal
       formData.append(
         "members",
         JSON.stringify(selectedMembers.map((id) => ({ user_id: id })))
@@ -139,16 +148,15 @@ export default function GetAssessmentDetail() {
       });
 
       if (uploadRes.ok) {
-        alert("Group file uploaded successfully!");
+        setGroupModalOpen(false); // ปิด Modal ทันทีหลังจากส่งสำเร็จ
       } else {
-        alert("Group file upload failed.");
+        const result = await uploadRes.json();
+        console.error(result.message || "Group file upload failed.");
       }
     } catch (error) {
-      console.error("Group upload error:", error);
-      alert("An error occurred during group submission.");
+      console.error("Group submission error:", error);
     } finally {
       setGroupLoading(false);
-      setGroupModalOpen(false);
     }
   };
 
@@ -214,15 +222,6 @@ export default function GetAssessmentDetail() {
               : assessmentDetails.assignment_type === "group"
                 ? "Create Group"
                 : "Submission"}
-            {assessmentDetails.assignment_type !== "group" && (
-              <input
-                id="file-upload"
-                type="file"
-                accept="application/pdf"
-                onChange={handleFileChange}
-                hidden
-              />
-            )}
           </StyledButton>
         </Col>
       </Row>
@@ -299,12 +298,14 @@ export default function GetAssessmentDetail() {
       <GroupSubmitModal
         open={groupModalOpen}
         onClose={() => setGroupModalOpen(false)}
-        onSubmit={handleGroupSubmit}
-        loading={groupLoading}
-        setFile={setGroupFile}
+        assessment={assessmentDetails}
+        file={groupFile}
+        groupName={groupName}
         setGroupName={setGroupName}
         groupMembersData={groupMembersData}
-        setGroupMembersData={setGroupMembersData}
+        uploading={groupLoading}
+        onSubmit={handleGroupSubmit}
+        setGroupFile={setGroupFile}
       />
     </Container>
   );

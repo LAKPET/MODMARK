@@ -136,12 +136,7 @@ export default function AddUserCourse({
         setEmail("");
         setExcelData([]);
       } catch (error) {
-        setErrorModal({
-          open: true,
-          message:
-            error.response?.data?.message ||
-            "Failed to add user(s). Please try again.",
-        });
+        console.error("Error adding user(s):", error);
       }
     } else {
       setErrorModal({
