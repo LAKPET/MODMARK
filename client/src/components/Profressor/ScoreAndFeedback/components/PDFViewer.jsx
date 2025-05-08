@@ -103,6 +103,60 @@ const PDFViewer = ({
       }}
       onContextMenu={onContextMenu}
     >
+      {/* Icon Box */}
+      <Box
+        sx={{
+          position: "absolute", // ตำแหน่งแบบ absolute ภายใน Paper
+          top: 0, // ชิดบนสุด
+          right: 0, // ชิดขวาสุด
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          zIndex: 1000,
+          backgroundColor: "#fff",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+          borderRadius: 0,
+          p: 1,
+          width: "50px",
+        }}
+      >
+        <IconButton
+          size="small"
+          onClick={() => onPanelChange("scores")}
+          sx={{
+            backgroundColor:
+              activePanel === "scores" ? "#8B5F34" : "transparent",
+            color: activePanel === "scores" ? "white" : "inherit",
+            borderRadius: 0,
+            width: "100%",
+            height: "40px",
+            "&:hover": {
+              backgroundColor: activePanel === "scores" ? "#6B4A2A" : "#f5f5f5",
+            },
+          }}
+        >
+          <CreditScoreIcon />
+        </IconButton>
+        <IconButton
+          onClick={() => onPanelChange("comments")}
+          sx={{
+            backgroundColor:
+              activePanel === "comments" ? "#8B5F34" : "transparent",
+            color: activePanel === "comments" ? "white" : "inherit",
+            borderRadius: 0,
+            width: "100%",
+            height: "40px",
+            "&:hover": {
+              backgroundColor:
+                activePanel === "comments" ? "#6B4A2A" : "#f5f5f5",
+            },
+          }}
+        >
+          <CommentIcon />
+        </IconButton>
+      </Box>
+
+      {/* PDF Viewer */}
       <Box
         sx={{
           position: "relative",
@@ -114,58 +168,6 @@ const PDFViewer = ({
           alignItems: "flex-start", // Align PDF at the top
         }}
       >
-        <Box
-          sx={{
-            position: "fixed",
-            top: 48,
-            right: "432px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 1,
-            zIndex: 1000,
-            backgroundColor: "#fff",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-            borderRadius: 0,
-            p: 1,
-            width: "50px",
-          }}
-        >
-          <IconButton
-            size="small"
-            onClick={() => onPanelChange("scores")}
-            sx={{
-              backgroundColor:
-                activePanel === "scores" ? "#8B5F34" : "transparent",
-              color: activePanel === "scores" ? "white" : "inherit",
-              borderRadius: 0,
-              width: "100%",
-              height: "40px",
-              "&:hover": {
-                backgroundColor:
-                  activePanel === "scores" ? "#6B4A2A" : "#f5f5f5",
-              },
-            }}
-          >
-            <CreditScoreIcon />
-          </IconButton>
-          <IconButton
-            onClick={() => onPanelChange("comments")}
-            sx={{
-              backgroundColor:
-                activePanel === "comments" ? "#8B5F34" : "transparent",
-              color: activePanel === "comments" ? "white" : "inherit",
-              borderRadius: 0,
-              width: "100%",
-              height: "40px",
-              "&:hover": {
-                backgroundColor:
-                  activePanel === "comments" ? "#6B4A2A" : "#f5f5f5",
-              },
-            }}
-          >
-            <CommentIcon />
-          </IconButton>
-        </Box>
         {loading && (
           <Box
             sx={{
