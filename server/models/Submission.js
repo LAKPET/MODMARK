@@ -20,7 +20,6 @@ const submissionSchema = new mongoose.Schema({
     ],
     default: []
   },
-  score: { type: Number }
 });
 
 module.exports = mongoose.model('Submission', submissionSchema);
