@@ -58,7 +58,7 @@ const PDFReviewer = ({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [commentIcons, setCommentIcons] = useState([]);
   const [pageHeight, setPageHeight] = useState(0);
-  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedColor, setSelectedColor] = useState("#ffeb3b"); // Default color
   const [replyInputs, setReplyInputs] = useState({});
   const [replyTexts, setReplyTexts] = useState({});
   const [activePanel, setActivePanel] = useState("scores");
@@ -84,17 +84,6 @@ const PDFReviewer = ({
 
   // Extract filename from fileUrl
   const fileName = fileUrl.split("/").pop().split(".")[0];
-  const mockupHighlight = {
-    id: "1",
-    content: { text: "This is a highlighted text" },
-    comment: "This is a comment",
-    highlight_color: "#ffeb3b",
-    professor: { username: "John Doe" },
-    replies: [
-      { username: "Jane Smith", text: "This is a reply" },
-      { username: "Alice Johnson", text: "Another reply" },
-    ],
-  };
 
   // Get student name from submissionInfo
   const studentName = submissionInfo?.student_info
@@ -128,12 +117,12 @@ const PDFReviewer = ({
   };
 
   const handleAddHighlight = async () => {
-    const userRole = localStorage.getItem("UserRole"); // Get user role
+    const userRole = localStorage.getItem("UserRole");
 
     // Prevent students from adding comments
     if (userRole === "student") {
       console.warn("Students are not allowed to add comments.");
-      return; // Exit the function
+      return;
     }
 
     const selection = window.getSelection();
@@ -142,8 +131,8 @@ const PDFReviewer = ({
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
 
-    // Get all PDF pages and find the current page
-    const pdfPages = document.querySelectorAll(".react-pdf__Page");
+    // Get all PDF pages
+    const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
 
     if (!pdfPages || pdfPages.length === 0) {
       console.warn("No PDF pages found. Check selector or PDF loading.");
@@ -162,6 +151,8 @@ const PDFReviewer = ({
 
     // Find the current page element by checking which one contains the selection
     let currentPageElement = null;
+    let currentPageNumber = currentPage;
+
     for (let i = 0; i < pdfPages.length; i++) {
       const pageRect = pdfPages[i].getBoundingClientRect();
       if (
@@ -171,6 +162,11 @@ const PDFReviewer = ({
         rect.left <= pageRect.right
       ) {
         currentPageElement = pdfPages[i];
+        // Get the data-page-number attribute to ensure we use the correct page
+        const pageNumAttribute = pdfPages[i].getAttribute("data-page-number");
+        if (pageNumAttribute) {
+          currentPageNumber = parseInt(pageNumAttribute, 10);
+        }
         break;
       }
     }
@@ -191,6 +187,7 @@ const PDFReviewer = ({
         y: 100,
         width: rect.width,
         height: rect.height,
+        pageNumber: currentPageNumber,
       });
       setSelectedText(selection.toString());
       setShowCommentDialog(true);
@@ -202,11 +199,17 @@ const PDFReviewer = ({
     const relativeX = rect.x - pdfPageRect.left;
     const relativeY = rect.y - pdfPageRect.top;
 
+    // Update current page if it changed
+    if (currentPageNumber !== currentPage) {
+      setCurrentPage(currentPageNumber);
+    }
+
     setSelectionPosition({
       x: relativeX,
       y: relativeY,
       width: rect.width,
       height: rect.height,
+      pageNumber: currentPageNumber,
     });
     setSelectedText(selection.toString());
     setShowCommentDialog(true);
@@ -335,7 +338,7 @@ const PDFReviewer = ({
 
           return {
             id: annotation._id,
-            pageIndex: annotation.page_number - 1,
+            pageIndex: annotation.page_number - 1, // Store pageIndex as 0-based
             position: annotation.bounding_box,
             comment: firstComment,
             highlight_color: annotation.highlight_color || "#ffeb3b",
@@ -504,15 +507,23 @@ const PDFReviewer = ({
       const professorId = localStorage.getItem("UserId");
       const professorUsername = localStorage.getItem("Username");
 
+      // Ensure we have the correct page number
+      const pageNumber = selectionPosition.pageNumber || currentPage;
+
       // Create new annotation with comment using stored position
       const annotation = {
         submission_id: submissionId,
         file_url: fileUrl,
-        page_number: currentPage,
+        page_number: pageNumber,
         highlight_text: selectedText,
-        bounding_box: selectionPosition,
+        bounding_box: {
+          x: selectionPosition.x,
+          y: selectionPosition.y,
+          width: selectionPosition.width,
+          height: selectionPosition.height,
+        },
         professor_id: professorId,
-        highlight_color: selectedColor,
+        highlight_color: selectedColor || "#ffeb3b",
         comment_text: comment.trim(),
       };
 
@@ -528,31 +539,43 @@ const PDFReviewer = ({
 
       console.log("Annotation created:", response.data);
 
-      // Add new comment icon to the list
+      // Add new comment icon to the list with correct page index
       const newCommentIcon = {
         id: response.data.annotation._id,
-        pageIndex: currentPage - 1,
-        position: selectionPosition,
+        pageIndex: pageNumber - 1, // Store pageIndex as 0-based
+        position: {
+          x: selectionPosition.x,
+          y: selectionPosition.y,
+          width: selectionPosition.width,
+          height: selectionPosition.height,
+        },
         comment: comment.trim(),
-        highlight_color: selectedColor,
+        highlight_color: selectedColor || "#ffeb3b",
       };
-      setCommentIcons([...commentIcons, newCommentIcon]);
+
+      setCommentIcons((prevIcons) => [...prevIcons, newCommentIcon]);
 
       // Add new highlight to the list
       const newHighlight = {
         id: response.data.annotation._id,
         content: {
           text: selectedText,
-          boundingBox: selectionPosition,
+          boundingBox: {
+            x: selectionPosition.x,
+            y: selectionPosition.y,
+            width: selectionPosition.width,
+            height: selectionPosition.height,
+          },
         },
-        pageIndex: currentPage - 1,
+        pageIndex: pageNumber - 1, // Store pageIndex as 0-based
         comment: comment.trim(),
-        highlight_color: selectedColor,
+        highlight_color: selectedColor || "#ffeb3b",
         professor: {
           username: professorUsername || "Unknown",
         },
       };
-      setHighlights([...highlights, newHighlight]);
+
+      setHighlights((prevHighlights) => [...prevHighlights, newHighlight]);
 
       // Immediately fetch comments for this highlight
       await fetchCommentsForHighlight(response.data.annotation._id);
@@ -562,6 +585,7 @@ const PDFReviewer = ({
       setShowCommentDialog(false);
       setSelectedText("");
       setSelectionPosition(null);
+      setSelectedColor("#ffeb3b"); // Reset color for next comment
     } catch (error) {
       console.error("Error adding comment:", error);
       if (error.response) {
@@ -598,37 +622,31 @@ const PDFReviewer = ({
       .filter((icon) => icon.pageIndex === currentPage - 1)
       .map((icon) => {
         // Get all PDF pages and find the current page
-        const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
-        // const currentPageElement = pdfPages[currentPage - 1];
-        // const pdfPageRect = currentPageElement?.getBoundingClientRect();
+        const pdfPages = document.querySelectorAll(".pdf-page");
 
-        // const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
-        // const iconY = icon.position.y;
-        let iconX = 50;
+        // Get the specific page container for the current page
+        const currentPageElement = document.querySelector(
+          `.page-${currentPage}`
+        );
+
+        // Set default positions
+        let iconX = icon.position?.x || 50;
         let iconY = icon.position?.y || 100;
 
         // Only try to access page elements if they exist
-        if (pdfPages && pdfPages.length > 0) {
-          const pageIndex = currentPage - 1;
-          const currentPageElement =
-            pageIndex < pdfPages.length ? pdfPages[pageIndex] : pdfPages[0];
+        if (currentPageElement) {
+          const pageRect = currentPageElement.getBoundingClientRect();
 
-          if (currentPageElement) {
-            const pdfPageRect = currentPageElement.getBoundingClientRect();
-            if (pdfPageRect) {
-              iconX = pdfPageRect.right - 50;
-            }
-          }
-        }
+          // For right side positioning (if needed)
+          const rightSidePosition = pageRect.width - 30;
 
-        return (
-          <React.Fragment key={icon.id}>
+          return (
             <Tooltip key={icon.id} title={icon.comment} placement="left" arrow>
               <IconButton
                 size="small"
                 sx={{
                   position: "absolute",
-                  left: `${iconX}px`,
+                  right: "0px", // Position icons on the right margin
                   top: `${iconY}px`,
                   backgroundColor: "#fff",
                   boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
@@ -636,7 +654,6 @@ const PDFReviewer = ({
                     backgroundColor: "#f5f5f5",
                   },
                   zIndex: 1000,
-                  transform: "translate(0, -50%)",
                 }}
                 onClick={() => {
                   setSelectedHighlight({
@@ -654,7 +671,41 @@ const PDFReviewer = ({
                 />
               </IconButton>
             </Tooltip>
-          </React.Fragment>
+          );
+        }
+
+        // If no currentPageElement was found, still render an icon but with default positioning
+        return (
+          <Tooltip key={icon.id} title={icon.comment} placement="left" arrow>
+            <IconButton
+              size="small"
+              sx={{
+                position: "absolute",
+                right: "30px",
+                top: `${iconY}px`,
+                backgroundColor: "#fff",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                "&:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+                zIndex: 1000,
+              }}
+              onClick={() => {
+                setSelectedHighlight({
+                  id: icon.id,
+                  content: { text: "", boundingBox: icon.position },
+                  pageIndex: icon.pageIndex,
+                  comment: icon.comment,
+                });
+              }}
+            >
+              <CommentIcon
+                sx={{
+                  color: icon.highlight_color || "#1976d2",
+                }}
+              />
+            </IconButton>
+          </Tooltip>
         );
       });
   };
