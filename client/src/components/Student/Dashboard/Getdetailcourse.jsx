@@ -15,17 +15,6 @@ import ListItemText from "@mui/material/ListItemText";
 import Checkbox from "@mui/material/Checkbox";
 import "../../../assets/Styles/Course/Getcourse.css";
 import SegmentIcon from "@mui/icons-material/Segment";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import GroupSubmitModal from "./GroupSubmitModal";
 
 const VisuallyHiddenInput = styled("input")({
@@ -49,6 +38,20 @@ const StyledButton = styled(Button)(({ isSubmitted }) => ({
     backgroundColor: isSubmitted ? "#60d164" : "#d16060",
   },
 }));
+
+const GroupButton = styled(Button)({
+  color: "white",
+  backgroundColor: "#5c90d2",
+  fontSize: "0.875rem",
+  textTransform: "none",
+  minWidth: "140px",
+  "&:hover": {
+    backgroundColor: "#4a7ab0",
+  },
+  "&:disabled": {
+    backgroundColor: "#ccc",
+  },
+});
 
 const ScoreBar = ({ score, maxScore = 100, label }) => {
   const percentage = (score / maxScore) * 100;
@@ -112,7 +115,7 @@ export default function CourseDetail() {
     mean_score: 0,
     Myscore: 0,
   });
-  const [scoreData, setScoreData] = useState([]); // State สำหรับเก็บคะแนน
+  const [scoreData, setScoreData] = useState([]);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -175,6 +178,7 @@ export default function CourseDetail() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setAssessments(response.data);
+      console.log("Fetched assessments:", response.data);
     } catch (error) {
       setErrorMessage("An error occurred while retrieving assessments.");
     }
@@ -197,6 +201,24 @@ export default function CourseDetail() {
     }
   };
 
+  const refreshAssessments = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const token = localStorage.getItem("authToken");
+      const assessmentResponse = await axios.get(
+        `${apiUrl}/assessment/section/${sectionId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setAssessments(assessmentResponse.data);
+    } catch (err) {
+      setErrorMessage("Error loading data.");
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
+
   const handleFileChange = async (event, assessmentId) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -207,48 +229,60 @@ export default function CourseDetail() {
     setUploading(true);
     try {
       const token = localStorage.getItem("authToken");
+
+      // Fetch assessment data to confirm assessment type
       const response = await axios.get(
         `${apiUrl}/assessment/section/${sectionId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
+
       const assessment = response.data.find((a) => a._id === assessmentId);
       if (!assessment) throw new Error("Assessment not found");
+
       if (assessment.assignment_type === "group") {
+        // For group submissions
         setGroupModalAssessment(assessment);
         setGroupFile(file);
         setGroupModalOpen(true);
         setGroupLoading(true);
-        // ดึงสมาชิกกลุ่ม
+
+        // Fetch group members
         const membersRes = await axios.get(
           `${apiUrl}/section/students/${sectionId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         setGroupMembersData(membersRes.data);
         setGroupLoading(false);
       } else {
-        // ถ้า individual ส่งไฟล์ทันที
+        // For individual submissions
         setUploadingAssessmentId(assessmentId);
         const userId = localStorage.getItem("UserId");
         const formData = new FormData();
         formData.append("file", file);
         formData.append("assessment_id", assessmentId);
-        formData.append("group_name", "Group1");
+        formData.append("group_name", "individual");
         formData.append("members", JSON.stringify([{ user_id: userId }]));
         formData.append("file_type", "pdf");
         formData.append("section_id", sectionId);
+
         const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
+
         const result = await uploadRes.json();
         if (uploadRes.ok) {
           setSubmittedAssessments((prev) => ({
             ...prev,
             [assessmentId]: true,
           }));
-          // Refresh progress data after submission
-          fetchProgressData();
+          await fetchProgressData();
+          await refreshAssessments(false);
         } else {
           alert(result.message || "File upload failed.");
         }
@@ -279,8 +313,8 @@ export default function CourseDetail() {
   useEffect(() => {
     setDisplayedAssessments(
       selectedAssessments.length > 0
-        ? selectedAssessments
-        : assessments.slice(0, 1)
+        ? selectedAssessments.slice(0, 2)
+        : assessments.slice(0, 2)
     );
   }, [selectedAssessments, assessments]);
 
@@ -296,14 +330,15 @@ export default function CourseDetail() {
     borderRadius: 2,
   };
 
-  // ฟังก์ชันสำหรับ submit group
+  // Group submission handler
   const handleGroupSubmit = async (selectedMembers) => {
-    if (!groupFile) {
-      alert("Please select a file.");
+    if (!groupFile || !groupModalAssessment) {
+      alert("Please select a file and ensure the assessment is loaded.");
       return;
     }
-    setUploading(true);
+
     try {
+      setGroupLoading(true);
       const token = localStorage.getItem("authToken");
       const formData = new FormData();
       formData.append("file", groupFile);
@@ -315,43 +350,30 @@ export default function CourseDetail() {
       );
       formData.append("file_type", "pdf");
       formData.append("section_id", sectionId);
+
       const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
+
       const result = await uploadRes.json();
       if (uploadRes.ok) {
+        setSubmittedAssessments((prev) => ({
+          ...prev,
+          [groupModalAssessment._id]: true,
+        }));
         setGroupModalOpen(false);
+        await fetchProgressData();
+        await refreshAssessments(false);
       } else {
-        alert(result.message || "File upload failed.");
+        alert(result.message || "Group submission failed.");
       }
     } catch (error) {
-      alert("An error occurred during file upload.");
+      console.error("Group submission error:", error);
+      alert("An error occurred during group submission.");
     } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleBrowse = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      if (selectedFile.type !== "application/pdf") {
-        alert("Only PDF files are allowed!");
-        return;
-      }
-      setGroupFile(selectedFile);
-    }
-  };
-
-  const handleDrop = (e) => {
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) {
-      if (droppedFile.type !== "application/pdf") {
-        alert("Only PDF files are allowed!");
-        return;
-      }
-      setGroupFile(droppedFile);
+      setGroupLoading(false);
     }
   };
 
@@ -378,24 +400,6 @@ export default function CourseDetail() {
   }, [sectionId]);
 
   useEffect(() => {
-    const fetchScores = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const response = await axios.get(
-          `${apiUrl}/assessment/scores/${sectionId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setAssessments(response.data);
-        console.log("Fetched scores:", response.data);
-      } catch (error) {
-        console.error("Error fetching scores:", error);
-      }
-    };
-
-    fetchScores();
-  }, []);
-
-  useEffect(() => {
     const fetchScoreData = async () => {
       try {
         const token = localStorage.getItem("authToken");
@@ -403,16 +407,16 @@ export default function CourseDetail() {
           `${apiUrl}/assessment/scores/${sectionId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setScoreData(response.data); // เก็บข้อมูลคะแนนใน state
+        setScoreData(response.data);
       } catch (error) {
         console.error("Error fetching score data:", error);
       }
     };
 
     if (sectionId) {
-      fetchScoreData(); // เรียกใช้ฟังก์ชัน fetchScoreData
+      fetchScoreData();
     }
-  }, [sectionId]); // ทำงานทุกครั้งที่ sectionId เปลี่ยน
+  }, [sectionId]);
 
   if (loading) {
     return (
@@ -442,7 +446,7 @@ export default function CourseDetail() {
         <CircularProgress color="inherit" />
       </Backdrop>
 
-      <Container className="mt-4">
+      <Container className="mt-2">
         <Row className="g-4">
           {/* Attendance Card */}
           <Col md={3}>
@@ -591,10 +595,17 @@ export default function CourseDetail() {
                           <span className="small text-muted">
                             {assessment.assessment_name}
                           </span>
-                          {assessment.assignment_type === "group" ? (
-                            <Button
+                          {submittedAssessments[assessment._id] ? (
+                            <StyledButton
                               variant="contained"
-                              color="primary"
+                              isSubmitted={true}
+                              disabled
+                            >
+                              Edit Submission
+                            </StyledButton>
+                          ) : assessment.assignment_type === "group" ? (
+                            <GroupButton
+                              variant="contained"
                               disabled={uploading}
                               onClick={async () => {
                                 setGroupModalAssessment(assessment);
@@ -614,8 +625,8 @@ export default function CourseDetail() {
                                 setGroupLoading(false);
                               }}
                             >
-                              ส่งงานกลุ่ม
-                            </Button>
+                              Create Group
+                            </GroupButton>
                           ) : (
                             <StyledButton
                               component="label"
@@ -627,12 +638,13 @@ export default function CourseDetail() {
                             >
                               {uploadingAssessmentId === assessment._id
                                 ? "Uploading..."
-                                : "Un-submit"}
+                                : "Submission"}
                               <VisuallyHiddenInput
                                 type="file"
                                 onChange={(e) =>
                                   handleFileChange(e, assessment._id)
                                 }
+                                accept=".pdf"
                               />
                             </StyledButton>
                           )}

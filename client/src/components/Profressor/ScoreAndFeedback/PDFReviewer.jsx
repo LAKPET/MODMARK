@@ -143,7 +143,22 @@ const PDFReviewer = ({
     const rect = range.getBoundingClientRect();
 
     // Get all PDF pages and find the current page
-    const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
+    const pdfPages = document.querySelectorAll(".react-pdf__Page");
+
+    if (!pdfPages || pdfPages.length === 0) {
+      console.warn("No PDF pages found. Check selector or PDF loading.");
+      // Use fallback positioning
+      setSelectionPosition({
+        x: 100,
+        y: 100,
+        width: rect.width,
+        height: rect.height,
+      });
+      setSelectedText(selection.toString());
+      setShowCommentDialog(true);
+      handleCloseContextMenu();
+      return;
+    }
 
     // Find the current page element by checking which one contains the selection
     let currentPageElement = null;
@@ -160,12 +175,28 @@ const PDFReviewer = ({
       }
     }
 
-    // If we couldn't find the page element, use the first one as fallback
+    // If we couldn't find the page element, use the current page number
     if (!currentPageElement && pdfPages.length > 0) {
-      currentPageElement = pdfPages[0];
+      currentPageElement = pdfPages[currentPage - 1] || pdfPages[0];
     }
 
+    // Get bounding rect for the page, with fallback
     const pdfPageRect = currentPageElement?.getBoundingClientRect();
+
+    if (!pdfPageRect) {
+      console.warn("Could not get bounding rectangle for PDF page");
+      // Use fallback positioning
+      setSelectionPosition({
+        x: 100,
+        y: 100,
+        width: rect.width,
+        height: rect.height,
+      });
+      setSelectedText(selection.toString());
+      setShowCommentDialog(true);
+      handleCloseContextMenu();
+      return;
+    }
 
     // Calculate position relative to the current PDF page
     const relativeX = rect.x - pdfPageRect.left;
@@ -568,11 +599,27 @@ const PDFReviewer = ({
       .map((icon) => {
         // Get all PDF pages and find the current page
         const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
-        const currentPageElement = pdfPages[currentPage - 1];
-        const pdfPageRect = currentPageElement?.getBoundingClientRect();
+        // const currentPageElement = pdfPages[currentPage - 1];
+        // const pdfPageRect = currentPageElement?.getBoundingClientRect();
 
-        const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
-        const iconY = icon.position.y;
+        // const iconX = pdfPageRect ? pdfPageRect.right - 50 : 0;
+        // const iconY = icon.position.y;
+        let iconX = 50;
+        let iconY = icon.position?.y || 100;
+
+        // Only try to access page elements if they exist
+        if (pdfPages && pdfPages.length > 0) {
+          const pageIndex = currentPage - 1;
+          const currentPageElement =
+            pageIndex < pdfPages.length ? pdfPages[pageIndex] : pdfPages[0];
+
+          if (currentPageElement) {
+            const pdfPageRect = currentPageElement.getBoundingClientRect();
+            if (pdfPageRect) {
+              iconX = pdfPageRect.right - 50;
+            }
+          }
+        }
 
         return (
           <React.Fragment key={icon.id}>
