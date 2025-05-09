@@ -20,6 +20,7 @@ import DeleteUser from "../user/DeleteUser";
 import TablePaginationActions from "../TablePaginationActions"; // Import the component
 
 const columns = [
+  { id: "personal_num", label: "ID", minWidth: 100 },
   { id: "first_name", label: "First Name", minWidth: 150 },
   { id: "last_name", label: "Last Name", minWidth: 150 },
   { id: "username", label: "Username", minWidth: 150 },
