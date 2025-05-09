@@ -28,6 +28,26 @@ const NavigationBar = ({
     }
   };
 
+  const handlePreviousSubmission = () => {
+    if (onPrevious && !isFirstSubmission) {
+      // Save any pending changes before navigation
+      // This could include saving comments, scores, etc.
+
+      console.log("Navigating to previous submission");
+      onPrevious();
+    }
+  };
+
+  const handleNextSubmission = () => {
+    if (onNext && !isLastSubmission) {
+      // Save any pending changes before navigation
+      // This could include saving comments, scores, etc.
+
+      console.log("Navigating to next submission");
+      onNext();
+    }
+  };
+
   return (
     <Paper
       elevation={3}
@@ -113,7 +133,7 @@ const NavigationBar = ({
           >
             <span>
               <IconButton
-                onClick={onPrevious}
+                onClick={handlePreviousSubmission}
                 size="small"
                 disabled={isFirstSubmission}
                 sx={{
@@ -137,7 +157,7 @@ const NavigationBar = ({
           >
             <span>
               <IconButton
-                onClick={onNext}
+                onClick={handleNextSubmission}
                 size="small"
                 disabled={isLastSubmission}
                 sx={{

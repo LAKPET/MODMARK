@@ -5,8 +5,8 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import axios from "axios";
-import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
+import ModalComponent from "../../../controls/Modal";
+import { userApi } from "../../../services/userAPI"; // Import the userApi service
 
 export default function Edituser({ show, handleClose, userId, refreshUsers }) {
   const [firstname, setFirstname] = useState("");
@@ -14,8 +14,7 @@ export default function Edituser({ show, handleClose, userId, refreshUsers }) {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [role, setRole] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // State for success modal
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -25,11 +24,7 @@ export default function Edituser({ show, handleClose, userId, refreshUsers }) {
 
   const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/users/profile/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const user = response.data;
+      const user = await userApi.getUserProfile(userId);
       setFirstname(user.first_name);
       setLastname(user.last_name);
       setEmail(user.email);
@@ -40,29 +35,23 @@ export default function Edituser({ show, handleClose, userId, refreshUsers }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("authToken");
-    axios
-      .put(
-        `${apiUrl}/users/update/${userId}`,
-        {
-          first_name: firstname,
-          last_name: lastname,
-          email,
-          username,
-          role,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      .then(() => {
-        handleClose();
-        refreshUsers();
-        setShowSuccessModal(true); // Show success modal
-      })
-      .catch((err) => console.error(err));
+
+    try {
+      await userApi.updateUser(userId, {
+        firstname,
+        lastname,
+        email,
+        username,
+        role,
+      });
+      handleClose();
+      refreshUsers();
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (

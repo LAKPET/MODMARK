@@ -15,7 +15,17 @@ import ListItemText from "@mui/material/ListItemText";
 import Checkbox from "@mui/material/Checkbox";
 import "../../../assets/Styles/Course/Getcourse.css";
 import SegmentIcon from "@mui/icons-material/Segment";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Divider from "@mui/material/Divider";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import TuneIcon from "@mui/icons-material/Tune";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import InfoIcon from "@mui/icons-material/Info";
+import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import GroupSubmitModal from "./GroupSubmitModal";
+import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
 
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
@@ -81,6 +91,101 @@ const ScoreBar = ({ score, maxScore = 100, label }) => {
         />
       </div>
     </div>
+  );
+};
+
+const CardOptionsMenu = ({
+  title,
+  cardType,
+  onRefresh,
+  onExport,
+  onFullscreen,
+  onFilter,
+}) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleAction = (action) => {
+    handleClose();
+    switch (action) {
+      case "refresh":
+        onRefresh();
+        break;
+      case "export":
+        onExport();
+        break;
+      case "fullscreen":
+        onFullscreen();
+        break;
+      case "filter":
+        onFilter();
+        break;
+      default:
+        break;
+    }
+  };
+
+  return (
+    <>
+      <Tooltip title="Options">
+        <IconButton
+          id={`${cardType}-menu-button`}
+          aria-controls={open ? `${cardType}-menu` : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? "true" : undefined}
+          onClick={handleClick}
+          sx={{ minWidth: "auto", p: 1, color: "black" }}
+        >
+          <SegmentIcon />
+        </IconButton>
+      </Tooltip>
+      <Menu
+        id={`${cardType}-menu`}
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          "aria-labelledby": `${cardType}-menu-button`,
+        }}
+      >
+        <MenuItem disabled sx={{ fontWeight: "bold" }}>
+          {title}
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => handleAction("refresh")}>
+          <RefreshIcon fontSize="small" sx={{ mr: 1 }} />
+          Refresh data
+        </MenuItem>
+        {cardType === "assessment" && (
+          <MenuItem onClick={() => handleAction("filter")}>
+            <TuneIcon fontSize="small" sx={{ mr: 1 }} />
+            Filter by status
+          </MenuItem>
+        )}
+        {(cardType === "score" || cardType === "assessment") && (
+          <MenuItem onClick={() => handleAction("export")}>
+            <FileDownloadIcon fontSize="small" sx={{ mr: 1 }} />
+            Export data
+          </MenuItem>
+        )}
+        <MenuItem onClick={() => handleAction("fullscreen")}>
+          <FullscreenIcon fontSize="small" sx={{ mr: 1 }} />
+          Expand view
+        </MenuItem>
+        <MenuItem onClick={() => handleAction("info")}>
+          <InfoIcon fontSize="small" sx={{ mr: 1 }} />
+          Help
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 

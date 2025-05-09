@@ -6,9 +6,12 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import CommentIcon from "@mui/icons-material/Comment";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
@@ -134,6 +137,42 @@ const PDFViewer = ({
     }
   }, [currentPage, visiblePageNumber]);
 
+  // Handle navigation to the previous page
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1);
+
+      // Scroll to the page
+      setTimeout(() => {
+        const pageElement = document.querySelector(`.page-${currentPage - 1}`);
+        if (pageElement && containerRef.current) {
+          containerRef.current.scrollTo({
+            top: pageElement.offsetTop,
+            behavior: "smooth",
+          });
+        }
+      }, 100);
+    }
+  };
+
+  // Handle navigation to the next page
+  const handleNextPage = () => {
+    if (numPages && currentPage < numPages) {
+      onPageChange(currentPage + 1);
+
+      // Scroll to the page
+      setTimeout(() => {
+        const pageElement = document.querySelector(`.page-${currentPage + 1}`);
+        if (pageElement && containerRef.current) {
+          containerRef.current.scrollTo({
+            top: pageElement.offsetTop,
+            behavior: "smooth",
+          });
+        }
+      }, 100);
+    }
+  };
+
   // Update page elements ref after each page renders
   const handlePageLoadSuccess = (pageNumber) => {
     setTimeout(() => {
@@ -240,11 +279,12 @@ const PDFViewer = ({
       onContextMenu={onContextMenu}
     >
       {/* Icon Box */}
+      {/* Icon Box - Right side controls */}
       <Box
         sx={{
-          position: "absolute", // ตำแหน่งแบบ absolute ภายใน Paper
-          top: 0, // ชิดบนสุด
-          right: 0, // ชิดขวาสุด
+          position: "absolute",
+          top: 0,
+          right: 0,
           display: "flex",
           flexDirection: "column",
           gap: 1,
@@ -290,6 +330,76 @@ const PDFViewer = ({
         >
           <CommentIcon />
         </IconButton>
+      </Box>
+
+      {/* Page Navigation Controls - Left side */}
+      <Box
+        sx={{
+          position: "absolute",
+          left: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          zIndex: 1000,
+        }}
+      >
+        <Tooltip title="Previous page" placement="right">
+          <IconButton
+            onClick={handlePreviousPage}
+            disabled={currentPage <= 1}
+            sx={{
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+              },
+              "&.Mui-disabled": {
+                backgroundColor: "rgba(255, 255, 255, 0.3)",
+              },
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            borderRadius: 1,
+            padding: "4px 8px",
+          }}
+        >
+          <Typography variant="body2" fontWeight="bold">
+            {currentPage}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            of {numPages || "?"}
+          </Typography>
+        </Box>
+
+        <Tooltip title="Next page" placement="right">
+          <IconButton
+            onClick={handleNextPage}
+            disabled={!numPages || currentPage >= numPages}
+            sx={{
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+              },
+              "&.Mui-disabled": {
+                backgroundColor: "rgba(255, 255, 255, 0.3)",
+              },
+            }}
+          >
+            <ArrowForwardIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* PDF Viewer */}

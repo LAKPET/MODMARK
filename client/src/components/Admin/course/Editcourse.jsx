@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { MDBInput } from "mdb-react-ui-kit";
-import axios from "axios";
 import ModalComponent from "../../../controls/Modal";
 import { validateEditCourseForm } from "../../../utils/FormValidation";
+import courseAPI from "../../../services/courseAPI";
 
 export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [courseNumber, setCourseNumber] = useState("");
@@ -14,7 +14,6 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [errors, setErrors] = useState({});
-  const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (Id) {
@@ -24,10 +23,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
 
   const fetchCourseDetails = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/section/${Id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await courseAPI.getCourseById(Id);
       const course = response.data;
       setCourseNumber(course.course_number);
       setSectionName(course.section_number);
@@ -42,7 +38,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = {
@@ -61,34 +57,26 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
       return;
     }
 
-    const token = localStorage.getItem("authToken");
-    axios
-      .put(
-        `${apiUrl}/section/update/${Id}`,
-        {
-          course_number: courseNumber,
-          section_number: sectionName,
-          semester_term: semesterTerm,
-          semester_year: semesterYear,
-          course_name: courseName,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      .then(() => {
-        handleClose();
-        refreshCourses();
-        setShowSuccessModal(true);
-      })
-      .catch((err) => {
-        setErrorModal({
-          open: true,
-          message:
-            err.response?.data?.message ||
-            "Failed to update course. Please try again.",
-        });
+    try {
+      await courseAPI.updateCourse(Id, {
+        course_number: courseNumber,
+        section_number: sectionName,
+        semester_term: semesterTerm,
+        semester_year: semesterYear,
+        course_name: courseName,
       });
+
+      handleClose();
+      refreshCourses();
+      setShowSuccessModal(true);
+    } catch (err) {
+      setErrorModal({
+        open: true,
+        message:
+          err.response?.data?.message ||
+          "Failed to update course. Please try again.",
+      });
+    }
   };
 
   const handleSuccessModalClose = () => {

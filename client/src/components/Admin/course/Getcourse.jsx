@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { MDBInput } from "mdb-react-ui-kit";
 import SearchIcon from "@mui/icons-material/Search";
 import Paper from "@mui/material/Paper";
@@ -19,8 +18,9 @@ import Createcourse from "../../Profressor/Course/Createcourse";
 import TablePaginationActions from "../TablePaginationActions";
 import { useAuth } from "../../../routes/AuthContext";
 import DeleteCourse from "../course/Deletecourse";
-import AddUserCourse from "../course/Addusercourse"; // Import AddUserCourse component
+import AddUserCourse from "../course/Addusercourse";
 import EditCourse from "../course/Editcourse";
+import courseAPI from "../../../services/courseAPI";
 
 const columns = [
   { id: "course_number", label: "Course Number", minWidth: 150 },
@@ -44,16 +44,15 @@ export default function CourseTable() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false); // Add state for create modal
-  const [showAddUserModal, setShowAddUserModal] = useState(false); // Add state for add user modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [courseNumber, setCourseNumber] = useState("");
   const [sectionName, setSectionName] = useState("");
   const [semesterTerm, setSemesterTerm] = useState("");
   const [semesterYear, setSemesterYear] = useState("");
-  const [searchPerformed, setSearchPerformed] = useState(false); // Add this state variable
-  const apiUrl = import.meta.env.VITE_API_URL;
-  const { user } = useAuth(); // Use the useAuth hook
+  const [searchPerformed, setSearchPerformed] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchCourses();
@@ -62,13 +61,10 @@ export default function CourseTable() {
   const fetchCourses = async (params = {}) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post(`${apiUrl}/section/all`, params, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await courseAPI.getAllCourses(params);
       setCourses(response.data);
-      console.log("Courses:", response.data); // Debugging log
-      setSearchPerformed(true); // Set searchPerformed to true after fetching courses
+      console.log("Courses:", response.data);
+      setSearchPerformed(true);
     } catch (err) {
       setError("Failed to fetch courses");
     } finally {
@@ -101,7 +97,7 @@ export default function CourseTable() {
   };
 
   const handleDelete = (courseId) => {
-    console.log("Deleting course with ID:", courseId); // Debugging log
+    console.log("Deleting course with ID:", courseId);
     setSelectedCourseId(courseId);
     setShowDeleteModal(true);
   };
@@ -114,7 +110,7 @@ export default function CourseTable() {
   const handleShowCreateModal = () => setShowCreateModal(true);
   const handleCloseCreateModal = () => {
     setShowCreateModal(false);
-    fetchCourses(); // Refresh courses after closing create modal
+    fetchCourses();
   };
   const handleCloseEditModal = () => setShowEditModal(false);
   const handleCloseDeleteModal = () => setShowDeleteModal(false);

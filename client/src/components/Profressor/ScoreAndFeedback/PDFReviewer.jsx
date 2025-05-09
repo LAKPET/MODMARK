@@ -4,20 +4,7 @@ import { highlightPlugin } from "@react-pdf-viewer/highlight";
 import { selectionModePlugin } from "@react-pdf-viewer/selection-mode";
 import {
   Box,
-  Paper,
-  Typography,
   IconButton,
-  Container,
-  TextField,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Menu,
   MenuItem,
   Tooltip,
@@ -513,14 +500,6 @@ const PDFReviewer = ({
     return () => window.removeEventListener("resize", calculatePageHeight);
   }, []);
 
-  const handleZoomIn = () => {
-    setScale((prevScale) => Math.min(prevScale + 0.1, 2));
-  };
-
-  const handleZoomOut = () => {
-    setScale((prevScale) => Math.max(prevScale - 0.1, 0.5));
-  };
-
   const handleAddComment = async () => {
     if (!comment.trim() || !selectionPosition) return;
 
@@ -948,6 +927,56 @@ const PDFReviewer = ({
     };
   }, [replyInputs]);
 
+  // Handler for navigating to the next submission
+  const handleNextSubmission = async () => {
+    try {
+      // Save any pending changes before navigating
+      if (Object.keys(scores).length > 0 && gradingStatus !== "already") {
+        await handleSubmitScores();
+      }
+
+      // Clear local state
+      setHighlights([]);
+      setCommentIcons([]);
+      setSelectedHighlight(null);
+      setSelectedText("");
+      setComment("");
+      setSelectionPosition(null);
+
+      // Navigate to next submission
+      if (onNext) {
+        onNext();
+      }
+    } catch (error) {
+      console.error("Error while navigating to next submission:", error);
+    }
+  };
+
+  // Handler for navigating to the previous submission
+  const handlePreviousSubmission = async () => {
+    try {
+      // Save any pending changes before navigating
+      if (Object.keys(scores).length > 0 && gradingStatus !== "already") {
+        await handleSubmitScores();
+      }
+
+      // Clear local state
+      setHighlights([]);
+      setCommentIcons([]);
+      setSelectedHighlight(null);
+      setSelectedText("");
+      setComment("");
+      setSelectionPosition(null);
+
+      // Navigate to previous submission
+      if (onPrevious) {
+        onPrevious();
+      }
+    } catch (error) {
+      console.error("Error while navigating to previous submission:", error);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -961,8 +990,8 @@ const PDFReviewer = ({
       <NavigationBar
         currentPage={currentPage}
         selectedText={selectedText}
-        onNext={onNext}
-        onPrevious={onPrevious}
+        onNext={handleNextSubmission}
+        onPrevious={handlePreviousSubmission}
         submissionId={submissionId}
         assessmentId={assessmentId}
         isFirstSubmission={isFirstSubmission}

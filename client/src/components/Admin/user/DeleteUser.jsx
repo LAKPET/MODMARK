@@ -1,21 +1,17 @@
 import React from "react";
 import { Modal, Button } from "react-bootstrap";
-import axios from "axios";
 import { MDBBtn } from "mdb-react-ui-kit";
+import { userApi } from "../../../services/userAPI"; // Import the userApi service
+
 export default function DeleteUser({
   show,
   handleClose,
   userId,
   refreshUsers,
 }) {
-  const apiUrl = import.meta.env.VITE_API_URL;
-
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/users/delete/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await userApi.deleteUser(userId);
       handleClose();
       refreshUsers();
     } catch (err) {

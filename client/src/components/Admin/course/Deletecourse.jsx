@@ -1,19 +1,15 @@
-import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
 import { MDBBtn } from "mdb-react-ui-kit";
-function DeleteCourse({ show, handleClose, Id, refreshCourses }) {
-  const apiUrl = import.meta.env.VITE_API_URL;
+import courseAPI from "../../../services/courseAPI";
 
+function DeleteCourse({ show, handleClose, Id, refreshCourses }) {
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/section/delete/${Id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await courseAPI.deleteCourse(Id);
       handleClose();
       refreshCourses();
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response?.data?.message) {
         console.error("Failed to delete course:", err.response.data.message);
       } else {
         console.error("Failed to delete course", err);

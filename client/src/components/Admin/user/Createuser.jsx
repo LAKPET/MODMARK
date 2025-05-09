@@ -5,9 +5,9 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
-import axios from "axios";
 import ModalComponent from "../../../controls/Modal";
 import { validateCreateUserForm } from "../../../utils/FormValidation";
+import { userApi } from "../../../services/userAPI"; // Import the userApi service
 import "../../../assets/Styles/Admin/Createuser.css";
 
 export default function Createuser({ show, handleClose, refreshUsers }) {
@@ -21,9 +21,8 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [errors, setErrors] = useState({});
-  const apiUrl = import.meta.env.VITE_API_URL;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = {
@@ -44,36 +43,19 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
       return;
     }
 
-    const token = localStorage.getItem("authToken");
-    axios
-      .post(
-        `${apiUrl}/users/create`,
-        {
-          personal_num: parseInt(personalNum, 10),
-          first_name: firstname,
-          last_name: lastname,
-          username,
-          email,
-          password,
-          role,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      .then(() => {
-        handleClose();
-        refreshUsers();
-        setShowSuccessModal(true);
-      })
-      .catch((err) => {
-        setErrorModal({
-          open: true,
-          message:
-            err.response?.data?.message ||
-            "Failed to create user. Please try again.",
-        });
+    try {
+      await userApi.createUser(formData);
+      handleClose();
+      refreshUsers();
+      setShowSuccessModal(true);
+    } catch (err) {
+      setErrorModal({
+        open: true,
+        message:
+          err.response?.data?.message ||
+          "Failed to create user. Please try again.",
       });
+    }
   };
 
   const handleSuccessModalClose = () => {

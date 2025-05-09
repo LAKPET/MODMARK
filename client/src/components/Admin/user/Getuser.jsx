@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { MDBInput } from "mdb-react-ui-kit";
 import SearchIcon from "@mui/icons-material/Search";
 import Paper from "@mui/material/Paper";
@@ -17,7 +16,8 @@ import { Button } from "react-bootstrap";
 import Createuser from "../user/Createuser";
 import Edituser from "../user/Edituser";
 import DeleteUser from "../user/DeleteUser";
-import TablePaginationActions from "../TablePaginationActions"; // Import the component
+import TablePaginationActions from "../TablePaginationActions";
+import { userApi } from "../../../services/userAPI"; // Import the userApi service
 
 const columns = [
   { id: "personal_num", label: "ID", minWidth: 100 },
@@ -43,7 +43,6 @@ export default function UserTable() {
   const [sectionName, setSectionName] = useState("");
   const [semesterTerm, setSemesterTerm] = useState("");
   const [semesterYear, setSemesterYear] = useState("");
-  const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     fetchUsers();
@@ -52,11 +51,9 @@ export default function UserTable() {
   const fetchUsers = async (params = {}) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post(`${apiUrl}/users/all`, params, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUsers(response.data);
+      const userData = await userApi.getAllUsers(params);
+      setUsers(userData);
+      setError(null);
     } catch (err) {
       setError("Failed to fetch users");
     } finally {
