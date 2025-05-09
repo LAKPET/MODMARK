@@ -4,14 +4,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   Typography,
   TextField,
   Box,
   IconButton,
 } from "@mui/material";
-import CommentIcon from "@mui/icons-material/Comment";
+import { Button } from "react-bootstrap";
 
+import { MDBBtn } from "mdb-react-ui-kit";
 const CommentDialog = ({
   open,
   onClose,
@@ -81,11 +81,20 @@ const CommentDialog = ({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <MDBBtn
+          outline
+          onClick={onClose}
+          style={{
+            color: "#CDC9C9",
+            borderColor: "#CDC9C9",
+          }}
+        >
+          Cancel
+        </MDBBtn>
         <Button
           onClick={onAddComment}
-          variant="contained"
-          disabled={!comment.trim()}
+          // variant="contained"
+          // disabled={!comment.trim()}
           className="custom-btn"
         >
           Add Comment

@@ -354,43 +354,57 @@ const PDFViewer = ({
                 data-page-index={index}
               />
               {/* Render comment icons for this specific page */}
+              {/* Render comment icons for this specific page */}
               {index + 1 === currentPage &&
                 commentIcons
                   .filter((icon) => icon.pageIndex === index)
-                  .map((icon) => (
-                    <Tooltip
-                      key={icon.id}
-                      title={icon.comment}
-                      placement="left"
-                      arrow
-                    >
-                      <IconButton
-                        size="small"
-                        sx={{
-                          position: "absolute",
-                          right: 0,
-                          top: `${icon.position?.y || 0}px`,
-                          backgroundColor: "#fff",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                          zIndex: 1000,
-                        }}
-                        onClick={() =>
-                          onCommentIconClick({
-                            id: icon.id,
-                            content: { text: "", boundingBox: icon.position },
-                            pageIndex: icon.pageIndex,
-                            comment: icon.comment,
-                          })
-                        }
+                  .map((icon) => {
+                    // Get the actual rendered page element
+                    const pageElement = document.querySelector(
+                      `.page-${index + 1} .react-pdf__Page`
+                    );
+                    if (!pageElement) return null;
+
+                    // Grab the position from the icon data
+                    const posX = icon.position?.x || 0;
+                    const posY = icon.position?.y || 0;
+                    const posWidth = icon.position?.width || 0;
+
+                    return (
+                      <Tooltip
+                        key={icon.id}
+                        title={icon.comment}
+                        placement="left"
+                        arrow
                       >
-                        <CommentIcon
+                        <IconButton
+                          size="small"
                           sx={{
-                            color: icon.highlight_color || "#1976d2",
+                            position: "absolute",
+                            left: `${posX + posWidth}px`,
+                            top: `${posY}px`,
+                            backgroundColor: "#fff",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                            zIndex: 1000,
                           }}
-                        />
-                      </IconButton>
-                    </Tooltip>
-                  ))}
+                          onClick={() =>
+                            onCommentIconClick({
+                              id: icon.id,
+                              content: { text: "", boundingBox: icon.position },
+                              pageIndex: icon.pageIndex,
+                              comment: icon.comment,
+                            })
+                          }
+                        >
+                          <CommentIcon
+                            sx={{
+                              color: icon.highlight_color || "#1976d2",
+                            }}
+                          />
+                        </IconButton>
+                      </Tooltip>
+                    );
+                  })}
             </div>
           ))}
         </Document>

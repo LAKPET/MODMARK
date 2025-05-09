@@ -131,8 +131,8 @@ const PDFReviewer = ({
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
 
-    // Get all PDF pages
-    const pdfPages = document.querySelectorAll(".rpv-core__page-layer");
+    // Get all PDF pages using react-pdf's class naming
+    const pdfPages = document.querySelectorAll(".pdf-page");
 
     if (!pdfPages || pdfPages.length === 0) {
       console.warn("No PDF pages found. Check selector or PDF loading.");
@@ -162,10 +162,11 @@ const PDFReviewer = ({
         rect.left <= pageRect.right
       ) {
         currentPageElement = pdfPages[i];
-        // Get the data-page-number attribute to ensure we use the correct page
-        const pageNumAttribute = pdfPages[i].getAttribute("data-page-number");
-        if (pageNumAttribute) {
-          currentPageNumber = parseInt(pageNumAttribute, 10);
+        // Extract page number from the class name (page-X)
+        const className = pdfPages[i].className;
+        const match = className.match(/page-(\d+)/);
+        if (match && match[1]) {
+          currentPageNumber = parseInt(match[1], 10);
         }
         break;
       }
@@ -173,11 +174,19 @@ const PDFReviewer = ({
 
     // If we couldn't find the page element, use the current page number
     if (!currentPageElement && pdfPages.length > 0) {
-      currentPageElement = pdfPages[currentPage - 1] || pdfPages[0];
+      currentPageElement = document.querySelector(`.page-${currentPage}`);
+      if (!currentPageElement) {
+        currentPageElement = pdfPages[0];
+      }
     }
 
-    // Get bounding rect for the page, with fallback
-    const pdfPageRect = currentPageElement?.getBoundingClientRect();
+    // Get the actual PDF content element within the page
+    const pdfContent = currentPageElement?.querySelector(".react-pdf__Page");
+
+    // Get bounding rect for the page content, with fallback to page container
+    const pdfPageRect =
+      pdfContent?.getBoundingClientRect() ||
+      currentPageElement?.getBoundingClientRect();
 
     if (!pdfPageRect) {
       console.warn("Could not get bounding rectangle for PDF page");
@@ -196,8 +205,21 @@ const PDFReviewer = ({
     }
 
     // Calculate position relative to the current PDF page
-    const relativeX = rect.x - pdfPageRect.left;
-    const relativeY = rect.y - pdfPageRect.top;
+    const relativeX = rect.left - pdfPageRect.left;
+    const relativeY = rect.top - pdfPageRect.top;
+
+    console.log("Selection position:", {
+      x: relativeX,
+      y: relativeY,
+      width: rect.width,
+      height: rect.height,
+      pageRect: {
+        left: pdfPageRect.left,
+        top: pdfPageRect.top,
+        width: pdfPageRect.width,
+        height: pdfPageRect.height,
+      },
+    });
 
     // Update current page if it changed
     if (currentPageNumber !== currentPage) {
@@ -629,16 +651,14 @@ const PDFReviewer = ({
           `.page-${currentPage}`
         );
 
-        // Set default positions
-        let iconX = icon.position?.x || 50;
+        // Calculate icon position based on highlight position
+        // Position icon at the end of the highlighted text (x + width)
+        let iconX = (icon.position?.x || 0) + (icon.position?.width || 0);
         let iconY = icon.position?.y || 100;
 
         // Only try to access page elements if they exist
         if (currentPageElement) {
           const pageRect = currentPageElement.getBoundingClientRect();
-
-          // For right side positioning (if needed)
-          const rightSidePosition = pageRect.width - 30;
 
           return (
             <Tooltip key={icon.id} title={icon.comment} placement="left" arrow>
@@ -646,7 +666,7 @@ const PDFReviewer = ({
                 size="small"
                 sx={{
                   position: "absolute",
-                  right: "0px", // Position icons on the right margin
+                  left: `${iconX}px`, // Position icons at the end of highlighted text
                   top: `${iconY}px`,
                   backgroundColor: "#fff",
                   boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
@@ -681,7 +701,7 @@ const PDFReviewer = ({
               size="small"
               sx={{
                 position: "absolute",
-                right: "30px",
+                left: `${iconX}px`,
                 top: `${iconY}px`,
                 backgroundColor: "#fff",
                 boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
