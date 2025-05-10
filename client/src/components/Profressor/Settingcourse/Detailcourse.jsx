@@ -156,7 +156,7 @@ export default function DetailCourse({ Id }) {
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Section Name</Form.Label>
+          <Form.Label>Section Number</Form.Label>
           <Form.Control
             type="text"
             name="section_number"

@@ -6,16 +6,14 @@ import {
   MDBRow,
   MDBCol,
   MDBInput,
-  MDBValidation,
-  MDBValidationItem,
 } from "mdb-react-ui-kit";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
 import { useAuth } from "../../routes/AuthContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 import { validateLoginForm } from "../../utils/FormValidation";
+import { authAPI } from "../../services/authAPI";
 
 function Loginpage() {
   const [email, setEmail] = useState("");
@@ -27,45 +25,49 @@ function Loginpage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUser } = useAuth();
-  const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    // Check if user is already logged in
-    const authToken = localStorage.getItem("authToken");
-    const userRole = localStorage.getItem("UserRole");
-    const username = localStorage.getItem("Username");
-    const userId = localStorage.getItem("UserId");
+    // Use authAPI to check if user is already logged in
+    const checkAuthentication = async () => {
+      try {
+        const userData = await authAPI.checkAuth();
 
-    if (authToken && userRole && username && userId) {
-      const user = {
-        username,
-        role: userRole,
-        id: userId,
-      };
-      setUser(user);
+        if (userData) {
+          const user = {
+            username: userData.username,
+            role: userData.role,
+            id: userData.id,
+          };
+          setUser(user);
 
-      // Redirect based on role and previous location
-      const from = location.state?.from?.pathname || null;
+          // Redirect based on role and previous location
+          const from = location.state?.from?.pathname || null;
 
-      if (from) {
-        // If there's a previous location, go back there
-        navigate(from);
-      } else if (userRole === "admin") {
-        navigate("/dashboard/admin/users");
-      } else if (userRole === "professor" || userRole === "ta") {
-        navigate("/professor/course");
-      } else if (userRole === "student") {
-        navigate("/student/course");
+          if (from) {
+            // If there's a previous location, go back there
+            navigate(from);
+          } else if (userData.role === "admin") {
+            navigate("/dashboard/admin/users");
+          } else if (userData.role === "professor" || userData.role === "ta") {
+            navigate("/professor/course");
+          } else if (userData.role === "student") {
+            navigate("/student/course");
+          }
+        }
+      } catch (error) {
+        console.error("Authentication check failed:", error);
+      } finally {
+        // Add a small delay to show the loading backdrop
+        setTimeout(() => {
+          setCheckingAuth(false);
+        }, 500);
       }
-    } else {
-      // Add a small delay to show the loading backdrop
-      setTimeout(() => {
-        setCheckingAuth(false);
-      }, 500);
-    }
+    };
+
+    checkAuthentication();
   }, [navigate, setUser, location]);
 
-  const handlesubmit = (e) => {
+  const handlesubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage("");
@@ -84,38 +86,29 @@ function Loginpage() {
       return;
     }
 
-    axios
-      .post(`${apiUrl}/auth/login`, { email, password })
-      .then((result) => {
-        setLoading(false);
-        const { token, user } = result.data;
-        localStorage.setItem("authToken", token);
-        localStorage.setItem("FirstName", user.first_name);
-        localStorage.setItem("LastName", user.last_name);
-        localStorage.setItem("Username", user.username);
-        localStorage.setItem("UserRole", user.role);
-        localStorage.setItem("UserId", user.id);
-        setUser(user);
+    try {
+      const { user } = await authAPI.login(email, password);
+      setLoading(false);
+      setUser(user);
 
-        // Redirect based on role and previous location
-        const from = location.state?.from?.pathname || null;
+      // Redirect based on role and previous location
+      const from = location.state?.from?.pathname || null;
 
-        if (from) {
-          // If there's a previous location, go back there
-          navigate(from);
-        } else if (user.role === "admin") {
-          navigate("/dashboard/admin/users");
-        } else if (user.role === "professor" || user.role === "ta") {
-          navigate("/professor/course");
-        } else if (user.role === "student") {
-          navigate("/student/course");
-        }
-      })
-      .catch((err) => {
-        setLoading(false);
-        setErrorMessage("Invalid credentials, please try again.");
-        console.error(err);
-      });
+      if (from) {
+        // If there's a previous location, go back there
+        navigate(from);
+      } else if (user.role === "admin") {
+        navigate("/dashboard/admin/users");
+      } else if (user.role === "professor" || user.role === "ta") {
+        navigate("/professor/course");
+      } else if (user.role === "student") {
+        navigate("/student/course");
+      }
+    } catch (err) {
+      setLoading(false);
+      setErrorMessage("Invalid credentials, please try again.");
+      console.error(err);
+    }
   };
 
   if (loading || checkingAuth) {

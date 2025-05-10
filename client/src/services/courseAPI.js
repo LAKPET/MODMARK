@@ -68,46 +68,6 @@ const courseAPI = {
   },
 
   /**
-   * Enroll students in a course section
-   * @param {string} sectionId - Section ID
-   * @param {Array} students - Array of student objects with personal_num, first_name, last_name, email
-   * @returns {Promise} - Promise with enrollment result
-   */
-  enrollStudents: async (sectionId, students) => {
-    const token = localStorage.getItem("authToken");
-    return axios.post(
-      `${apiUrl}/enrollment/enroll`,
-      {
-        section_id: sectionId,
-        students: students,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-  },
-
-  /**
-   * Register instructors (professors/TAs) for a course section
-   * @param {string} sectionId - Section ID
-   * @param {Array} instructors - Array of instructor objects with personal_num, first_name, last_name, email
-   * @returns {Promise} - Promise with registration result
-   */
-  registerInstructors: async (sectionId, instructors) => {
-    const token = localStorage.getItem("authToken");
-    return axios.post(
-      `${apiUrl}/course-instructor/register-instructor`,
-      {
-        section_id: sectionId,
-        professors: instructors,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-  },
-
-  /**
    * Get user details by ID
    * @param {string} userId - User ID
    * @returns {Promise} - Promise with user details
@@ -116,6 +76,31 @@ const courseAPI = {
     const token = localStorage.getItem("authToken");
     return axios.get(`${apiUrl}/users/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Get detailed course information by ID (includes professors and course relationships)
+   * @param {string} courseId - Course ID
+   * @returns {Promise} - Promise with detailed course information
+   */
+  getCourseDetails: async (courseId) => {
+    const token = localStorage.getItem("authToken");
+    return axios.get(`${apiUrl}/course/details/${courseId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Get all courses for the current user
+   * @returns {Promise} - Promise with user's courses
+   */
+  getMyCourses: async () => {
+    const token = localStorage.getItem("authToken");
+    return axios.get(`${apiUrl}/course/my-courses`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   },
 };

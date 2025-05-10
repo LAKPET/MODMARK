@@ -24,7 +24,7 @@ import courseAPI from "../../../services/courseAPI";
 
 const columns = [
   { id: "course_number", label: "Course Number", minWidth: 150 },
-  { id: "section_number", label: "Section Name", minWidth: 150 },
+  { id: "section_number", label: "Section Number", minWidth: 150 },
   { id: "semester_term", label: "Semester Term", minWidth: 150 },
   { id: "semester_year", label: "Semester Year", minWidth: 150 },
   {

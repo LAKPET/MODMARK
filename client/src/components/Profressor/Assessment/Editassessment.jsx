@@ -411,7 +411,26 @@ export default function EditAssessmentModal({
                       columns={columns}
                       pageSize={5}
                       // checkboxSelection
-                      sx={{ border: 0 }}
+
+                      sx={{
+                        border: 0,
+                        "& .MuiTablePagination-root": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                        "& .MuiTablePagination-selectLabel": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                        "& .MuiTablePagination-displayedRows": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                        "& .MuiTablePagination-select": {
+                          marginTop: "auto",
+                          marginBottom: "auto",
+                        },
+                      }}
                     />
                   </Paper>
                   {errors.weights && (

@@ -7,9 +7,9 @@ import "../../../assets/Styles/Navbar.css";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
-import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import { stringAvatar } from "../../../controls/Avatar";
+import authAPI from "../../../services/authAPI"; // Import authAPI for logout
 
 function Navber() {
   const username = localStorage.getItem("Username");
@@ -20,21 +20,8 @@ function Navber() {
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/auth/logout`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Clear user data from localStorage
-      localStorage.removeItem("Username");
-      localStorage.removeItem("authToken");
-
+      // Use authAPI for logout
+      await authAPI.logout();
       // Redirect to login page
       navigate("/login");
     } catch (error) {

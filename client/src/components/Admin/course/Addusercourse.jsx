@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { MDBFile, MDBInput } from "mdb-react-ui-kit";
-import axios from "axios";
 import * as XLSX from "xlsx";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import ModalComponent from "../../../controls/Modal";
 import { validateAddUserCourseForm } from "../../../utils/FormValidation";
+import {
+  userApi,
+  enrollmentApi,
+  instructorApi,
+} from "../../../services/userAPI";
 
 export default function AddUserCourse({
   show,
@@ -27,7 +31,6 @@ export default function AddUserCourse({
   const [lastname, setLastname] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
-  const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleRoleChange = (e) => {
     setRole(e.target.value);
@@ -71,8 +74,6 @@ export default function AddUserCourse({
       return;
     }
 
-    const token = localStorage.getItem("authToken");
-
     let usersToAdd = [];
 
     // Add manually entered user if fields are filled
@@ -97,44 +98,25 @@ export default function AddUserCourse({
     }
 
     if (usersToAdd.length > 0) {
-      let payload, apiEndpoint;
-
-      if (role === "student") {
-        apiEndpoint = `${apiUrl}/enrollment/enroll`;
-        payload = {
-          section_id: Id,
-          students: usersToAdd,
-        };
-      } else if (role === "professor" || role === "ta") {
-        apiEndpoint = `${apiUrl}/course-instructor/register-instructor`;
-        payload = {
-          section_id: Id,
-          professors: usersToAdd,
-        };
-      } else {
-        setErrorModal({
-          open: true,
-          message: "Invalid role selected.",
-        });
-        return;
-      }
-
       try {
-        const response = await axios.post(apiEndpoint, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        if (role === "student") {
+          await enrollmentApi.enrollStudents(Id, usersToAdd);
+        } else if (role === "professor" || role === "ta") {
+          await instructorApi.registerInstructors(Id, usersToAdd);
+        } else {
+          setErrorModal({
+            open: true,
+            message: "Invalid role selected.",
+          });
+          return;
+        }
 
-        console.log("Success:", response.data);
         handleClose();
         refreshCourses();
         onSuccess();
         setShowSuccessModal(true);
         // Reset form fields
-        setPersonalNum("");
-        setFirstname("");
-        setLastname("");
-        setEmail("");
-        setExcelData([]);
+        resetForm();
       } catch (error) {
         console.error("Error adding user(s):", error);
       }
@@ -147,6 +129,15 @@ export default function AddUserCourse({
     }
   };
 
+  const resetForm = () => {
+    setPersonalNum("");
+    setFirstname("");
+    setLastname("");
+    setEmail("");
+    setUsername("");
+    setExcelData([]);
+  };
+
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
   };
@@ -157,18 +148,18 @@ export default function AddUserCourse({
 
   const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const user = response.data;
-      setFirstname(user.first_name);
-      setLastname(user.last_name);
-      setEmail(user.email);
-      setUsername(user.username);
-      setRole(user.role);
+      const userData = await userApi.getUserProfile(userId);
+      setFirstname(userData.first_name);
+      setLastname(userData.last_name);
+      setEmail(userData.email);
+      setUsername(userData.username);
+      setRole(userData.role);
     } catch (err) {
       console.error("Failed to fetch user data", err);
+      setErrorModal({
+        open: true,
+        message: "Failed to fetch user data",
+      });
     }
   };
 

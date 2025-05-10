@@ -118,7 +118,7 @@ export default function EditCourse({ show, handleClose, Id, refreshCourses }) {
 
             <Form.Group className="mb-4" controlId="formSectionName">
               <MDBInput
-                label="Section Name"
+                label="Section Number"
                 id="formSectionName"
                 type="text"
                 value={sectionName}

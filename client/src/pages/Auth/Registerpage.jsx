@@ -7,9 +7,9 @@ import {
   MDBInput,
 } from "mdb-react-ui-kit";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 import ModalComponent from "../../controls/Modal";
 import { validateRegistrationForm } from "../../utils/FormValidation";
+import { authAPI } from "../../services/authAPI"; // Import the authAPI
 
 function Register() {
   const [personalNum, setPersonalNum] = useState("");
@@ -19,12 +19,11 @@ function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [errorModal, setErrorModal] = useState({ open: false, message: "" }); // State สำหรับ Modal error
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_URL;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = {
@@ -44,24 +43,23 @@ function Register() {
       return;
     }
 
-    axios
-      .post(`${apiUrl}/auth/register`, {
-        personal_num: parseInt(personalNum, 10),
+    try {
+      // Using authAPI for registration
+      await authAPI.register({
+        personal_num: personalNum,
         first_name: firstname,
         last_name: lastname,
         email,
         username,
         password,
-      })
-      .then(() => {
-        setShowModal(true);
-      })
-      .catch((err) => {
-        const errorMessage =
-          err.response?.data?.message ||
-          "Registration failed. Please try again.";
-        setErrorModal({ open: true, message: errorMessage }); // แสดง Modal error
       });
+
+      setShowModal(true);
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Registration failed. Please try again.";
+      setErrorModal({ open: true, message: errorMessage });
+    }
   };
 
   const handleModalClose = () => {
@@ -70,7 +68,7 @@ function Register() {
   };
 
   const handleErrorModalClose = () => {
-    setErrorModal({ open: false, message: "" }); // ปิด Modal error
+    setErrorModal({ open: false, message: "" });
   };
 
   return (
@@ -283,7 +281,7 @@ function Register() {
         handleClose={handleModalClose}
         title="Registration Successful"
         description="Your account has been created successfully. You can now login with your credentials."
-        type="success" // กำหนดประเภทเป็น success
+        type="success"
       />
 
       <ModalComponent
@@ -291,7 +289,7 @@ function Register() {
         handleClose={handleErrorModalClose}
         title="Registration Error"
         description={errorModal.message}
-        type="error" // กำหนดประเภทเป็น error
+        type="error"
       />
     </MDBContainer>
   );

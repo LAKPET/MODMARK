@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Row, Col, Container, Button } from "react-bootstrap";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import "../../../assets/Styles/Dashboard/GetDetail.css";
 import CreateAssessmentModal from "../Assessment/CreateAssessmentModal";
 import EditAssessmentModal from "../Assessment/Editassessment";
@@ -14,6 +13,8 @@ import { formatDateTime } from "../../../utils/FormatDateTime";
 import { sortAssessments } from "../../../utils/SortAssessment";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
+import courseAPI from "../../../services/courseAPI"; // Import courseAPI
+import assessmentAPI from "../../../services/assessmentAPI"; // Import assessmentAPI
 
 export default function GetDetailCourse() {
   const { id } = useParams();
@@ -26,7 +27,6 @@ export default function GetDetailCourse() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
-  const apiUrl = import.meta.env.VITE_API_URL;
   const [sortColumn, setSortColumn] = useState(null);
   const [sortOrder, setSortOrder] = useState("asc");
 
@@ -45,12 +45,8 @@ export default function GetDetailCourse() {
           return;
         }
 
-        const response = await axios.get(`${apiUrl}/course/details/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        // Use courseAPI instead of direct axios call
+        const response = await courseAPI.getCourseDetails(id);
         setCourseDetails(response.data);
         console.log("co", response.data);
       } catch (error) {
@@ -62,13 +58,9 @@ export default function GetDetailCourse() {
 
     const fetchAssessments = async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        const assessmentResponse = await axios.get(
-          `${apiUrl}/assessment/section/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        // Use courseAPI instead of direct axios call
+        const assessmentResponse =
+          await assessmentAPI.getSectionAssessments(id);
         setAssessments(assessmentResponse.data);
       } catch (err) {
         setError("Error loading assessments.");

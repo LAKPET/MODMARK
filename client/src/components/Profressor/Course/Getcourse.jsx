@@ -4,27 +4,21 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import axios from "axios";
-import "../../../assets/Styles/Course/Getcourse.css"; // Updated import statement
+import "../../../assets/Styles/Course/Getcourse.css";
 import Ant from "../../../assets/Picture/Ant.png";
 import { useNavigate } from "react-router-dom";
+import courseAPI from "../../../services/courseAPI"; // Import courseAPI
 
 const Getcourse = forwardRef((props, ref) => {
   const [courses, setCourses] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_URL;
 
   const fetchCourses = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/course/my-courses`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      // Use courseAPI instead of direct axios call
+      const response = await courseAPI.getMyCourses();
       setCourses(response.data.courses || []);
       console.log(response.data.courses);
       setError(null);
