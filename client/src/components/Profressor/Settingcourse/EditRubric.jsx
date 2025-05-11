@@ -3,7 +3,7 @@ import { Modal, Button, Form } from "react-bootstrap";
 import { TextField, IconButton } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ClearIcon from "@mui/icons-material/Clear";
-import axios from "axios";
+import { fetchRubricById, updateRubric } from "../../../services/rubricAPI"; // Update path as needed
 import { validateRubricForm } from "../../../utils/FormValidation";
 
 export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
@@ -23,17 +23,11 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
   ]);
   const [errors, setErrors] = useState({});
 
-  const apiUrl = import.meta.env.VITE_API_URL;
-
   useEffect(() => {
-    if (rubricId) {
-      const fetchRubric = async () => {
-        const token = localStorage.getItem("authToken");
+    if (rubricId && show) {
+      const fetchRubricData = async () => {
         try {
-          const response = await axios.get(`${apiUrl}/rubric/${rubricId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = response.data;
+          const data = await fetchRubricById(rubricId);
           console.log("Rubric data:", data);
           setRubric({
             rubric_name: data.rubric_name,
@@ -44,7 +38,7 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
             data.criteria[0]?.levels
               .slice()
               .sort((a, b) => b.level - a.level)
-              .map((level, index) => ({
+              .map((level) => ({
                 score: level.score,
                 level: level.level,
               })) || [{ score: "", level: 1 }]
@@ -68,9 +62,9 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
         }
       };
 
-      fetchRubric();
+      fetchRubricData();
     }
-  }, [rubricId]);
+  }, [rubricId, show]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -231,11 +225,8 @@ export default function EditRubric({ show, handleClose, rubricId, onUpdate }) {
       })),
     };
 
-    const token = localStorage.getItem("authToken");
     try {
-      await axios.put(`${apiUrl}/rubric/update/${rubricId}`, formattedRubric, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await updateRubric(rubricId, formattedRubric);
       onUpdate();
       handleClose();
     } catch (err) {

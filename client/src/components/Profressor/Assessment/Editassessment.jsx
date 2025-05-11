@@ -13,8 +13,7 @@ import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
-import CircularProgress from "@mui/material/CircularProgress";
-import Backdrop from "@mui/material/Backdrop";
+import assessmentAPI from "../../../services/assessmentAPI"; // Import assessmentAPI
 import { validateCreateAssessmentForm } from "../../../utils/FormValidation";
 
 export default function EditAssessmentModal({
@@ -55,13 +54,7 @@ export default function EditAssessmentModal({
     if (assessmentId && show) {
       const fetchAssessmentDetails = async () => {
         try {
-          const token = localStorage.getItem("authToken");
-          const response = await axios.get(
-            `${apiUrl}/assessment/${assessmentId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          const response = await assessmentAPI.getAssessmentById(assessmentId);
           const data = response.data;
           console.log("Assessment details:", data);
           setAssessmentName(data.assessment_name);

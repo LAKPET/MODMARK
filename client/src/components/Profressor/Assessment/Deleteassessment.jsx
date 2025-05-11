@@ -1,22 +1,18 @@
-import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
 import { MDBBtn } from "mdb-react-ui-kit";
+import assessmentAPI from "../../../services/assessmentAPI";
+
 function DeleteAssessment({
   show,
   handleClose,
   assessmentId,
   refreshAssessments,
 }) {
-  const apiUrl = import.meta.env.VITE_API_URL;
-
   const handleDelete = async () => {
     try {
-      console.log("Attempting to delete assessment with ID:", assessmentId); // Add this line
-      const token = localStorage.getItem("authToken");
-      await axios.delete(`${apiUrl}/assessment/delete/${assessmentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log("Assessment deleted successfully"); // Add this line
+      console.log("Attempting to delete assessment with ID:", assessmentId);
+      await assessmentAPI.deleteAssessment(assessmentId);
+      console.log("Assessment deleted successfully");
       handleClose();
       refreshAssessments();
     } catch (err) {
@@ -38,9 +34,6 @@ function DeleteAssessment({
       </Modal.Header>
       <Modal.Body>Are you sure you want to delete this assessment?</Modal.Body>
       <Modal.Footer>
-        {/* <Button variant="secondary" onClick={handleClose}>
-          Cancel
-        </Button> */}
         <MDBBtn
           outline
           onClick={handleClose}

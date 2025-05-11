@@ -12,9 +12,10 @@ import picturetab2 from "../../../assets/Picture/mdi_number-2-box.png";
 import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
-import ModalComponent from "../../../controls/Modal"; // Import ModalComponent
-import CircularProgress from "@mui/material/CircularProgress";
-import Backdrop from "@mui/material/Backdrop";
+import ModalComponent from "../../../controls/Modal";
+import assessmentAPI from "../../../services/assessmentAPI";
+import courseAPI from "../../../services/courseAPI";
+import rubricAPI from "../../../services/rubricAPI";
 import { validateCreateAssessmentForm } from "../../../utils/FormValidation";
 
 export default function CreateAssessmentModal({
@@ -108,10 +109,8 @@ export default function CreateAssessmentModal({
 
     console.log("Sending data:", requestData);
 
-    axios
-      .post(`${apiUrl}/assessment/create`, requestData, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    assessmentAPI
+      .createAssessment(requestData)
       .then((response) => {
         handleClose();
         resetForm();
@@ -175,10 +174,7 @@ export default function CreateAssessmentModal({
         const token = localStorage.getItem("authToken"); // ดึง token ก่อน
         if (!token) throw new Error("No auth token found");
 
-        const response = await axios.get(
-          `http://localhost:5001/section/professors/${id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await courseAPI.getSectionProfessors(id);
         const data = response.data;
 
         // แปลงข้อมูลให้อยู่ในรูปแบบที่ต้องการ
@@ -203,10 +199,7 @@ export default function CreateAssessmentModal({
         const token = localStorage.getItem("authToken"); // ดึง token อีกครั้ง
         if (!token) throw new Error("No auth token found");
 
-        const response = await axios.get(
-          `http://localhost:5001/rubric/section/${id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await fetchRubricsBySection(id);
         setRubrics(response.data);
       } catch (error) {
         console.error("Error fetching rubrics:", error);

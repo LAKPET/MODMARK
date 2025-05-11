@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import RubricMain from "./Rubriccourse";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -9,8 +8,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 import "../../../assets/Styles/Settingcourse/Listrubric.css";
-import EditRubric from "./EditRubric"; // Import the EditRubric component
-import DeleteRubric from "./Deleterubric"; // Import the DeleteRubric component
+import EditRubric from "./EditRubric";
+import DeleteRubric from "./Deleterubric";
+import { fetchRubricsBySection } from "../../../services/rubricAPI"; // Update path as needed
 
 export default function Listrubric() {
   const { id } = useParams();
@@ -22,18 +22,12 @@ export default function Listrubric() {
   const [selectedRubricId, setSelectedRubricId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const apiUrl = import.meta.env.VITE_API_URL;
-
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-
-    const fetchRubrics = async () => {
+    const loadRubrics = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/rubric/section/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setRubrics(response.data);
-        console.log("rubric", response.data);
+        const data = await fetchRubricsBySection(id);
+        setRubrics(data);
+        console.log("rubric", data);
       } catch (err) {
         console.error("Error fetching rubrics:", err);
       } finally {
@@ -41,7 +35,7 @@ export default function Listrubric() {
       }
     };
 
-    fetchRubrics();
+    loadRubrics();
   }, [id]);
 
   const handleEditClick = (rubricId) => {
@@ -54,21 +48,13 @@ export default function Listrubric() {
     setShowDeleteModal(true);
   };
 
-  const handleUpdate = () => {
-    const token = localStorage.getItem("authToken");
-
-    const fetchRubrics = async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/rubric/section/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setRubrics(response.data);
-      } catch (err) {
-        console.error("Error fetching rubrics:", err);
-      }
-    };
-
-    fetchRubrics();
+  const handleUpdate = async () => {
+    try {
+      const data = await fetchRubricsBySection(id);
+      setRubrics(data);
+    } catch (err) {
+      console.error("Error fetching rubrics:", err);
+    }
   };
 
   const handleExpandClick = (rubricId) => {

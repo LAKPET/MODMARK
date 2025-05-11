@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import { useParams, useNavigate } from "react-router-dom";
 import CreateAssessmentModal from "./CreateAssessmentModal";
 import EditAssessmentModal from "./Editassessment";
 import DeleteAssessment from "./Deleteassessment";
@@ -14,6 +13,8 @@ import { formatDateTime } from "../../../utils/FormatDateTime";
 import { sortAssessments } from "../../../utils/SortAssessment";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
+import courseAPI from "../../../services/courseAPI";
+import assessmentAPI from "../../../services/assessmentAPI";
 
 export default function Getassessment() {
   const { id } = useParams();
@@ -27,7 +28,6 @@ export default function Getassessment() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
 
-  const apiUrl = import.meta.env.VITE_API_URL;
   const [sortColumn, setSortColumn] = useState(null);
   const [sortOrder, setSortOrder] = useState("asc");
 
@@ -43,13 +43,7 @@ export default function Getassessment() {
   const refreshAssessments = async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
-      const token = localStorage.getItem("authToken");
-      const assessmentResponse = await axios.get(
-        `${apiUrl}/assessment/section/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const assessmentResponse = await assessmentAPI.getSectionAssessments(id);
       setAssessments(assessmentResponse.data);
     } catch (err) {
       setError("Error loading data.");
@@ -72,12 +66,7 @@ export default function Getassessment() {
           navigate("/login");
           return;
         }
-        const courseResponse = await axios.get(
-          `${apiUrl}/course/details/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const courseResponse = await courseAPI.getCourseDetails(id);
         setCourseDetails(courseResponse.data);
         await refreshAssessments();
       } catch (err) {

@@ -1,7 +1,8 @@
 import React from "react";
 import { Modal, Button } from "react-bootstrap";
-import axios from "axios";
 import { MDBBtn } from "mdb-react-ui-kit";
+import { deleteRubric } from "../../../services/rubricAPI"; // Update path as needed
+
 export default function DeleteRubric({
   show,
   handleClose,
@@ -9,11 +10,8 @@ export default function DeleteRubric({
   onDelete,
 }) {
   const handleDelete = async () => {
-    const token = localStorage.getItem("authToken");
     try {
-      await axios.delete(`http://localhost:5001/rubric/delete/${rubricId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await deleteRubric(rubricId);
       onDelete();
       handleClose();
     } catch (err) {

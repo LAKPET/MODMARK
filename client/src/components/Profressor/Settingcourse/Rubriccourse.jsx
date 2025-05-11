@@ -10,7 +10,7 @@ import InputFileUpload from "../../../controls/InputFileUpload";
 import "../../../assets/Styles/Settingcourse/Rubrictable.css";
 import * as XLSX from "xlsx";
 import { validateRubricForm } from "../../../utils/FormValidation";
-
+import { createRubric } from "../../../services/rubricAPI";
 const RubricMain = () => {
   const id = useParams();
   const navigate = useNavigate();
@@ -259,14 +259,7 @@ const RubricMain = () => {
 
     const token = localStorage.getItem("authToken");
     try {
-      const response = await fetch(`${apiUrl}/rubric/create`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formattedRubric),
-      });
+      const response = await createRubric(formattedRubric);
 
       if (!response.ok) {
         throw new Error("Network response was not ok");

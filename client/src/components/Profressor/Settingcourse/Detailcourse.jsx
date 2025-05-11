@@ -6,7 +6,7 @@ import ModalComponent from "../../../controls/Modal";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 import { validateDetailCourseForm } from "../../../utils/FormValidation";
-
+import courseAPI from "../../../services/courseAPI";
 export default function DetailCourse({ Id }) {
   const { id: paramId } = useParams();
   const courseId = Id || paramId;
@@ -32,10 +32,7 @@ export default function DetailCourse({ Id }) {
 
   const fetchCourseDetails = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(`${apiUrl}/course/details/${courseId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await courseAPI.getCourseDetails(courseId);
       setCourse(response.data);
     } catch (err) {
       setErrorModal({
@@ -70,10 +67,7 @@ export default function DetailCourse({ Id }) {
     }
 
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.put(`${apiUrl}/section/update/${courseId}`, course, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await courseAPI.updateCourse(courseId, course);
       setShowSuccessModal(true);
       setErrors({});
     } catch (err) {

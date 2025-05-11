@@ -103,6 +103,18 @@ const courseAPI = {
       },
     });
   },
+
+  /**
+   * Get professors for a section
+   * @param {string} sectionId - Section ID
+   * @returns {Promise} - Promise with section professors
+   */
+  getSectionProfessors: async (sectionId) => {
+    const token = localStorage.getItem("authToken");
+    return axios.get(`${apiUrl}/section/professors/${sectionId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
 };
 
 export default courseAPI;
