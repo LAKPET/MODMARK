@@ -297,12 +297,22 @@ export default function AddUserCourse({
                 <InputLabel className="mt-3 mb-2" id="file-upload-label">
                   You can import users <span className="fw-bold">{role}</span>{" "}
                   by CSV or Excel file
+                  <div className="small text-muted mt-1">
+                    Expected columns: Personal Number, First Name, Last Name,
+                    Email
+                  </div>
                 </InputLabel>
                 <MDBFile
                   className="mb-4"
                   id="customFile"
                   onChange={handleFileUpload}
                 />
+                {excelData.length > 0 && (
+                  <div className="alert alert-info" role="alert">
+                    Excel file loaded successfully. {excelData.length} users
+                    ready to be created.
+                  </div>
+                )}
               </>
             )}
 

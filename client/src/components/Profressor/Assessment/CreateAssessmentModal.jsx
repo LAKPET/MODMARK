@@ -15,7 +15,6 @@ import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/Modal";
 import assessmentAPI from "../../../services/assessmentAPI";
 import courseAPI from "../../../services/courseAPI";
-import rubricAPI from "../../../services/rubricAPI";
 import { validateCreateAssessmentForm } from "../../../utils/FormValidation";
 
 export default function CreateAssessmentModal({

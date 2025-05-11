@@ -5,6 +5,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
+import * as XLSX from "xlsx";
 import ModalComponent from "../../../controls/Modal";
 import { validateCreateUserForm } from "../../../utils/FormValidation";
 import { userApi } from "../../../services/userAPI"; // Import the userApi service
@@ -18,13 +19,79 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
+  const [excelData, setExcelData] = useState([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [errors, setErrors] = useState({});
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const parsedData = XLSX.utils.sheet_to_json(sheet);
+        setExcelData(parsedData);
+        console.log(parsedData);
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // If we have excel data, process it
+    if (excelData.length > 0) {
+      try {
+        const promises = excelData.map(async (user) => {
+          const userData = {
+            personalNum: user["Personal Number"] || user.personal_number,
+            firstname: user["First Name"] || user.first_name,
+            lastname: user["Last Name"] || user.last_name,
+            username: user.Username || user.username,
+            email: user.Email || user.email,
+            role: user.Role || user.role,
+            password: user.Password || "password123", // Default password
+          };
+
+          // Validate each user from Excel
+          const { isValid, errors: validationErrors } =
+            validateCreateUserForm(userData);
+
+          if (!isValid) {
+            throw new Error(
+              `Validation failed for user ${userData.username}: ${JSON.stringify(validationErrors)}`
+            );
+          }
+
+          // Create user
+          return userApi.createUser(userData);
+        });
+
+        await Promise.all(promises);
+        handleClose();
+        refreshUsers();
+        setShowSuccessModal(true);
+        resetForm();
+      } catch (err) {
+        setErrorModal({
+          open: true,
+          message:
+            err.message ||
+            err.response?.data?.message ||
+            "Failed to create users from Excel. Please check your file format.",
+        });
+      }
+      return;
+    }
+
+    // Manual form submission (single user)
     const formData = {
       personalNum,
       firstname,
@@ -48,6 +115,7 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
       handleClose();
       refreshUsers();
       setShowSuccessModal(true);
+      resetForm();
     } catch (err) {
       setErrorModal({
         open: true,
@@ -56,6 +124,17 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
           "Failed to create user. Please try again.",
       });
     }
+  };
+
+  const resetForm = () => {
+    setPersonalNum("");
+    setFirstname("");
+    setLastname("");
+    setEmail("");
+    setUsername("");
+    setPassword("");
+    setRole("");
+    setExcelData([]);
   };
 
   const handleSuccessModalClose = () => {
@@ -230,14 +309,31 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
               <span>or</span>
             </div>
 
+            <InputLabel className="mt-3 mb-2" id="file-upload-label">
+              You can import users by CSV or Excel file
+              <div className="small text-muted mt-1">
+                Expected columns: Personal Number, First Name, Last Name,
+                <br />
+                Username, Email, Role (student/professor/admin)
+              </div>
+            </InputLabel>
             <MDBFile
               className="mb-4"
-              label="You can import user by csv file"
               id="customFile"
+              onChange={handleFileUpload}
             />
+            {excelData.length > 0 && (
+              <div className="alert alert-info" role="alert">
+                Excel file loaded successfully. {excelData.length} users ready
+                to be created.
+              </div>
+            )}
+
             <div className="d-flex justify-content-end">
               <Button className="custom-btn" type="submit">
-                Create User
+                {excelData.length > 0
+                  ? `Create ${excelData.length} Users`
+                  : "Create User"}
               </Button>
             </div>
           </Form>
@@ -248,7 +344,11 @@ export default function Createuser({ show, handleClose, refreshUsers }) {
         open={showSuccessModal}
         handleClose={handleSuccessModalClose}
         title="Create User"
-        description="The user has been successfully created."
+        description={
+          excelData.length > 1
+            ? `${excelData.length} users have been successfully created.`
+            : "The user has been successfully created."
+        }
         type="success"
       />
 
