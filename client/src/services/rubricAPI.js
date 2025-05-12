@@ -52,19 +52,21 @@ export const fetchRubricById = async (rubricId) => {
  * @returns {Promise<Object>} Promise resolving to created rubric
  */
 export const createRubric = async (rubricData) => {
-  const token = getToken();
-  try {
-    const response = await axios.post(`${apiUrl}/rubric/create`, rubricData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error creating rubric:", error);
-    throw error;
-  }
+  const token = localStorage.getItem("authToken");
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+  const response = await fetch(`${apiUrl}/rubric/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(rubricData),
+  });
+
+  // Return the response object directly instead of checking ok status here
+  // This allows the calling function to handle the response appropriately
+  return response;
 };
 
 /**

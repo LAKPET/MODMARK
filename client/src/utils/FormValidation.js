@@ -430,13 +430,18 @@ export const validateRubricForm = (formData) => {
       }
     });
 
-    // Validate total weight
-    const totalWeight = formData.rows.reduce(
-      (sum, row) => sum + (Number(row.criteria_weight) || 0),
-      0
-    );
-    if (totalWeight !== 100) {
-      errors.total_weight = "Total weight of all criteria must equal 100%";
+    // Validate total weight equals 100% of max score
+    const maxScore = Number(formData.score) || 0;
+    if (maxScore > 0) {
+      const totalWeight = formData.rows.reduce(
+        (sum, row) => sum + (Number(row.criteria_weight) || 0),
+        0
+      );
+
+      // Check if total weight equals max score
+      if (totalWeight !== maxScore) {
+        errors.total_weight = `Total weight of all criteria must equal max score (${maxScore})`;
+      }
     }
   }
 

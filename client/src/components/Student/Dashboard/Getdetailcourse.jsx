@@ -819,7 +819,16 @@ export default function CourseDetail() {
                         className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
                       >
                         <span>{assessment.assessment_name}</span>
-                        <i className="fas fa-file-alt"></i>
+                        <button
+                          className="fas fa-file-alt"
+                          onClick={() =>
+                            navigate(
+                              `/student/view-pdf/${sectionId}/${encodeURIComponent(
+                                assessment.pdf_link.split("/").pop()
+                              )}/${assessment._id}`
+                            )
+                          }
+                        ></button>
                       </div>
                     ))
                   ) : (

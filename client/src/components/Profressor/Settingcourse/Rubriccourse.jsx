@@ -224,6 +224,8 @@ const RubricMain = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  // In Rubriccourse.jsx, update the handleSubmit function
+
   const handleSubmit = async () => {
     const formData = {
       name: rubric.name,
@@ -257,37 +259,43 @@ const RubricMain = () => {
       section_id: id.id,
     };
 
-    const token = localStorage.getItem("authToken");
     try {
       const response = await createRubric(formattedRubric);
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
       const data = await response.json();
-      setShowSuccessModal(true);
 
-      // Clear all fields
-      setRubric({
-        name: "",
-        description: "",
-        score: "",
-      });
-      setColumns([{ score: "", level: 1 }]);
-      setRows([
-        {
+      // Check if the response contains a success message or the rubric data
+      if (
+        (data.message && data.message.includes("successfully")) ||
+        data.rubric
+      ) {
+        setShowSuccessModal(true);
+
+        // Clear all fields
+        setRubric({
+          name: "",
+          description: "",
           score: "",
-          criteria: "",
-          criteria_weight: "",
-          details: [{ description: "", score: "" }],
-        },
-      ]);
-      setErrors({});
+        });
+        setColumns([{ score: "", level: 1 }]);
+        setRows([
+          {
+            score: "",
+            criteria: "",
+            criteria_weight: "",
+            details: [{ description: "", score: "" }],
+          },
+        ]);
+        setErrors({});
 
-      // Clear file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        // Clear file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } else {
+        // If there's no success message or rubric data, show error
+        throw new Error(
+          data.message || "Failed to create rubric. Please try again."
+        );
       }
     } catch (error) {
       setErrorModal({
@@ -501,18 +509,23 @@ const RubricMain = () => {
             </tr>
           </tbody>
         </table>
-        {rows.map(
-          (row, rowIndex) =>
-            errors[`score_order_${rowIndex}`] && (
+        <div className="mt-2">
+          {rows
+            .map((_, rowIndex) => errors[`score_order_${rowIndex}`])
+            .filter(Boolean)
+            .map((errorMessage, idx) => (
               <div
-                key={`order_${rowIndex}`}
-                className="text-danger text-center mt-2"
-                style={{ fontSize: "0.875rem" }}
+                key={`order_error_${idx}`}
+                className="text-danger text-center"
+                style={{
+                  fontSize: "0.875rem",
+                  marginBottom: "0.25rem",
+                }}
               >
-                {errors[`score_order_${rowIndex}`]}
+                {errorMessage}
               </div>
-            )
-        )}
+            ))}
+        </div>
       </div>
 
       <ModalComponent
