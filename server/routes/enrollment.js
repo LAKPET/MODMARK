@@ -73,8 +73,11 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
 
     // ถ้ามีรายชื่อซ้ำ ส่ง 400 กลับทันทีและไม่ enroll ใครเลย
     if (alreadyEnrolled.length > 0) {
+      const names = alreadyEnrolled.map(
+        (u) => `${u.first_name} ${u.last_name} (${u.personal_num})`
+      ).join(", ");
       return res.status(400).json({
-        message: "Some students are already enrolled in the section",
+        message: `Some students are already enrolled in the section: ${names}`,
         alreadyEnrolled,
       });
     }
