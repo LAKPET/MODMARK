@@ -294,7 +294,7 @@ const PDFReviewer = ({
     },
   });
 
-  // useEffect(() => {
+  // (old code)useEffect(() => {
   //   const fetchAnnotations = async () => {
   //     try {
   //       console.log("Fetching annotations for submission:", submissionId);
@@ -945,14 +945,21 @@ const PDFReviewer = ({
 
   // Add useEffect to fetch comments when replyInputs changes
   useEffect(() => {
-    const highlightIds = Object.keys(replyInputs).filter(
+    const activeHighlightIds = Object.keys(replyInputs).filter(
       (id) => replyInputs[id]
     );
-    highlightIds.forEach((id) => {
-      if (!comments[id]) {
-        fetchCommentsForHighlight(id);
-      }
-    });
+
+    if (activeHighlightIds.length > 0) {
+      const commentsInterval = setInterval(() => {
+        activeHighlightIds.forEach((id) => {
+          fetchCommentsForHighlight(id);
+        });
+      }, 2000);
+
+      return () => {
+        clearInterval(commentsInterval);
+      };
+    }
   }, [replyInputs]);
 
   // Add polling mechanism for active reply threads
