@@ -139,8 +139,10 @@ export default function Viewassessmentfile() {
   const handlePrevious = () => {
     if (currentSubmissionIndex > 0) {
       const prevSubmission = allSubmissions[currentSubmissionIndex - 1];
+      // Extract just the filename part from file_url, without the "PDF/" prefix
+      const fileUrlParam = prevSubmission.file_url.replace(/^PDF\//, "");
       navigate(
-        `/professor/viewassessment/${id}/${prevSubmission.file_url}/${assessmentId}`
+        `/professor/viewassessment/${id}/PDF/${encodeURIComponent(fileUrlParam)}/${assessmentId}`
       );
     }
   };
@@ -149,8 +151,10 @@ export default function Viewassessmentfile() {
   const handleNext = () => {
     if (currentSubmissionIndex < allSubmissions.length - 1) {
       const nextSubmission = allSubmissions[currentSubmissionIndex + 1];
+      // Extract just the filename part from file_url, without the "PDF/" prefix
+      const fileUrlParam = nextSubmission.file_url.replace(/^PDF\//, "");
       navigate(
-        `/professor/viewassessment/${id}/${nextSubmission.file_url}/${assessmentId}`
+        `/professor/viewassessment/${id}/PDF/${encodeURIComponent(fileUrlParam)}/${assessmentId}`
       );
     }
   };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import { highlightPlugin } from "@react-pdf-viewer/highlight";
 import { selectionModePlugin } from "@react-pdf-viewer/selection-mode";
@@ -57,7 +57,7 @@ const PDFReviewer = ({
   const [selectionPosition, setSelectionPosition] = useState(null);
   const [gradingStatus, setGradingStatus] = useState(null);
   const [submissionData, setSubmissionData] = useState(null);
-  const [pollingInterval, setPollingInterval] = useState(null);
+  const pollingIntervalRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -294,81 +294,81 @@ const PDFReviewer = ({
     },
   });
 
-  useEffect(() => {
-    const fetchAnnotations = async () => {
-      try {
-        console.log("Fetching annotations for submission:", submissionId);
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-          console.error("No authentication token found");
-          return;
-        }
+  // useEffect(() => {
+  //   const fetchAnnotations = async () => {
+  //     try {
+  //       console.log("Fetching annotations for submission:", submissionId);
+  //       const token = localStorage.getItem("authToken");
+  //       if (!token) {
+  //         console.error("No authentication token found");
+  //         return;
+  //       }
 
-        const response = await axios.get(
-          `${apiUrl}/annotation/submission/${submissionId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+  //       const response = await axios.get(
+  //         `${apiUrl}/annotation/submission/${submissionId}`,
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         }
+  //       );
 
-        console.log("Annotations response:", response.data);
+  //       console.log("Annotations response:", response.data);
 
-        const formattedHighlights = response.data.map((annotation) => {
-          // Get the first comment if it exists
-          const firstComment =
-            annotation.comments && annotation.comments.length > 0
-              ? annotation.comments[0].comment_text
-              : "";
+  //       const formattedHighlights = response.data.map((annotation) => {
+  //         // Get the first comment if it exists
+  //         const firstComment =
+  //           annotation.comments && annotation.comments.length > 0
+  //             ? annotation.comments[0].comment_text
+  //             : "";
 
-          return {
-            id: annotation._id,
-            content: {
-              text: annotation.highlight_text,
-              boundingBox: annotation.bounding_box,
-            },
-            pageIndex: annotation.page_number - 1,
-            comment: firstComment,
-            highlight_color: annotation.highlight_color || "#ffeb3b",
-            professor: {
-              username: annotation.professor_id?.username,
-            },
-            comments: annotation.comments || [],
-          };
-        });
+  //         return {
+  //           id: annotation._id,
+  //           content: {
+  //             text: annotation.highlight_text,
+  //             boundingBox: annotation.bounding_box,
+  //           },
+  //           pageIndex: annotation.page_number - 1,
+  //           comment: firstComment,
+  //           highlight_color: annotation.highlight_color || "#ffeb3b",
+  //           professor: {
+  //             username: annotation.professor_id?.username,
+  //           },
+  //           comments: annotation.comments || [],
+  //         };
+  //       });
 
-        setHighlights(formattedHighlights);
+  //       setHighlights(formattedHighlights);
 
-        const formattedCommentIcons = response.data.map((annotation) => {
-          // Get the first comment if it exists
-          const firstComment =
-            annotation.comments && annotation.comments.length > 0
-              ? annotation.comments[0].comment_text
-              : annotation.highlight_text;
+  //       const formattedCommentIcons = response.data.map((annotation) => {
+  //         // Get the first comment if it exists
+  //         const firstComment =
+  //           annotation.comments && annotation.comments.length > 0
+  //             ? annotation.comments[0].comment_text
+  //             : annotation.highlight_text;
 
-          return {
-            id: annotation._id,
-            pageIndex: annotation.page_number - 1, // Store pageIndex as 0-based
-            position: annotation.bounding_box,
-            comment: firstComment,
-            highlight_color: annotation.highlight_color || "#ffeb3b",
-          };
-        });
-        setCommentIcons(formattedCommentIcons);
-      } catch (error) {
-        console.error("Error fetching annotations:", error);
-        if (error.response) {
-          console.error("Error response:", error.response.data);
-          console.error("Error status:", error.response.status);
-        }
-        setHighlights([]);
-        setCommentIcons([]);
-      }
-    };
+  //         return {
+  //           id: annotation._id,
+  //           pageIndex: annotation.page_number - 1, // Store pageIndex as 0-based
+  //           position: annotation.bounding_box,
+  //           comment: firstComment,
+  //           highlight_color: annotation.highlight_color || "#ffeb3b",
+  //         };
+  //       });
+  //       setCommentIcons(formattedCommentIcons);
+  //     } catch (error) {
+  //       console.error("Error fetching annotations:", error);
+  //       if (error.response) {
+  //         console.error("Error response:", error.response.data);
+  //         console.error("Error status:", error.response.status);
+  //       }
+  //       setHighlights([]);
+  //       setCommentIcons([]);
+  //     }
+  //   };
 
-    if (submissionId) {
-      fetchAnnotations();
-    }
-  }, [submissionId]);
+  //   if (submissionId) {
+  //     fetchAnnotations();
+  //   }
+  // }, [submissionId]);
 
   useEffect(() => {
     const fetchRubricData = async () => {
@@ -876,7 +876,66 @@ const PDFReviewer = ({
       // Handle error (e.g., show success message)
     }
   };
+  const fetchLatestAnnotations = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token || !submissionId) return;
 
+      const response = await axios.get(
+        `${apiUrl}/annotation/submission/${submissionId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const formattedHighlights = response.data.map((annotation) => {
+        const firstComment =
+          annotation.comments && annotation.comments.length > 0
+            ? annotation.comments[0].comment_text
+            : "";
+
+        return {
+          id: annotation._id,
+          content: {
+            text: annotation.highlight_text,
+            boundingBox: annotation.bounding_box,
+          },
+          pageIndex: annotation.page_number - 1,
+          comment: firstComment,
+          highlight_color: annotation.highlight_color || "#ffeb3b",
+          professor: {
+            username: annotation.professor_id?.username,
+          },
+          comments: annotation.comments || [],
+        };
+      });
+
+      setHighlights(formattedHighlights);
+
+      const formattedCommentIcons = response.data.map((annotation) => {
+        const firstComment =
+          annotation.comments && annotation.comments.length > 0
+            ? annotation.comments[0].comment_text
+            : annotation.highlight_text;
+
+        return {
+          id: annotation._id,
+          pageIndex: annotation.page_number - 1,
+          position: annotation.bounding_box,
+          comment: firstComment,
+          highlight_color: annotation.highlight_color || "#ffeb3b",
+        };
+      });
+      setCommentIcons(formattedCommentIcons);
+
+      // Update comments for currently selected highlight if any
+      if (selectedHighlight) {
+        await fetchCommentsForHighlight(selectedHighlight.id);
+      }
+    } catch (error) {
+      console.error("Error fetching latest annotations:", error);
+    }
+  };
   // Add useEffect to fetch comments when selectedHighlight changes
   useEffect(() => {
     if (selectedHighlight) {
@@ -897,35 +956,25 @@ const PDFReviewer = ({
   }, [replyInputs]);
 
   // Add polling mechanism for active reply threads
+  // Set up polling for annotations when submissionId is available
   useEffect(() => {
-    // Clear any existing polling interval
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
+    if (!submissionId) return;
 
-    // Get all highlight IDs that have reply inputs open
-    const activeHighlightIds = Object.keys(replyInputs).filter(
-      (id) => replyInputs[id]
-    );
+    // Initial fetch
+    fetchLatestAnnotations();
 
-    if (activeHighlightIds.length > 0) {
-      // Set up polling interval to fetch new replies every 5 seconds
-      const interval = setInterval(() => {
-        activeHighlightIds.forEach((id) => {
-          fetchCommentsForHighlight(id);
-        });
-      }, 4000);
+    // Start polling every 5 seconds
+    pollingIntervalRef.current = setInterval(() => {
+      fetchLatestAnnotations();
+    }, 5000);
 
-      setPollingInterval(interval);
-    }
-
-    // Clean up interval on unmount or when active highlights change
+    // Cleanup on unmount or when submissionId changes
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [replyInputs]);
+  }, [submissionId]);
 
   // Handler for navigating to the next submission
   const handleNextSubmission = async () => {
