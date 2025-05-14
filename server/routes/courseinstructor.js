@@ -65,8 +65,11 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherA
 
     // ถ้ามีรายชื่อซ้ำ ส่ง 400 กลับทันทีและไม่ register ใครเลย
     if (alreadyRegistered.length > 0) {
+      const names = alreadyRegistered.map(
+        (u) => `${u.first_name} ${u.last_name} (${u.personal_num})`
+      ).join(", ");
       return res.status(400).json({
-        message: "Some instructors are already registered in the section",
+        message: `Some instructors are already registered in the section: ${names}`,
         alreadyRegistered,
       });
     }

@@ -42,21 +42,21 @@ router.post("/create", verifyToken, checkAdmin, async (req, res) => {
     if (existingUserByPersonalNum) {
       return res
         .status(400)
-        .json({ message: "User with this personal number already exists." });
+        .json({ message: `User with this personal number already exists: ${existingUserByPersonalNum.first_name} ${existingUserByPersonalNum.last_name} (${existingUserByPersonalNum.personal_num})` });
     }
 
     const existingUserByEmail = await User.findOne({ email });
     if (existingUserByEmail) {
       return res
         .status(400)
-        .json({ message: "User with this email already exists." });
+        .json({ message: `User with this email already exists: ${existingUserByEmail.first_name} ${existingUserByEmail.last_name} (${existingUserByEmail.email})` });
     }
 
     const existingUserByUsername = await User.findOne({ username });
     if (existingUserByUsername) {
       return res
         .status(400)
-        .json({ message: "User with this username already exists." });
+        .json({ message: `User with this username already exists: ${existingUserByUsername.first_name} ${existingUserByUsername.last_name} (${existingUserByUsername.username})` });
     }
 
     // เข้ารหัสรหัสผ่านก่อนบันทึก
@@ -221,7 +221,7 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
       if (existingUserByPersonalNum) {
         return res
           .status(400)
-          .json({ message: "User with this personal number already exists." });
+          .json({ message: `User with this personal number already exists: ${existingUserByPersonalNum.first_name} ${existingUserByPersonalNum.last_name} (${existingUserByPersonalNum.personal_num})` });
       }
       user.personal_num = personal_num;
     }
@@ -231,7 +231,7 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
       if (existingUserByEmail) {
         return res
           .status(400)
-          .json({ message: "User with this email already exists." });
+          .json({ message: `User with this email already exists: ${existingUserByEmail.first_name} ${existingUserByEmail.last_name} (${existingUserByEmail.email})` });
       }
       user.email = email;
     }
