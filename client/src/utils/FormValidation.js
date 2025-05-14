@@ -307,10 +307,11 @@ export const validateCreateAssessmentForm = (formData) => {
   // Publish Date validation
   if (!formData.publishDate) {
     errors.publishDate = "Publish Date is required";
-  } else {
+  } else if (formData.isCreateMode) {
+    // Only check for past dates in create mode, not edit mode
     const publishDate = new Date(formData.publishDate);
     const now = new Date();
-    now.setSeconds(now.getSeconds() - 30); // เพิ่ม delay 30 วินาที
+    now.setSeconds(now.getSeconds() - 100); // เพิ่ม delay 30 วินาที
     if (publishDate < now) {
       errors.publishDate = "Publish Date cannot be in the past";
     }

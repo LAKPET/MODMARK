@@ -119,6 +119,23 @@ export default function AddUserCourse({
         resetForm();
       } catch (error) {
         console.error("Error adding user(s):", error);
+
+        // Extract error message from backend response
+        let errorMessage = "Error adding user(s)";
+
+        if (
+          error.response &&
+          error.response.data &&
+          error.response.data.message
+        ) {
+          // Extract the specific error message from the API response
+          errorMessage = error.response.data.message;
+        }
+
+        setErrorModal({
+          open: true,
+          message: errorMessage,
+        });
       }
     } else {
       setErrorModal({
@@ -156,9 +173,17 @@ export default function AddUserCourse({
       setRole(userData.role);
     } catch (err) {
       console.error("Failed to fetch user data", err);
+
+      // Extract error message from backend response
+      let errorMessage = "Failed to fetch user data";
+
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage = err.response.data.message;
+      }
+
       setErrorModal({
         open: true,
-        message: "Failed to fetch user data",
+        message: errorMessage,
       });
     }
   };
@@ -192,7 +217,7 @@ export default function AddUserCourse({
                 <MenuItem value="student">Student</MenuItem>
                 <MenuItem value="professor">Professor</MenuItem>
                 <MenuItem value="ta">TA</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
+                {/* <MenuItem value="admin">Admin</MenuItem> */}
               </Select>
               {errors.role && (
                 <div

@@ -14,7 +14,9 @@ import Paper from "@mui/material/Paper";
 import { useParams } from "react-router-dom";
 import ModalComponent from "../../../controls/Modal";
 import assessmentAPI from "../../../services/assessmentAPI";
+import { fetchRubricBysectionId } from "../../../services/rubricAPI";
 import courseAPI from "../../../services/courseAPI";
+
 import { validateCreateAssessmentForm } from "../../../utils/FormValidation";
 
 export default function CreateAssessmentModal({
@@ -113,7 +115,7 @@ export default function CreateAssessmentModal({
       .then((response) => {
         handleClose();
         resetForm();
-        setShowSuccessModal(true);
+        setShowSuccessModal(true); // แก้ไขตรงนี้ให้เป็น true
         if (refreshAssessments) {
           refreshAssessments();
         }
@@ -198,7 +200,7 @@ export default function CreateAssessmentModal({
         const token = localStorage.getItem("authToken"); // ดึง token อีกครั้ง
         if (!token) throw new Error("No auth token found");
 
-        const response = await fetchRubricsBySection(id);
+        const response = await fetchRubricBysectionId(id);
         setRubrics(response.data);
       } catch (error) {
         console.error("Error fetching rubrics:", error);
@@ -548,6 +550,7 @@ export default function CreateAssessmentModal({
         </Modal.Body>
       </Modal>
 
+      {/* แก้ไข ModalComponent ให้ถูกต้อง */}
       <ModalComponent
         open={showSuccessModal}
         handleClose={handleSuccessModalClose}

@@ -112,3 +112,21 @@ export const deleteRubric = async (rubricId) => {
     throw error;
   }
 };
+
+/**
+ * Get a specific rubric by ID
+ * @param {string} rubricId - ID of the rubric
+ * @returns {Promise<Object>} Promise resolving to rubric data
+ */
+export const fetchRubricBysectionId = async (sectionId) => {
+  const token = getToken();
+  try {
+    const response = await axios.get(`${apiUrl}/rubric/section/${sectionId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response;
+  } catch (error) {
+    console.error("Error fetching rubric:", error);
+    throw error;
+  }
+};

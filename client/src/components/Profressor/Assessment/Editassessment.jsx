@@ -60,7 +60,8 @@ export default function EditAssessmentModal({
           setAssessmentName(data.assessment_name);
           setAssessmentDescription(data.assessment_description);
           setAssessmentType(data.assignment_type);
-          setGradingType(data.teamgrading_type);
+          // Convert teamgrading_type to boolean explicitly
+          setGradingType(data.teamgrading_type === true);
           setPublishDate(formatDateTimeLocal(data.publish_date));
           setDueDate(formatDateTimeLocal(data.due_date));
           setWeights(
@@ -129,6 +130,20 @@ export default function EditAssessmentModal({
 
     const token = localStorage.getItem("authToken");
 
+    // Create graders array only if gradingType is true (team grading)
+    const graders = gradingType
+      ? rows
+          .filter(
+            (row) =>
+              weights[row.p_id] !== undefined && weights[row.p_id] !== null
+          )
+          .map((row) => ({
+            user_id: row.p_id,
+            role: row.role,
+            weight: weights[row.p_id] / 100,
+          }))
+      : [];
+
     const requestData = {
       course_id: courseDetails.course_id,
       section_id: courseDetails.section_id,
@@ -139,22 +154,18 @@ export default function EditAssessmentModal({
       publish_date: publishDate,
       due_date: dueDate,
       rubric_id: rubric,
-      graders: rows
-        .filter(
-          (row) => weights[row.p_id] !== undefined && weights[row.p_id] !== null
-        )
-        .map((row) => ({
-          user_id: row.p_id,
-          role: row.role,
-          weight: weights[row.p_id] / 100,
-        })),
+      graders: graders,
     };
+
+    console.log("Submitting with gradingType:", gradingType);
+    console.log("Request data:", requestData);
 
     axios
       .put(`${apiUrl}/assessment/update/${assessmentId}`, requestData, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
+        console.log("Update response:", response.data);
         handleClose();
         resetForm();
         refreshAssessments();
@@ -258,16 +269,10 @@ export default function EditAssessmentModal({
     }
   }, [id, apiUrl, courseDetails?.section_id]);
 
-  // if (loading) {
-  //   return (
-  //     <Backdrop
-  //       sx={(theme) => ({ color: "#8B5F34", zIndex: theme.zIndex.drawer + 1 })}
-  //       open={loading}
-  //     >
-  //       <CircularProgress color="inherit" />
-  //     </Backdrop>
-  //   );
-  // }
+  // Debug value changes
+  useEffect(() => {
+    console.log("gradingType changed to:", gradingType);
+  }, [gradingType]);
 
   return (
     <>
@@ -379,7 +384,10 @@ export default function EditAssessmentModal({
                     id="grading-type-select"
                     value={gradingType}
                     label="Grading Type"
-                    onChange={(e) => setGradingType(e.target.value)}
+                    onChange={(e) => {
+                      console.log("Select changed to:", e.target.value);
+                      setGradingType(e.target.value);
+                    }}
                     error={!!errors.gradingType}
                   >
                     <MenuItem value={false}>Individual</MenuItem>
@@ -396,15 +404,13 @@ export default function EditAssessmentModal({
                 </FormControl>
               </Form.Group>
 
-              {gradingType && (
+              {gradingType === true && (
                 <div className="mb-4">
                   <Paper sx={{ height: 400, width: "100%" }}>
                     <DataGrid
                       rows={rows}
                       columns={columns}
                       pageSize={5}
-                      // checkboxSelection
-
                       sx={{
                         border: 0,
                         "& .MuiTablePagination-root": {
