@@ -31,6 +31,7 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
     }
 
     const enrollments = [];
+    const alreadyEnrolled = [];
 
     for (const student of students) {
       const { personal_num, email } = student;
@@ -62,6 +63,19 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
       });
 
       if (existingEnrollment) {
+        alreadyEnrolled.push({
+          personal_num: user.personal_num,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+        });
+        // ถ้ามีแค่คนเดียวและซ้ำ ให้ตอบกลับทันที
+        if (students.length === 1) {
+          return res.status(200).json({
+            message: "Student is already enrolled in the section",
+            alreadyEnrolled,
+          });
+        }
         continue; // ข้ามการลงทะเบียนถ้านักเรียนได้ลงทะเบียนแล้ว
       }
 
@@ -83,9 +97,15 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
       enrollments.push(newEnrollment);
     }
 
+    let message = "Students successfully enrolled in the section";
+    if (alreadyEnrolled.length > 0) {
+      message += `. Some students were already enrolled and were skipped.`;
+    }
+
     res.status(200).json({
-      message: "Students successfully enrolled in the section",
+      message,
       enrollments,
+      alreadyEnrolled, // ส่งรายชื่อที่ซ้ำกลับไปด้วย
     });
   } catch (error) {
     console.error("Error enrolling students:", error.message);
