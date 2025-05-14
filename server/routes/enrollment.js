@@ -30,9 +30,8 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const enrollments = [];
+    // ตรวจสอบรายชื่อที่ซ้ำทั้งหมดก่อน enroll
     const alreadyEnrolled = [];
-
     for (const student of students) {
       const { personal_num, email } = student;
       const userByPersonalNum = await User.findOne({ personal_num });
@@ -69,15 +68,22 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
           first_name: user.first_name,
           last_name: user.last_name,
         });
-        // ถ้ามีแค่คนเดียวและซ้ำ ให้ตอบกลับทันที
-        if (students.length === 1) {
-          return res.status(400).json({
-            message: "Student is already enrolled in the section",
-            alreadyEnrolled,
-          });
-        }
-        continue; // ข้ามการลงทะเบียนถ้านักเรียนได้ลงทะเบียนแล้ว
       }
+    }
+
+    // ถ้ามีรายชื่อซ้ำ ส่ง 400 กลับทันทีและไม่ enroll ใครเลย
+    if (alreadyEnrolled.length > 0) {
+      return res.status(400).json({
+        message: "Some students are already enrolled in the section",
+        alreadyEnrolled,
+      });
+    }
+
+    // ถ้าไม่มีรายชื่อซ้ำ ให้ enroll ได้ตามปกติ
+    const enrollments = [];
+    for (const student of students) {
+      const { personal_num, email } = student;
+      const user = await User.findOne({ personal_num, email });
 
       // สร้าง Enrollment ใหม่
       const newEnrollment = new Enrollment({
@@ -97,15 +103,10 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
       enrollments.push(newEnrollment);
     }
 
-    let message = "Students successfully enrolled in the section";
-    if (alreadyEnrolled.length > 0) {
-      message += `. Some students were already enrolled and were skipped.`;
-    }
-
     res.status(200).json({
-      message,
+      message: "Students successfully enrolled in the section",
       enrollments,
-      alreadyEnrolled, // ส่งรายชื่อที่ซ้ำกลับไปด้วย
+      alreadyEnrolled: [],
     });
   } catch (error) {
     console.error("Error enrolling students:", error.message);

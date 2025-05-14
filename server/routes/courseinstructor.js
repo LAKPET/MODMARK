@@ -23,9 +23,8 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherA
       return res.status(404).json({ message: "Section not found" });
     }
 
-    const registeredInstructors = [];
+    // ตรวจสอบรายชื่อที่ซ้ำทั้งหมดก่อน register
     const alreadyRegistered = [];
-
     for (const professor of professors) {
       const { personal_num, email } = professor;
 
@@ -61,15 +60,22 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherA
           last_name: user.last_name,
           role: user.role,
         });
-        // ถ้าส่งมาคนเดียวและซ้ำ ให้ตอบกลับทันที (ใช้ status 400)
-        if (professors.length === 1) {
-          return res.status(400).json({
-            message: "Instructor is already registered in the section",
-            alreadyRegistered,
-          });
-        }
-        continue;
       }
+    }
+
+    // ถ้ามีรายชื่อซ้ำ ส่ง 400 กลับทันทีและไม่ register ใครเลย
+    if (alreadyRegistered.length > 0) {
+      return res.status(400).json({
+        message: "Some instructors are already registered in the section",
+        alreadyRegistered,
+      });
+    }
+
+    // ถ้าไม่มีรายชื่อซ้ำ ให้ register ได้ตามปกติ
+    const registeredInstructors = [];
+    for (const professor of professors) {
+      const { personal_num, email } = professor;
+      const user = await User.findOne({ personal_num, email });
 
       // สร้าง CourseInstructor ใหม่
       const newInstructor = new CourseInstructor({
@@ -90,15 +96,10 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherA
       registeredInstructors.push(newInstructor);
     }
 
-    let message = "Professors and teaching assistants successfully registered for the section";
-    if (alreadyRegistered.length > 0) {
-      message += `. Some instructors were already registered and were skipped.`;
-    }
-
     res.status(200).json({
-      message,
+      message: "Professors and teaching assistants successfully registered for the section",
       registeredInstructors,
-      alreadyRegistered,
+      alreadyRegistered: [],
     });
   } catch (error) {
     console.error("Error registering instructors:", error.message);
