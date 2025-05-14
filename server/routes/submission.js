@@ -12,6 +12,7 @@ const {
   checkAdminOrProfessorOrTeacherAssistant,
 } = require("./middleware");
 const { upload, uploadFile, fetchFileFromStorage } = require("../services/storageService");
+const bucket = require("../services/firebaseConfig"); // เพิ่มบรรทัดนี้
 const fs = require("fs");
 const path = require("path");
 const scoreRoutes = require("./score");
@@ -278,7 +279,16 @@ router.put(
       }
 
       if (req.file) {
-        // อัปโหลดไฟล์ใหม่ไปยัง Firebase และอัปเดต URL
+        // ลบไฟล์เดิมใน Firebase Storage ถ้ามี
+        if (submission.file_url) {
+          const oldFile = bucket.file(submission.file_url);
+          const [exists] = await oldFile.exists();
+          if (exists) {
+            await oldFile.delete();
+          }
+        }
+
+        // Upload the new file to Firebase storage
         const file_url = await uploadFile(req.file);
         submission.file_url = file_url;
       }
@@ -311,11 +321,14 @@ router.delete(
         return res.status(404).json({ message: "Submission not found" });
       }
 
-      // Delete file from Firebase if using Firebase storage
-      if (submission.file_url.startsWith("https://storage.googleapis.com")) {
-        const fileName = submission.file_url.split("/").pop();
-        const file = bucket.file(fileName);
-        await file.delete(); // Delete file from Firebase
+      // Extract the correct file path from file_url
+      // เปลี่ยนจาก file_url เป็นชื่อไฟล์ที่เก็บใน Firebase (file_url ในระบบนี้คือชื่อไฟล์ ไม่ใช่ URL)
+      if (submission.file_url) {
+        const file = bucket.file(submission.file_url);
+        const [exists] = await file.exists();
+        if (exists) {
+          await file.delete();
+        }
       }
 
       // Delete related group members

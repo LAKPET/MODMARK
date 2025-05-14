@@ -24,12 +24,13 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherA
     }
 
     const registeredInstructors = [];
+    const alreadyRegistered = [];
 
     for (const professor of professors) {
-      const { personal_num, email } = professor; // เปลี่ยนเป็น personal_num และ email
+      const { personal_num, email } = professor;
 
       // ตรวจสอบว่า User ที่เป็น Professor หรือ TA มีอยู่หรือไม่
-      const userByPersonalNum = await User.findOne({ personal_num }); // เปลี่ยนเป็น personal_num
+      const userByPersonalNum = await User.findOne({ personal_num });
       const userByEmail = await User.findOne({ email });
 
       if (!userByPersonalNum || !userByEmail) {
@@ -49,11 +50,25 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherA
       // ตรวจสอบว่า Professor หรือ TA ได้ลงทะเบียนใน Section นี้แล้วหรือยัง
       const existingInstructor = await CourseInstructor.findOne({
         section_id: section._id,
-        personal_num: user.personal_num, // เปลี่ยนเป็น personal_num
+        personal_num: user.personal_num,
       });
 
       if (existingInstructor) {
-        continue; // ข้ามการลงทะเบียนถ้าอาจารย์หรือ TA ได้ลงทะเบียนแล้ว
+        alreadyRegistered.push({
+          personal_num: user.personal_num,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+        });
+        // ถ้าส่งมาคนเดียวและซ้ำ ให้ตอบกลับทันที (ใช้ status 400)
+        if (professors.length === 1) {
+          return res.status(400).json({
+            message: "Instructor is already registered in the section",
+            alreadyRegistered,
+          });
+        }
+        continue;
       }
 
       // สร้าง CourseInstructor ใหม่
@@ -75,9 +90,15 @@ router.post("/register-instructor", verifyToken, checkAdminOrProfessorOrTeacherA
       registeredInstructors.push(newInstructor);
     }
 
+    let message = "Professors and teaching assistants successfully registered for the section";
+    if (alreadyRegistered.length > 0) {
+      message += `. Some instructors were already registered and were skipped.`;
+    }
+
     res.status(200).json({
-      message: "Professors and teaching assistants successfully registered for the section",
+      message,
       registeredInstructors,
+      alreadyRegistered,
     });
   } catch (error) {
     console.error("Error registering instructors:", error.message);
