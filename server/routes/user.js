@@ -37,7 +37,7 @@ router.post("/create", verifyToken, checkAdmin, async (req, res) => {
   }
 
   try {
-    // ตรวจสอบว่าผู้ใช้นี้มีอยู่ในระบบหรือไม่
+    // ตรวจสอบว่าผู้ใช้นี้มีอยู่ในระบบหรือไม่ (personal_num, email, username)
     const existingUserByPersonalNum = await User.findOne({ personal_num });
     if (existingUserByPersonalNum) {
       return res
@@ -50,6 +50,13 @@ router.post("/create", verifyToken, checkAdmin, async (req, res) => {
       return res
         .status(400)
         .json({ message: "User with this email already exists." });
+    }
+
+    const existingUserByUsername = await User.findOne({ username });
+    if (existingUserByUsername) {
+      return res
+        .status(400)
+        .json({ message: "User with this username already exists." });
     }
 
     // เข้ารหัสรหัสผ่านก่อนบันทึก

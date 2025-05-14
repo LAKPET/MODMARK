@@ -71,7 +71,7 @@ router.post("/enroll", verifyToken, checkAdminOrProfessorOrTeacherAssistant, asy
         });
         // ถ้ามีแค่คนเดียวและซ้ำ ให้ตอบกลับทันที
         if (students.length === 1) {
-          return res.status(200).json({
+          return res.status(400).json({
             message: "Student is already enrolled in the section",
             alreadyEnrolled,
           });
