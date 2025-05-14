@@ -685,8 +685,8 @@ router.put(
         assessment_description || assessment.assessment_description;
       assessment.assignment_type =
         assignment_type || assessment.assignment_type;
-      assessment.teamgrading_type =
-        teamgrading_type || assessment.teamgrading_type;
+      if (teamgrading_type !== undefined)
+        assessment.teamgrading_type = teamgrading_type;
       assessment.publish_date = publish_date || assessment.publish_date;
       assessment.due_date = due_date || assessment.due_date;
       // assessment.rubric_id is handled above
