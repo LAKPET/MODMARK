@@ -983,6 +983,23 @@ const PDFReviewer = ({
     };
   }, [submissionId]);
 
+  useEffect(() => {
+    const fetchAllComments = async () => {
+      try {
+        // Fetch comments for all highlights to ensure reply counts are always available
+        for (const highlight of highlights) {
+          await fetchCommentsForHighlight(highlight.id);
+        }
+      } catch (error) {
+        console.error("Error fetching all comments:", error);
+      }
+    };
+
+    if (highlights.length > 0) {
+      fetchAllComments();
+    }
+  }, [highlights]);
+
   // Handler for navigating to the next submission
   const handleNextSubmission = async () => {
     try {

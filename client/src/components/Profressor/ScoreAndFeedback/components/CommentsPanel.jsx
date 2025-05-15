@@ -209,7 +209,29 @@ const CommentsPanel = ({
                         width: "100%",
                       }}
                     >
-                      <span>{highlight.professor?.username}</span>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <span>{highlight.professor?.username}</span>
+                        {/* Always show reply count badge if there are replies */}
+                        {comments[highlight.id] &&
+                          comments[highlight.id][0]?.replies &&
+                          comments[highlight.id][0].replies.length > 0 && (
+                            <Box
+                              sx={{
+                                ml: 1,
+                                backgroundColor: "#e0e0e0",
+                                borderRadius: "10px",
+                                px: 1,
+                                py: 0.2,
+                                fontSize: "0.75rem",
+                                color: "#666",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              +{comments[highlight.id][0].replies.length}
+                            </Box>
+                          )}
+                      </Box>
                     </Typography>
                   </Box>
                 </Box>
