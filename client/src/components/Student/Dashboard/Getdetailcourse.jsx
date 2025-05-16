@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Row, Col, Container } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { styled } from "@mui/material/styles";
-import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Backdrop from "@mui/material/Backdrop";
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
@@ -13,6 +11,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Checkbox from "@mui/material/Checkbox";
+import Button from "@mui/material/Button";
 import "../../../assets/Styles/Course/Getcourse.css";
 import SegmentIcon from "@mui/icons-material/Segment";
 import Menu from "@mui/material/Menu";
@@ -23,45 +22,25 @@ import TuneIcon from "@mui/icons-material/Tune";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import InfoIcon from "@mui/icons-material/Info";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import GroupSubmitModal from "../Assessment/components/GroupSubmitModal";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import DescriptionIcon from "@mui/icons-material/Description";
+// Import styled components
+import {
+  StyledButton,
+  ViewButton,
+  GroupButton,
+  VisuallyHiddenInput,
+  GroupIcon,
+} from "../Assessment/components/StyledComponents";
 
-const VisuallyHiddenInput = styled("input")({
-  clip: "rect(0 0 0 0)",
-  clipPath: "inset(50%)",
-  height: 1,
-  overflow: "hidden",
-  position: "absolute",
-  bottom: 0,
-  left: 0,
-  whiteSpace: "nowrap",
-  width: 1,
-});
+// Import components for assessment submissions
+import GroupSubmitModal from "../Assessment/components/GroupSubmitModal";
+import EditSubmissionModal from "../Assessment/components/EditsubmissionModal";
 
-const StyledButton = styled(Button)(({ isSubmitted }) => ({
-  color: "white",
-  backgroundColor: isSubmitted ? "#71F275" : "#F27171",
-  fontSize: "0.875rem",
-  textTransform: "none",
-  "&:hover": {
-    backgroundColor: isSubmitted ? "#60d164" : "#d16060",
-  },
-}));
-
-const GroupButton = styled(Button)({
-  color: "white",
-  backgroundColor: "#5c90d2",
-  fontSize: "0.875rem",
-  textTransform: "none",
-  minWidth: "140px",
-  "&:hover": {
-    backgroundColor: "#4a7ab0",
-  },
-  "&:disabled": {
-    backgroundColor: "#ccc",
-  },
-});
+// Import custom hook for assessment data handling
+import useAssessmentData from "../Assessment/hooks/useAssessmentData";
 
 const ScoreBar = ({ score, maxScore = 100, label }) => {
   const percentage = (score / maxScore) * 100;
@@ -192,23 +171,9 @@ const CardOptionsMenu = ({
 export default function CourseDetail() {
   const { id: sectionId } = useParams();
   const navigate = useNavigate();
-  const [courseDetails, setCourseDetails] = useState(null);
-  const [assessments, setAssessments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [submittedAssessments, setSubmittedAssessments] = useState({});
-  const [uploadingAssessmentId, setUploadingAssessmentId] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [selectedAssessments, setSelectedAssessments] = useState([]);
   const [displayedAssessments, setDisplayedAssessments] = useState([]);
-  const [groupModalOpen, setGroupModalOpen] = useState(false);
-  const [groupModalAssessment, setGroupModalAssessment] = useState(null);
-  const [groupFile, setGroupFile] = useState(null);
-  const [groupName, setGroupName] = useState("");
-  const [groupMembers, setGroupMembers] = useState([]);
-  const [groupMembersData, setGroupMembersData] = useState([]);
-  const [groupLoading, setGroupLoading] = useState(false);
   const [progressData, setProgressData] = useState({
     total_assessments: 0,
     completed_assessments: 0,
@@ -221,46 +186,50 @@ export default function CourseDetail() {
     Myscore: 0,
   });
   const [scoreData, setScoreData] = useState([]);
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [groupModalAssessment, setGroupModalAssessment] = useState(null);
+  const [groupFile, setGroupFile] = useState(null);
+  const [groupName, setGroupName] = useState("");
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentSubmission, setCurrentSubmission] = useState(null);
+  const [currentAssessment, setCurrentAssessment] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
-  useEffect(() => {
-    if (!sectionId) {
-      setErrorMessage("No section ID found in the URL.");
-      setLoading(false);
-      return;
-    }
-
-    const fetchCourseDetails = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-          navigate("/login");
-          return;
-        }
-
-        const courseResponse = await axios.get(
-          `${apiUrl}/course/details/${sectionId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setCourseDetails(courseResponse.data);
-      } catch (error) {
-        setErrorMessage("An error occurred while loading course details.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCourseDetails();
-  }, [sectionId, navigate]);
+  // Use the custom hook for assessment data handling
+  const {
+    courseDetails,
+    assessments,
+    loading,
+    error: errorMessage,
+    uploading,
+    submittedAssessments,
+    uploadingAssessmentId,
+    loadingPreview,
+    sortColumn,
+    sortOrder,
+    handleSort,
+    handleFileChange,
+    handleGroupSubmit: submitGroup,
+    handleEditSubmission,
+    handleUpdateSubmission,
+    handleViewSubmission,
+    refreshAssessments,
+  } = useAssessmentData(sectionId);
 
   useEffect(() => {
-    if (sectionId) {
-      fetchAssessments();
-      fetchSubmittedAssessments();
-      fetchProgressData();
-    }
+    fetchProgressData();
+    fetchOverallStatistics();
+    fetchScoreData();
   }, [sectionId]);
+
+  useEffect(() => {
+    setDisplayedAssessments(
+      selectedAssessments.length > 0
+        ? selectedAssessments.slice(0, 2)
+        : assessments.slice(0, 2)
+    );
+  }, [selectedAssessments, assessments]);
 
   const fetchProgressData = async () => {
     try {
@@ -275,129 +244,86 @@ export default function CourseDetail() {
     }
   };
 
-  const fetchAssessments = async () => {
+  const fetchOverallStatistics = async () => {
     try {
       const token = localStorage.getItem("authToken");
       const response = await axios.get(
-        `${apiUrl}/assessment/section/${sectionId}`,
+        `${apiUrl}/assessment/statistics/${sectionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setAssessments(response.data);
-      console.log("Fetched assessments:", response.data);
+      setOverallStatistics({
+        ...response.data.overall_statistics,
+        Myscore: response.data.Myscore,
+      });
     } catch (error) {
-      setErrorMessage("An error occurred while retrieving assessments.");
+      console.error("Error fetching overall statistics:", error);
     }
   };
 
-  const fetchSubmittedAssessments = async () => {
+  const fetchScoreData = async () => {
     try {
       const token = localStorage.getItem("authToken");
       const response = await axios.get(
-        `${apiUrl}/submission/student/${sectionId}`,
+        `${apiUrl}/assessment/scores/${sectionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const submitted = response.data.reduce((acc, submission) => {
-        acc[submission.assessment_id] = true;
-        return acc;
-      }, {});
-      setSubmittedAssessments(submitted);
+      setScoreData(response.data);
     } catch (error) {
-      console.error("Error fetching submitted assessments:", error);
+      console.error("Error fetching score data:", error);
     }
   };
 
-  const refreshAssessments = async (showLoading = true) => {
+  // Handle opening the group modal
+  const onOpenGroupModal = async (assessment) => {
+    setGroupModalAssessment(assessment);
+    setGroupFile(null);
+    setGroupModalOpen(true);
+
     try {
-      if (showLoading) setLoading(true);
       const token = localStorage.getItem("authToken");
-      const assessmentResponse = await axios.get(
-        `${apiUrl}/assessment/section/${sectionId}`,
+      const membersRes = await axios.get(
+        `${apiUrl}/section/students/${sectionId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setAssessments(assessmentResponse.data);
-    } catch (err) {
-      setErrorMessage("Error loading data.");
-    } finally {
-      if (showLoading) setLoading(false);
+      setGroupModalAssessment(membersRes.data);
+    } catch (error) {
+      console.error("Error fetching group members:", error);
     }
   };
 
-  const handleFileChange = async (event, assessmentId) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (file.type !== "application/pdf") {
-      alert("Only PDF files are allowed!");
-      return;
+  // Handle opening the edit submission modal
+  const onEditSubmission = async (assessmentId) => {
+    const result = await handleEditSubmission(assessmentId);
+    if (result) {
+      setCurrentSubmission(result.submission);
+      setCurrentAssessment(result.assessment);
+      setEditModalOpen(true);
     }
-    setUploading(true);
-    try {
-      const token = localStorage.getItem("authToken");
+  };
 
-      // Fetch assessment data to confirm assessment type
-      const response = await axios.get(
-        `${apiUrl}/assessment/section/${sectionId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  // Handle group submission
+  const onGroupSubmit = async (selectedMembers) => {
+    const success = await submitGroup(
+      groupFile,
+      groupName,
+      selectedMembers,
+      groupModalAssessment
+    );
 
-      const assessment = response.data.find((a) => a._id === assessmentId);
-      if (!assessment) throw new Error("Assessment not found");
+    if (success) {
+      setGroupModalOpen(false);
+      fetchProgressData();
+    }
+  };
 
-      if (assessment.assignment_type === "group") {
-        // For group submissions
-        setGroupModalAssessment(assessment);
-        setGroupFile(file);
-        setGroupModalOpen(true);
-        setGroupLoading(true);
-
-        // Fetch group members
-        const membersRes = await axios.get(
-          `${apiUrl}/section/students/${sectionId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setGroupMembersData(membersRes.data);
-        setGroupLoading(false);
-      } else {
-        // For individual submissions
-        setUploadingAssessmentId(assessmentId);
-        const userId = localStorage.getItem("UserId");
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("assessment_id", assessmentId);
-        formData.append("group_name", "individual");
-        formData.append("members", JSON.stringify([{ user_id: userId }]));
-        formData.append("file_type", "pdf");
-        formData.append("section_id", sectionId);
-
-        const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-
-        const result = await uploadRes.json();
-        if (uploadRes.ok) {
-          setSubmittedAssessments((prev) => ({
-            ...prev,
-            [assessmentId]: true,
-          }));
-          await fetchProgressData();
-          await refreshAssessments(false);
-        } else {
-          alert(result.message || "File upload failed.");
-        }
-      }
-    } catch (error) {
-      console.error("File upload error:", error);
-      alert("An error occurred during file upload.");
-    } finally {
-      setUploading(false);
-      setUploadingAssessmentId(null);
+  // Handle update submission from edit modal
+  const onUpdateSubmission = async (submissionId, file, groupName = "") => {
+    const success = await handleUpdateSubmission(submissionId, file, groupName);
+    if (success) {
+      setEditModalOpen(false);
+      fetchProgressData();
     }
   };
 
@@ -415,14 +341,6 @@ export default function CourseDetail() {
     });
   };
 
-  useEffect(() => {
-    setDisplayedAssessments(
-      selectedAssessments.length > 0
-        ? selectedAssessments.slice(0, 2)
-        : assessments.slice(0, 2)
-    );
-  }, [selectedAssessments, assessments]);
-
   const modalStyle = {
     position: "absolute",
     top: "50%",
@@ -434,94 +352,6 @@ export default function CourseDetail() {
     p: 4,
     borderRadius: 2,
   };
-
-  // Group submission handler
-  const handleGroupSubmit = async (selectedMembers) => {
-    if (!groupFile || !groupModalAssessment) {
-      alert("Please select a file and ensure the assessment is loaded.");
-      return;
-    }
-
-    try {
-      setGroupLoading(true);
-      const token = localStorage.getItem("authToken");
-      const formData = new FormData();
-      formData.append("file", groupFile);
-      formData.append("assessment_id", groupModalAssessment._id);
-      formData.append("group_name", groupName);
-      formData.append(
-        "members",
-        JSON.stringify(selectedMembers.map((id) => ({ user_id: id })))
-      );
-      formData.append("file_type", "pdf");
-      formData.append("section_id", sectionId);
-
-      const uploadRes = await fetch(`${apiUrl}/submission/submit`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      const result = await uploadRes.json();
-      if (uploadRes.ok) {
-        setSubmittedAssessments((prev) => ({
-          ...prev,
-          [groupModalAssessment._id]: true,
-        }));
-        setGroupModalOpen(false);
-        await fetchProgressData();
-        await refreshAssessments(false);
-      } else {
-        alert(result.message || "Group submission failed.");
-      }
-    } catch (error) {
-      console.error("Group submission error:", error);
-      alert("An error occurred during group submission.");
-    } finally {
-      setGroupLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const fetchOverallStatistics = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const response = await axios.get(
-          `${apiUrl}/assessment/statistics/${sectionId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setOverallStatistics({
-          ...response.data.overall_statistics,
-          Myscore: response.data.Myscore,
-        });
-      } catch (error) {
-        console.error("Error fetching overall statistics:", error);
-      }
-    };
-
-    if (sectionId) {
-      fetchOverallStatistics();
-    }
-  }, [sectionId]);
-
-  useEffect(() => {
-    const fetchScoreData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const response = await axios.get(
-          `${apiUrl}/assessment/scores/${sectionId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setScoreData(response.data);
-      } catch (error) {
-        console.error("Error fetching score data:", error);
-      }
-    };
-
-    if (sectionId) {
-      fetchScoreData();
-    }
-  }, [sectionId]);
 
   if (loading) {
     return (
@@ -680,12 +510,14 @@ export default function CourseDetail() {
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center">
                   <h5 className="card-title">Assessment</h5>
-                  <Button
-                    onClick={handleModalOpen}
-                    sx={{ minWidth: "auto", p: 1, color: "black" }}
-                  >
-                    <SegmentIcon />
-                  </Button>
+                  <CardOptionsMenu
+                    title="Assessment Options"
+                    cardType="assessment"
+                    onRefresh={() => refreshAssessments()}
+                    onExport={() => console.log("Export assessments")}
+                    onFullscreen={() => console.log("Fullscreen assessments")}
+                    onFilter={() => handleModalOpen()}
+                  />
                 </div>
 
                 <div className="text-muted mb-3">
@@ -701,35 +533,35 @@ export default function CourseDetail() {
                             {assessment.assessment_name}
                           </span>
                           {submittedAssessments[assessment._id] ? (
-                            <StyledButton
-                              variant="contained"
-                              isSubmitted={true}
-                              disabled
-                            >
-                              Edit Submission
-                            </StyledButton>
+                            <div>
+                              <StyledButton
+                                variant="contained"
+                                isSubmitted={true}
+                                onClick={() => onEditSubmission(assessment._id)}
+                                sx={{ mr: 1 }}
+                              >
+                                Edit
+                              </StyledButton>
+                              <ViewButton
+                                variant="contained"
+                                onClick={() =>
+                                  handleViewSubmission(assessment._id)
+                                }
+                              >
+                                {loadingPreview === assessment._id ? (
+                                  <CircularProgress size={16} color="inherit" />
+                                ) : (
+                                  <VisibilityIcon fontSize="small" />
+                                )}
+                              </ViewButton>
+                            </div>
                           ) : assessment.assignment_type === "group" ? (
                             <GroupButton
                               variant="contained"
                               disabled={uploading}
-                              onClick={async () => {
-                                setGroupModalAssessment(assessment);
-                                setGroupFile(null);
-                                setGroupModalOpen(true);
-                                setGroupLoading(true);
-                                const token = localStorage.getItem("authToken");
-                                const membersRes = await axios.get(
-                                  `${apiUrl}/section/students/${sectionId}`,
-                                  {
-                                    headers: {
-                                      Authorization: `Bearer ${token}`,
-                                    },
-                                  }
-                                );
-                                setGroupMembersData(membersRes.data);
-                                setGroupLoading(false);
-                              }}
+                              onClick={() => onOpenGroupModal(assessment)}
                             >
+                              <GroupIcon />
                               Create Group
                             </GroupButton>
                           ) : (
@@ -738,7 +570,7 @@ export default function CourseDetail() {
                               role={undefined}
                               variant="contained"
                               tabIndex={-1}
-                              isSubmitted={submittedAssessments[assessment._id]}
+                              isSubmitted={false}
                               disabled={uploading}
                             >
                               {uploadingAssessmentId === assessment._id
@@ -772,9 +604,13 @@ export default function CourseDetail() {
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center">
                   <h5 className="card-title mb-0">Score</h5>
-                  <Button sx={{ minWidth: "auto", p: 1, color: "black" }}>
-                    <SegmentIcon />
-                  </Button>
+                  <CardOptionsMenu
+                    title="Score Options"
+                    cardType="score"
+                    onRefresh={() => fetchScoreData()}
+                    onExport={() => console.log("Export scores")}
+                    onFullscreen={() => console.log("Fullscreen scores")}
+                  />
                 </div>
                 <div className="mt-3">
                   {scoreData.length > 0 ? (
@@ -807,36 +643,41 @@ export default function CourseDetail() {
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center">
                   <h5 className="card-title mb-0">Feedback</h5>
-                  <Button sx={{ minWidth: "auto", p: 1, color: "black" }}>
-                    <SegmentIcon />
-                  </Button>
+                  <CardOptionsMenu
+                    title="Feedback Options"
+                    cardType="feedback"
+                    onRefresh={() => refreshAssessments(false)}
+                    onFullscreen={() => console.log("Fullscreen feedback")}
+                  />
                 </div>
                 <div className="mt-3">
-                  {assessments.length > 0 ? (
-                    assessments.slice(0, 3).map((assessment) => (
-                      <div
-                        key={assessment._id}
-                        className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
-                      >
-                        <span>{assessment.assessment_name}</span>
-                        {assessment.pdf_link ? (
-                          <button
-                            className="btn btn-link p-0"
-                            onClick={() =>
-                              navigate(
-                                `/student/view-pdf/${sectionId}/${encodeURIComponent(
-                                  assessment.pdf_link
-                                )}/${assessment._id}`
-                              )
-                            }
-                          >
-                            <i className="fas fa-file-pdf text-danger"></i>
-                          </button>
-                        ) : (
-                          <span className="text-muted">No file</span>
-                        )}
-                      </div>
-                    ))
+                  {scoreData.length > 0 ? (
+                    scoreData.slice(0, 3).map((score) => {
+                      // Find matching submission from submissionData
+                      const submission =
+                        submittedAssessments[score.assessment_id];
+                      return (
+                        <div
+                          key={score.assessment_id}
+                          className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
+                        >
+                          <span>{score.assessment_name}</span>
+                          {submission ? (
+                            <DescriptionIcon
+                              onClick={() =>
+                                navigate(
+                                  `/student/view-pdf/${sectionId}/${encodeURIComponent(
+                                    submission.file_url.split("/").pop()
+                                  )}/${score.assessment_id}`
+                                )
+                              }
+                            />
+                          ) : (
+                            <span className="text-muted">No file</span>
+                          )}
+                        </div>
+                      );
+                    })
                   ) : (
                     <div className="d-flex justify-content-center align-items-center h-100">
                       <span className="text-muted">No feedback available</span>
@@ -884,18 +725,35 @@ export default function CourseDetail() {
           </Modal>
         </Row>
       </Container>
-      <GroupSubmitModal
-        open={groupModalOpen}
-        onClose={() => setGroupModalOpen(false)}
-        assessment={groupModalAssessment}
-        file={groupFile}
-        groupName={groupName}
-        setGroupName={setGroupName}
-        groupMembersData={groupMembersData}
-        uploading={uploading}
-        onSubmit={handleGroupSubmit}
-        setGroupFile={setGroupFile}
-      />
+
+      {/* Group submission modal */}
+      {groupModalOpen && (
+        <GroupSubmitModal
+          open={groupModalOpen}
+          onClose={() => setGroupModalOpen(false)}
+          assessment={groupModalAssessment}
+          file={groupFile}
+          groupName={groupName}
+          setGroupName={setGroupName}
+          groupMembersData={groupModalAssessment}
+          uploading={uploading}
+          onSubmit={onGroupSubmit}
+          setGroupFile={setGroupFile}
+        />
+      )}
+
+      {/* Edit submission modal */}
+      {editModalOpen && currentSubmission && currentAssessment && (
+        <EditSubmissionModal
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          submission={currentSubmission}
+          assessment={currentAssessment}
+          uploading={uploading}
+          onSubmit={onUpdateSubmission}
+          previewUrl={currentSubmission.previewUrl}
+        />
+      )}
     </>
   );
 }
