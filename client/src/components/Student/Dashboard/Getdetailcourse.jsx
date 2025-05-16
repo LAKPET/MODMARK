@@ -11,21 +11,25 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Checkbox from "@mui/material/Checkbox";
+import { MDBBtn } from "mdb-react-ui-kit";
 import Button from "@mui/material/Button";
 import "../../../assets/Styles/Course/Getcourse.css";
 import SegmentIcon from "@mui/icons-material/Segment";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import TuneIcon from "@mui/icons-material/Tune";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import InfoIcon from "@mui/icons-material/Info";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import TuneIcon from "@mui/icons-material/Tune";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DescriptionIcon from "@mui/icons-material/Description";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormControl from "@mui/material/FormControl";
+import FormLabel from "@mui/material/FormLabel";
+
 // Import styled components
 import {
   StyledButton,
@@ -73,14 +77,7 @@ const ScoreBar = ({ score, maxScore = 100, label }) => {
   );
 };
 
-const CardOptionsMenu = ({
-  title,
-  cardType,
-  onRefresh,
-  onExport,
-  onFullscreen,
-  onFilter,
-}) => {
+const CardOptionsMenu = ({ title, cardType, onRefresh, onFilter }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -98,12 +95,6 @@ const CardOptionsMenu = ({
       case "refresh":
         onRefresh();
         break;
-      case "export":
-        onExport();
-        break;
-      case "fullscreen":
-        onFullscreen();
-        break;
       case "filter":
         onFilter();
         break;
@@ -111,6 +102,9 @@ const CardOptionsMenu = ({
         break;
     }
   };
+
+  // Only show relevant menu options for assessment card
+  const showFilterOption = cardType === "assessment";
 
   return (
     <>
@@ -143,26 +137,12 @@ const CardOptionsMenu = ({
           <RefreshIcon fontSize="small" sx={{ mr: 1 }} />
           Refresh data
         </MenuItem>
-        {cardType === "assessment" && (
+        {showFilterOption && (
           <MenuItem onClick={() => handleAction("filter")}>
             <TuneIcon fontSize="small" sx={{ mr: 1 }} />
             Filter by status
           </MenuItem>
         )}
-        {(cardType === "score" || cardType === "assessment") && (
-          <MenuItem onClick={() => handleAction("export")}>
-            <FileDownloadIcon fontSize="small" sx={{ mr: 1 }} />
-            Export data
-          </MenuItem>
-        )}
-        <MenuItem onClick={() => handleAction("fullscreen")}>
-          <FullscreenIcon fontSize="small" sx={{ mr: 1 }} />
-          Expand view
-        </MenuItem>
-        <MenuItem onClick={() => handleAction("info")}>
-          <InfoIcon fontSize="small" sx={{ mr: 1 }} />
-          Help
-        </MenuItem>
       </Menu>
     </>
   );
@@ -172,6 +152,7 @@ export default function CourseDetail() {
   const { id: sectionId } = useParams();
   const navigate = useNavigate();
   const [openModal, setOpenModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all");
   const [selectedAssessments, setSelectedAssessments] = useState([]);
   const [displayedAssessments, setDisplayedAssessments] = useState([]);
   const [progressData, setProgressData] = useState({
@@ -193,6 +174,7 @@ export default function CourseDetail() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentSubmission, setCurrentSubmission] = useState(null);
   const [currentAssessment, setCurrentAssessment] = useState(null);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -224,12 +206,19 @@ export default function CourseDetail() {
   }, [sectionId]);
 
   useEffect(() => {
-    setDisplayedAssessments(
-      selectedAssessments.length > 0
-        ? selectedAssessments.slice(0, 2)
-        : assessments.slice(0, 2)
-    );
-  }, [selectedAssessments, assessments]);
+    let filteredAssessments =
+      selectedAssessments.length > 0 ? selectedAssessments : assessments;
+
+    // Apply the status filter
+    if (filterStatus !== "all") {
+      filteredAssessments = filteredAssessments.filter((assessment) => {
+        const isSubmitted = !!submittedAssessments[assessment._id];
+        return filterStatus === "submitted" ? isSubmitted : !isSubmitted;
+      });
+    }
+
+    setDisplayedAssessments(filteredAssessments.slice(0, 2));
+  }, [selectedAssessments, assessments, submittedAssessments, filterStatus]);
 
   const fetchProgressData = async () => {
     try {
@@ -330,6 +319,9 @@ export default function CourseDetail() {
   const handleModalOpen = () => setOpenModal(true);
   const handleModalClose = () => setOpenModal(false);
 
+  const handleFilterModalOpen = () => setFilterModalOpen(true);
+  const handleFilterModalClose = () => setFilterModalOpen(false);
+
   const handleAssessmentSelect = (assessment) => {
     setSelectedAssessments((prev) => {
       const isSelected = prev.find((a) => a._id === assessment._id);
@@ -339,6 +331,11 @@ export default function CourseDetail() {
         return [...prev, assessment];
       }
     });
+  };
+
+  const handleFilterChange = (event) => {
+    setFilterStatus(event.target.value);
+    handleFilterModalClose();
   };
 
   const modalStyle = {
@@ -514,19 +511,25 @@ export default function CourseDetail() {
                     title="Assessment Options"
                     cardType="assessment"
                     onRefresh={() => refreshAssessments()}
-                    onExport={() => console.log("Export assessments")}
-                    onFullscreen={() => console.log("Fullscreen assessments")}
-                    onFilter={() => handleModalOpen()}
+                    onFilter={() => handleFilterModalOpen()}
                   />
                 </div>
 
                 <div className="text-muted mb-3">
                   Progress: {progressData.completed_assessments}/
                   {progressData.total_assessments} assessments completed
+                  {filterStatus !== "all" && (
+                    <span className="ms-2">
+                      | Showing:{" "}
+                      {filterStatus === "submitted"
+                        ? "Submitted"
+                        : "Not Submitted"}
+                    </span>
+                  )}
                 </div>
                 {displayedAssessments.length > 0 ? (
                   displayedAssessments.map((assessment) => (
-                    <div key={assessment._id} className="mt-3">
+                    <div key={assessment._id} className="mt-3 ">
                       <div className="mb-3 p-3 bg-white rounded">
                         <div className="d-flex justify-content-between align-items-center">
                           <span className="small text-muted">
@@ -608,8 +611,6 @@ export default function CourseDetail() {
                     title="Score Options"
                     cardType="score"
                     onRefresh={() => fetchScoreData()}
-                    onExport={() => console.log("Export scores")}
-                    onFullscreen={() => console.log("Fullscreen scores")}
                   />
                 </div>
                 <div className="mt-3">
@@ -647,7 +648,6 @@ export default function CourseDetail() {
                     title="Feedback Options"
                     cardType="feedback"
                     onRefresh={() => refreshAssessments(false)}
-                    onFullscreen={() => console.log("Fullscreen feedback")}
                   />
                 </div>
                 <div className="mt-3">
@@ -721,6 +721,54 @@ export default function CourseDetail() {
                 <Button onClick={handleModalClose} variant="contained">
                   Close
                 </Button>
+              </div>
+            </Box>
+          </Modal>
+
+          {/* Modal for Status Filter */}
+          <Modal
+            open={filterModalOpen}
+            onClose={handleFilterModalClose}
+            aria-labelledby="status-filter-modal"
+          >
+            <Box sx={modalStyle}>
+              <h4 className="mb-3">Filter by Status</h4>
+              <FormControl component="fieldset">
+                <FormLabel component="legend">Submission Status</FormLabel>
+                <RadioGroup
+                  aria-label="submission-status"
+                  name="submission-status"
+                  value={filterStatus}
+                  onChange={handleFilterChange}
+                >
+                  <FormControlLabel
+                    value="all"
+                    control={<Radio />}
+                    label="All Assessments"
+                  />
+                  <FormControlLabel
+                    value="submitted"
+                    control={<Radio />}
+                    label="Submitted"
+                  />
+                  <FormControlLabel
+                    value="not-submitted"
+                    control={<Radio />}
+                    label="Not Submitted"
+                  />
+                </RadioGroup>
+              </FormControl>
+              <div className="d-flex justify-content-end mt-3">
+                <MDBBtn
+                  outline
+                  onClick={handleFilterModalClose}
+                  style={{
+                    color: "#CDC9C9",
+                    borderColor: "#CDC9C9",
+                  }}
+                >
+                  Cancel
+                </MDBBtn>
               </div>
             </Box>
           </Modal>
