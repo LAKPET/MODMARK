@@ -259,6 +259,61 @@ router.get(
   }
 );
 
+router.get(
+  "/student/with-groups/:student_id",
+  verifyToken,
+  checkAdminOrStudent,
+  async (req, res) => {
+    const { student_id } = req.params;
+
+    try {
+      // Find all groups the student is part of
+      const studentGroups = await GroupMember.find({
+        user_id: student_id,
+      }).distinct("group_id");
+
+      // Find all direct submissions by the student
+      const directSubmissions = await Submission.find({ student_id })
+        .populate(
+          "assessment_id",
+          "assessment_name rubric_id due_date assignment_type"
+        )
+        .populate("group_id", "group_name")
+        .lean();
+
+      // Find all group submissions where the student is a member
+      const groupSubmissions = await Submission.find({
+        group_id: { $in: studentGroups },
+        student_id: { $ne: student_id }, // Exclude submissions directly made by this student (already in directSubmissions)
+      })
+        .populate(
+          "assessment_id",
+          "assessment_name rubric_id due_date assignment_type"
+        )
+        .populate("group_id", "group_name")
+        .populate("student_id", "first_name last_name email") // Include info about who submitted
+        .lean();
+
+      // For each group submission, add a flag indicating it's from a group member
+      groupSubmissions.forEach((submission) => {
+        submission.isGroupMemberSubmission = true;
+      });
+
+      // Combine both sets of submissions
+      const allSubmissions = [...directSubmissions, ...groupSubmissions];
+
+      if (!allSubmissions || allSubmissions.length === 0) {
+        return res.status(404).json({ message: "No submissions found" });
+      }
+
+      res.status(200).json(allSubmissions);
+    } catch (error) {
+      console.error("Error fetching student submissions:", error);
+      res.status(500).json({ message: "Error fetching student submissions" });
+    }
+  }
+);
+
 // Get list of submissions for all groups with specified fields
 router.get("/list/all", verifyToken, checkAdminOrStudent, async (req, res) => {
   try {

@@ -6,8 +6,10 @@ import axios from "axios";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
+import Tooltip from "@mui/material/Tooltip";
 import "../../../assets/Styles/Assessment/Getassessment.css";
 import { formatDateTime } from "../../../utils/FormatDateTime";
 import { sortAssessments } from "../../../utils/SortAssessment";
@@ -65,6 +67,12 @@ const GroupButton = styled(Button)({
   },
 });
 
+const GroupIcon = styled(PeopleAltIcon)({
+  fontSize: "1.1rem",
+  marginRight: "6px",
+  color: "#5c90d2",
+});
+
 export default function GetStudentAssessment() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -101,7 +109,7 @@ export default function GetStudentAssessment() {
 
   const sortedAssessments = sortAssessments(assessments, sortColumn, sortOrder);
 
-  // Fetch submitted assessments function
+  // Fetch submitted assessments function (updated to use the new endpoint)
   const fetchSubmittedAssessments = async () => {
     try {
       const token = localStorage.getItem("authToken");
@@ -111,21 +119,24 @@ export default function GetStudentAssessment() {
         return;
       }
 
+      // Use the new endpoint that fetches direct and group submissions
       const response = await axios.get(
-        `${apiUrl}/submission/student/${userId}`,
+        `${apiUrl}/submission/student/with-groups/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       console.log("Fetched submissions:", response.data);
+
       // Process submissions and create an object with assessment_id as keys
       const submitted = {};
       if (response.data && Array.isArray(response.data)) {
         response.data.forEach((submission) => {
           if (submission && submission.assessment_id) {
-            submitted[
-              submission.assessment_id._id || submission.assessment_id
-            ] = submission;
+            // Store submission with assessment ID as key
+            const assessmentId =
+              submission.assessment_id._id || submission.assessment_id;
+            submitted[assessmentId] = submission;
           }
         });
       }
@@ -379,6 +390,7 @@ export default function GetStudentAssessment() {
       const submission = submittedAssessments[assessmentId];
       const assessment = assessments.find((a) => a._id === assessmentId);
 
+      // สามารถแก้ไขได้แม้เป็นงานกลุ่มผู้อื่น (ให้สมาชิกคนอื่นในกลุ่มแก้ไขได้)
       if (submission && assessment) {
         // Get file preview URL if available
         if (submission.file_url) {
@@ -530,6 +542,11 @@ export default function GetStudentAssessment() {
               const hasSubmission =
                 submittedAssessments[assessment._id] !== undefined;
 
+              // Check if this is a group member's submission
+              const isGroupMemberSubmission =
+                hasSubmission &&
+                submittedAssessments[assessment._id].isGroupMemberSubmission;
+
               return (
                 <tr key={assessment._id}>
                   <td
@@ -540,7 +557,16 @@ export default function GetStudentAssessment() {
                       )
                     }
                   >
-                    {assessment.assessment_name}
+                    <div className="d-flex align-items-center">
+                      {assessment.assessment_name}
+                      {isGroupMemberSubmission && (
+                        <Tooltip
+                          title={`Submitted by ${submittedAssessments[assessment._id].student_id.first_name} ${submittedAssessments[assessment._id].student_id.last_name}`}
+                        >
+                          <GroupIcon className="ms-1  text-secondary" />
+                        </Tooltip>
+                      )}
+                    </div>
                   </td>
                   <td>{formatDateTime(assessment.publish_date)}</td>
                   <td>{formatDateTime(assessment.due_date)}</td>
@@ -569,7 +595,9 @@ export default function GetStudentAssessment() {
                             onClick={() => handleEditSubmission(assessment._id)}
                             disabled={uploading}
                           >
-                            Edit Submission
+                            {isGroupMemberSubmission
+                              ? "Edit Submission"
+                              : "Edit Submission"}
                           </StyledButton>
                         </>
                       ) : assessment.assignment_type === "group" ? (
