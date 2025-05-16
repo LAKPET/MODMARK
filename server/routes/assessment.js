@@ -368,11 +368,39 @@ router.get(
 
       const assessmentIds = assessmentsInSection.map((a) => a._id);
 
-      // Count submissions for this student in the section
-      const completedAssessments = await Submission.countDocuments({
+      // 1. หา group ที่ user เป็นสมาชิกใน section และ assessment เหล่านี้
+      const groupMembers = await GroupMember.find({
         assessment_id: { $in: assessmentIds },
-        student_id: student_id,
+        user_id: student_id,
+      }).select("group_id assessment_id").lean();
+
+      // Map assessment_id => group_id ที่ user อยู่
+      const assessmentGroupMap = {};
+      groupMembers.forEach((gm) => {
+        assessmentGroupMap[gm.assessment_id.toString()] = gm.group_id;
       });
+
+      // 2. หา submission ที่ assessment_id และ group_id ตรงกับที่ user อยู่
+      const submissions = await Submission.find({
+        assessment_id: { $in: assessmentIds },
+        group_id: { $in: Object.values(assessmentGroupMap) },
+      }).select("assessment_id group_id").lean();
+
+      // 3. นับ assessment ที่มี submission ในกลุ่มของ user
+      const completedAssessmentSet = new Set();
+      submissions.forEach((sub) => {
+        // ตรวจสอบว่า submission นี้เป็นของกลุ่มที่ user อยู่ใน assessment นั้น
+        const aid = sub.assessment_id.toString();
+        if (
+          assessmentGroupMap[aid] &&
+          sub.group_id &&
+          sub.group_id.toString() === assessmentGroupMap[aid].toString()
+        ) {
+          completedAssessmentSet.add(aid);
+        }
+      });
+
+      const completedAssessments = completedAssessmentSet.size;
 
       res.status(200).json({
         course_id: section.course_id,
