@@ -31,9 +31,7 @@ const NavigationBar = ({
   const handlePreviousSubmission = () => {
     if (onPrevious && !isFirstSubmission) {
       // Save any pending changes before navigation
-      // This could include saving comments, scores, etc.
-
-      console.log("Navigating to previous submission");
+      console.log("Navigating to previous submission...");
       onPrevious();
     }
   };
@@ -41,9 +39,7 @@ const NavigationBar = ({
   const handleNextSubmission = () => {
     if (onNext && !isLastSubmission) {
       // Save any pending changes before navigation
-      // This could include saving comments, scores, etc.
-
-      console.log("Navigating to next submission");
+      console.log("Navigating to next submission...");
       onNext();
     }
   };

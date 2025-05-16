@@ -1016,8 +1016,9 @@ const PDFReviewer = ({
       setComment("");
       setSelectionPosition(null);
 
-      // Navigate to next submission
-      if (onNext) {
+      // Navigate to next submission using the passed callback
+      console.log("Calling onNext callback for next submission");
+      if (onNext && typeof onNext === "function") {
         onNext();
       }
     } catch (error) {
@@ -1041,8 +1042,9 @@ const PDFReviewer = ({
       setComment("");
       setSelectionPosition(null);
 
-      // Navigate to previous submission
-      if (onPrevious) {
+      // Navigate to previous submission using the passed callback
+      console.log("Calling onPrevious callback for previous submission");
+      if (onPrevious && typeof onPrevious === "function") {
         onPrevious();
       }
     } catch (error) {

@@ -671,6 +671,7 @@ export default function CourseDetail() {
                                   )}/${score.assessment_id}`
                                 )
                               }
+                              sx={{ cursor: "pointer" }}
                             />
                           ) : (
                             <span className="text-muted">No file</span>

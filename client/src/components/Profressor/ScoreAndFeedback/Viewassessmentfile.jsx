@@ -17,7 +17,14 @@ export default function Viewassessmentfile() {
   const [allSubmissions, setAllSubmissions] = useState([]);
   const [currentSubmissionIndex, setCurrentSubmissionIndex] = useState(-1);
 
+  // มีการเพิ่ม dependency ใน useEffect เพื่อให้โหลดข้อมูลใหม่เมื่อ parameters เปลี่ยน
   useEffect(() => {
+    // Reset states when params change
+    setPdfUrl(null);
+    setError(null);
+    setLoading(true);
+    setSubmissionInfo(null);
+
     const fetchSubmissionData = async () => {
       try {
         const token = localStorage.getItem("authToken");
@@ -35,23 +42,32 @@ export default function Viewassessmentfile() {
           }
         );
 
-        console.log("All submissions testtt:", submissionsResponse.data);
-        console.log("Looking for submission with fileUrl:", fileUrl);
+        console.log("All submissions:", submissionsResponse.data);
 
         // Store all submissions
         setAllSubmissions(submissionsResponse.data);
 
-        // Find the specific submission that matches our fileUrl
-        const decodedFileUrl = decodeURIComponent(`PDF/${fileUrl}`);
-        console.log("Decoded fileUrl with prefix:", decodedFileUrl);
-        console.log(
-          "API response file_urls:",
-          submissionsResponse.data.map((sub) => sub.file_url)
-        );
+        // ปรับปรุงการค้นหา submission ที่ตรงกับ fileUrl ที่ส่งมา
+        // Check if fileUrl already contains the 'PDF/' prefix
+        const normalizedFileUrl = fileUrl.startsWith("PDF/")
+          ? fileUrl
+          : `PDF/${fileUrl}`;
+        const decodedFileUrl = decodeURIComponent(normalizedFileUrl);
+        console.log("Searching for file URL:", decodedFileUrl);
 
-        const submission = submissionsResponse.data.find(
+        // หา submission ที่ตรงกับ fileUrl
+        let submission = submissionsResponse.data.find(
           (sub) => decodeURIComponent(sub.file_url) === decodedFileUrl
         );
+
+        // หากไม่พบ ลองตัด PDF/ ออกและค้นหาอีกครั้ง
+        if (!submission) {
+          const alternativeFileUrl = decodedFileUrl.replace(/^PDF\//, "");
+          console.log("Trying alternative URL:", alternativeFileUrl);
+          submission = submissionsResponse.data.find((sub) =>
+            sub.file_url.includes(alternativeFileUrl)
+          );
+        }
 
         if (!submission) {
           console.error("Submission not found. File URL:", fileUrl);
@@ -62,20 +78,11 @@ export default function Viewassessmentfile() {
 
         // Find the index of the current submission
         const submissionIndex = submissionsResponse.data.findIndex(
-          (sub) => sub.file_url === fileUrl
+          (sub) => sub._id === submission._id
         );
         setCurrentSubmissionIndex(submissionIndex);
 
-        // Now fetch the PDF using the submission data
-        const pdfRequestData = {
-          assessment_id: submission.assessment_id._id,
-          submission_id: submission._id,
-          group_id: submission.group_id._id,
-          student_id: submission.student_id._id,
-          file_url: submission.file_url,
-        };
-        console.log("PDF request data:", pdfRequestData);
-
+        // ดึงข้อมูล PDF
         // Extract filename from file_url
         const filename = submission.file_url;
         console.log("Extracted filename:", filename);
@@ -102,15 +109,17 @@ export default function Viewassessmentfile() {
           assessment_id: submission.assessment_id._id,
           assessment_name: submission.assessment_id.assessment_name,
           submission_id: submission._id,
-          group_id: submission.group_id._id,
-          group_name: submission.group_id.group_name,
-          student_id: submission.student_id._id,
-          student_info: {
-            personal_num: submission.student_id.personal_num,
-            email: submission.student_id.email,
-            first_name: submission.student_id.first_name,
-            last_name: submission.student_id.last_name,
-          },
+          group_id: submission.group_id?._id,
+          group_name: submission.group_id?.group_name,
+          student_id: submission.student_id?._id,
+          student_info: submission.student_id
+            ? {
+                personal_num: submission.student_id.personal_num,
+                email: submission.student_id.email,
+                first_name: submission.student_id.first_name,
+                last_name: submission.student_id.last_name,
+              }
+            : null,
           file_url: submission.file_url,
           file_type: submission.file_type,
           status: submission.status,
@@ -119,6 +128,9 @@ export default function Viewassessmentfile() {
         };
         console.log("Setting submission info:", submissionData);
         setSubmissionInfo(submissionData);
+
+        // Important: Set loading to false after everything is loaded
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching data:", err);
         console.error("Error details:", {
@@ -127,35 +139,56 @@ export default function Viewassessmentfile() {
           status: err.response?.status,
         });
         setError("Error loading submission data.");
-      } finally {
         setLoading(false);
       }
     };
 
     fetchSubmissionData();
-  }, [id, assessmentId, apiUrl, fileUrl]);
+  }, [id, assessmentId, apiUrl, fileUrl]); // fileUrl added as dependency to reload on navigation
 
-  // Function to navigate to the previous submission
   const handlePrevious = () => {
     if (currentSubmissionIndex > 0) {
       const prevSubmission = allSubmissions[currentSubmissionIndex - 1];
-      // Extract just the filename part from file_url, without the "PDF/" prefix
-      const fileUrlParam = prevSubmission.file_url.replace(/^PDF\//, "");
-      navigate(
-        `/professor/viewassessment/${id}/PDF/${encodeURIComponent(fileUrlParam)}/${assessmentId}`
-      );
+      // แสดงสถานะ loading ก่อนเปลี่ยนหน้า
+      setLoading(true);
+
+      // ดึงเอาเฉพาะชื่อไฟล์จาก file_url โดยตัด PDF/ ออกถ้ามี
+      const rawFileUrl = prevSubmission.file_url;
+      const fileUrlParam = rawFileUrl.startsWith("PDF/")
+        ? rawFileUrl.substring(4)
+        : rawFileUrl;
+
+      console.log("Navigating to previous submission:", fileUrlParam);
+
+      // สร้าง URL สำหรับ navigate
+      const newRoute = `/professor/viewassessment/${id}/PDF/${encodeURIComponent(fileUrlParam)}/${assessmentId}`;
+      console.log("New route:", newRoute);
+
+      // นำทางไปยังหน้าใหม่
+      navigate(newRoute);
     }
   };
 
-  // Function to navigate to the next submission
   const handleNext = () => {
     if (currentSubmissionIndex < allSubmissions.length - 1) {
       const nextSubmission = allSubmissions[currentSubmissionIndex + 1];
-      // Extract just the filename part from file_url, without the "PDF/" prefix
-      const fileUrlParam = nextSubmission.file_url.replace(/^PDF\//, "");
-      navigate(
-        `/professor/viewassessment/${id}/PDF/${encodeURIComponent(fileUrlParam)}/${assessmentId}`
-      );
+      // แสดงสถานะ loading ก่อนเปลี่ยนหน้า
+      setLoading(true);
+
+      // ดึงเอาเฉพาะชื่อไฟล์จาก file_url โดยตัด PDF/ ออกถ้ามี
+      const rawFileUrl = nextSubmission.file_url;
+      const fileUrlParam = rawFileUrl.startsWith("PDF/")
+        ? rawFileUrl.substring(4)
+        : rawFileUrl;
+
+      console.log("Navigating to next submission:", fileUrlParam);
+
+      // สร้าง URL สำหรับ navigate
+      const newRoute = `/professor/viewassessment/${id}/PDF/${encodeURIComponent(fileUrlParam)}/${assessmentId}`;
+      console.log("New route:", newRoute);
+
+      // นำทางไปยังหน้าใหม่
+      navigate(newRoute);
     }
   };
 
