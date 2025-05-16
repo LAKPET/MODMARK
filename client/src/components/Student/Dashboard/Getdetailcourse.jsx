@@ -813,22 +813,28 @@ export default function CourseDetail() {
                 </div>
                 <div className="mt-3">
                   {assessments.length > 0 ? (
-                    assessments.slice(0, 3).map((assessment, index) => (
+                    assessments.slice(0, 3).map((assessment) => (
                       <div
                         key={assessment._id}
                         className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
                       >
                         <span>{assessment.assessment_name}</span>
-                        <button
-                          className="fas fa-file-alt"
-                          onClick={() =>
-                            navigate(
-                              `/student/view-pdf/${sectionId}/${encodeURIComponent(
-                                assessment.pdf_link.split("/").pop()
-                              )}/${assessment._id}`
-                            )
-                          }
-                        ></button>
+                        {assessment.pdf_link ? (
+                          <button
+                            className="btn btn-link p-0"
+                            onClick={() =>
+                              navigate(
+                                `/student/view-pdf/${sectionId}/${encodeURIComponent(
+                                  assessment.pdf_link
+                                )}/${assessment._id}`
+                              )
+                            }
+                          >
+                            <i className="fas fa-file-pdf text-danger"></i>
+                          </button>
+                        ) : (
+                          <span className="text-muted">No file</span>
+                        )}
                       </div>
                     ))
                   ) : (

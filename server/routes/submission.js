@@ -11,7 +11,11 @@ const {
   checkAdminOrProfessorOrStudent,
   checkAdminOrProfessorOrTeacherAssistant,
 } = require("./middleware");
-const { upload, uploadFile, fetchFileFromStorage } = require("../services/storageService");
+const {
+  upload,
+  uploadFile,
+  fetchFileFromStorage,
+} = require("../services/storageService");
 const bucket = require("../services/firebaseConfig"); // เพิ่มบรรทัดนี้
 const fs = require("fs");
 const path = require("path");
@@ -143,27 +147,23 @@ router.post(
 );
 
 // Serve PDF files
-router.post(
-  "/pdf/file",
-  verifyToken,
-  async (req, res) => {
-    const { filename } = req.body;
+router.post("/pdf/file", verifyToken, async (req, res) => {
+  const { filename } = req.body;
 
-    try {
-      // ดึง URL ของไฟล์จาก Firebase Storage
-      const fileUrl = await fetchFileFromStorage(filename);
-      if (!fileUrl) {
-        return res.status(404).json({ message: "File not found" });
-      }
-
-      // ส่ง URL กลับไปให้ client
-      res.status(200).json({ fileUrl });
-    } catch (error) {
-      console.error("Error fetching file from storage:", error);
-      res.status(500).json({ message: "Error fetching file from storage" });
+  try {
+    // ดึง URL ของไฟล์จาก Firebase Storage
+    const fileUrl = await fetchFileFromStorage(filename);
+    if (!fileUrl) {
+      return res.status(404).json({ message: "File not found" });
     }
+
+    // ส่ง URL กลับไปให้ client
+    res.status(200).json({ fileUrl });
+  } catch (error) {
+    console.error("Error fetching file from storage:", error);
+    res.status(500).json({ message: "Error fetching file from storage" });
   }
-);
+});
 
 // Read (Get all submissions in this assessment)
 router.get(
@@ -234,6 +234,30 @@ router.get("/:id", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Error fetching submission", error });
   }
 });
+
+router.get(
+  "/student/:student_id",
+  verifyToken,
+  checkAdminOrStudent,
+  async (req, res) => {
+    const { student_id } = req.params;
+
+    try {
+      const submissions = await Submission.find({ student_id })
+        .populate("assessment_id", "assessment_name rubric_id due_date")
+        .populate("group_id", "group_name");
+
+      if (!submissions || submissions.length === 0) {
+        return res.status(404).json({ message: "No submissions found" });
+      }
+
+      res.status(200).json(submissions);
+    } catch (error) {
+      console.error("Error fetching student submissions:", error);
+      res.status(500).json({ message: "Error fetching student submissions" });
+    }
+  }
+);
 
 // Get list of submissions for all groups with specified fields
 router.get("/list/all", verifyToken, checkAdminOrStudent, async (req, res) => {
