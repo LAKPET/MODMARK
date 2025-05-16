@@ -23,7 +23,7 @@ import TuneIcon from "@mui/icons-material/Tune";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import InfoIcon from "@mui/icons-material/Info";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import GroupSubmitModal from "./GroupSubmitModal";
+import GroupSubmitModal from "../Assessment/components/GroupSubmitModal";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 

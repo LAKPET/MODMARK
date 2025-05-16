@@ -11,7 +11,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import "../../../assets/Styles/Dashboard/GetDetail.css";
 import { formatDateTime } from "../../../utils/FormatDateTime";
-import GroupSubmitModal from "../Dashboard/GroupSubmitModal";
+import GroupSubmitModal from "./components/GroupSubmitModal";
 import EditSubmissionModal from "../Assessment/components/EditsubmissionModal";
 import Tooltip from "@mui/material/Tooltip";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
