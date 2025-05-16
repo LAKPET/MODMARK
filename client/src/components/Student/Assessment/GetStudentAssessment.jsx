@@ -32,12 +32,12 @@ const VisuallyHiddenInput = styled("input")({
 
 const StyledButton = styled(Button)(({ isSubmitted }) => ({
   color: "white",
-  backgroundColor: isSubmitted ? "#4CAF50" : "#5c90d2",
+  backgroundColor: isSubmitted ? "#8b5f34" : "#5c90d2",
   fontSize: "0.875rem",
   textTransform: "none",
   minWidth: "140px",
   "&:hover": {
-    backgroundColor: isSubmitted ? "#388E3C" : "#4a7ab0",
+    backgroundColor: isSubmitted ? "#6f4f2f" : "#4a7ab0",
   },
 }));
 
@@ -46,8 +46,10 @@ const ViewButton = styled(Button)({
   backgroundColor: "#FF9800",
   fontSize: "0.875rem",
   textTransform: "none",
+  height: "37px",
   minWidth: "40px",
-  marginRight: "8px",
+  marginLeft: "6px",
+  // marginRight: "8px",
   "&:hover": {
     backgroundColor: "#F57C00",
   },
@@ -90,6 +92,7 @@ export default function GetStudentAssessment() {
   const [groupMembersData, setGroupMembersData] = useState([]);
   const [groupLoading, setGroupLoading] = useState(false);
   const [submissionPreviews, setSubmissionPreviews] = useState({});
+  const [loadingPreview, setLoadingPreview] = useState(null);
 
   // เพิ่มสถานะสำหรับ Edit Submission Modal
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -109,7 +112,7 @@ export default function GetStudentAssessment() {
 
   const sortedAssessments = sortAssessments(assessments, sortColumn, sortOrder);
 
-  // Fetch submitted assessments function (updated to use the new endpoint)
+  // Fetch submitted assessments function (updated to NOT fetch preview URLs)
   const fetchSubmittedAssessments = async () => {
     try {
       const token = localStorage.getItem("authToken");
@@ -119,7 +122,7 @@ export default function GetStudentAssessment() {
         return;
       }
 
-      // Use the new endpoint that fetches direct and group submissions
+      // Use the endpoint that fetches direct and group submissions
       const response = await axios.get(
         `${apiUrl}/submission/student/with-groups/${userId}`,
         {
@@ -144,27 +147,45 @@ export default function GetStudentAssessment() {
       console.log("Updated submissions:", submitted);
       setSubmittedAssessments(submitted);
 
-      // Get preview URLs for PDF files
-      const previewUrls = {};
-      for (const assessmentId in submitted) {
-        if (submitted[assessmentId].file_url) {
-          try {
-            const fileResponse = await axios.post(
-              `${apiUrl}/submission/pdf/file`,
-              { filename: submitted[assessmentId].file_url },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (fileResponse.data && fileResponse.data.fileUrl) {
-              previewUrls[assessmentId] = fileResponse.data.fileUrl;
-            }
-          } catch (err) {
-            console.error("Error getting preview URL:", err);
-          }
-        }
-      }
-      setSubmissionPreviews(previewUrls);
+      // No longer automatically fetching preview URLs here
     } catch (error) {
       console.error("Error fetching submitted assessments:", error);
+    }
+  };
+
+  // Function to get a preview URL on demand
+  const fetchPreviewUrl = async (assessmentId) => {
+    try {
+      setLoadingPreview(assessmentId);
+      const token = localStorage.getItem("authToken");
+      const submission = submittedAssessments[assessmentId];
+
+      if (!submission || !submission.file_url) {
+        alert("No file available for preview");
+        return null;
+      }
+
+      const fileResponse = await axios.post(
+        `${apiUrl}/submission/pdf/file`,
+        { filename: submission.file_url },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (fileResponse.data && fileResponse.data.fileUrl) {
+        // Store the URL in state
+        setSubmissionPreviews((prev) => ({
+          ...prev,
+          [assessmentId]: fileResponse.data.fileUrl,
+        }));
+        return fileResponse.data.fileUrl;
+      }
+      return null;
+    } catch (err) {
+      console.error("Error getting preview URL:", err);
+      alert("Could not load file preview");
+      return null;
+    } finally {
+      setLoadingPreview(null);
     }
   };
 
@@ -257,26 +278,6 @@ export default function GetStudentAssessment() {
           [assessmentId]: newSubmission,
         }));
 
-        // Get preview URL for the uploaded file
-        if (newSubmission.file_url) {
-          try {
-            const fileResponse = await axios.post(
-              `${apiUrl}/submission/pdf/file`,
-              { filename: newSubmission.file_url },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (fileResponse.data && fileResponse.data.fileUrl) {
-              setSubmissionPreviews((prev) => ({
-                ...prev,
-                [assessmentId]: fileResponse.data.fileUrl,
-              }));
-            }
-          } catch (err) {
-            console.error("Error getting preview URL:", err);
-          }
-        }
-
         alert("File uploaded successfully!");
       } else {
         alert(result.message || "File upload failed.");
@@ -328,26 +329,6 @@ export default function GetStudentAssessment() {
           [groupModalAssessment._id]: newSubmission,
         }));
 
-        // Get preview URL for the uploaded file
-        if (newSubmission.file_url) {
-          try {
-            const fileResponse = await axios.post(
-              `${apiUrl}/submission/pdf/file`,
-              { filename: newSubmission.file_url },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (fileResponse.data && fileResponse.data.fileUrl) {
-              setSubmissionPreviews((prev) => ({
-                ...prev,
-                [groupModalAssessment._id]: fileResponse.data.fileUrl,
-              }));
-            }
-          } catch (err) {
-            console.error("Error getting preview URL:", err);
-          }
-        }
-
         alert("Group submission successful!");
         setGroupModalOpen(false);
       } else {
@@ -383,26 +364,21 @@ export default function GetStudentAssessment() {
     }
   };
 
-  // Edit submission handler
+  // Edit submission handler - Modified to fetch preview URL on demand
   const handleEditSubmission = async (assessmentId) => {
     try {
-      const token = localStorage.getItem("authToken");
       const submission = submittedAssessments[assessmentId];
       const assessment = assessments.find((a) => a._id === assessmentId);
 
-      // สามารถแก้ไขได้แม้เป็นงานกลุ่มผู้อื่น (ให้สมาชิกคนอื่นในกลุ่มแก้ไขได้)
       if (submission && assessment) {
-        // Get file preview URL if available
-        if (submission.file_url) {
-          const response = await axios.post(
-            `${apiUrl}/submission/pdf/file`,
-            { filename: submission.file_url },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+        // Fetch the preview URL if needed for the edit modal
+        let previewUrl = submissionPreviews[assessmentId];
+        if (!previewUrl && submission.file_url) {
+          previewUrl = await fetchPreviewUrl(assessmentId);
+        }
 
-          if (response.data && response.data.fileUrl) {
-            submission.previewUrl = response.data.fileUrl;
-          }
+        if (previewUrl) {
+          submission.previewUrl = previewUrl;
         }
 
         setCurrentSubmission(submission);
@@ -443,24 +419,13 @@ export default function GetStudentAssessment() {
             [updatedSubmission.assessment_id]: updatedSubmission,
           }));
 
-          // Update preview URL if there's a new file
-          if (file && updatedSubmission.file_url) {
-            try {
-              const fileResponse = await axios.post(
-                `${apiUrl}/submission/pdf/file`,
-                { filename: updatedSubmission.file_url },
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-
-              if (fileResponse.data && fileResponse.data.fileUrl) {
-                setSubmissionPreviews((prev) => ({
-                  ...prev,
-                  [updatedSubmission.assessment_id]: fileResponse.data.fileUrl,
-                }));
-              }
-            } catch (err) {
-              console.error("Error getting updated preview URL:", err);
-            }
+          // Clear any existing preview URL since the file has changed
+          if (file) {
+            setSubmissionPreviews((prev) => {
+              const newPreviews = { ...prev };
+              delete newPreviews[updatedSubmission.assessment_id];
+              return newPreviews;
+            });
           }
         }
 
@@ -477,9 +442,16 @@ export default function GetStudentAssessment() {
     }
   };
 
-  // View submission handler
-  const handleViewSubmission = (assessmentId) => {
-    const previewUrl = submissionPreviews[assessmentId];
+  // View submission handler - Modified to fetch preview URL on demand
+  const handleViewSubmission = async (assessmentId) => {
+    // Check if we already have the preview URL
+    let previewUrl = submissionPreviews[assessmentId];
+
+    // If not, fetch it
+    if (!previewUrl) {
+      previewUrl = await fetchPreviewUrl(assessmentId);
+    }
+
     if (previewUrl) {
       window.open(previewUrl, "_blank");
     } else {
@@ -574,21 +546,6 @@ export default function GetStudentAssessment() {
                     <div className="d-flex align-items-center">
                       {hasSubmission ? (
                         <>
-                          {/* Show view button if we have a preview URL */}
-                          {submissionPreviews[assessment._id] && (
-                            <ViewButton
-                              variant="contained"
-                              onClick={() =>
-                                window.open(
-                                  submissionPreviews[assessment._id],
-                                  "_blank"
-                                )
-                              }
-                              disabled={uploading}
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </ViewButton>
-                          )}
                           <StyledButton
                             variant="contained"
                             isSubmitted={true}
@@ -599,6 +556,21 @@ export default function GetStudentAssessment() {
                               ? "Edit Submission"
                               : "Edit Submission"}
                           </StyledButton>
+
+                          {/* View button with on-demand preview URL fetching */}
+                          <ViewButton
+                            variant="contained"
+                            onClick={() => handleViewSubmission(assessment._id)}
+                            disabled={
+                              loadingPreview === assessment._id || uploading
+                            }
+                          >
+                            {loadingPreview === assessment._id ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <VisibilityIcon fontSize="small" />
+                            )}
+                          </ViewButton>
                         </>
                       ) : assessment.assignment_type === "group" ? (
                         <GroupButton
