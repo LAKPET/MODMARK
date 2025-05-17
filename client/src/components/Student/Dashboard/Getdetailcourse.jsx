@@ -29,6 +29,8 @@ import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 // Import styled components
 import {
@@ -46,115 +48,14 @@ import EditSubmissionModal from "../Assessment/components/EditsubmissionModal";
 // Import custom hook for assessment data handling
 import useAssessmentData from "../Assessment/hooks/useAssessmentData";
 
-const ScoreBar = ({ score, maxScore = 100, label }) => {
-  const percentage = (score / maxScore) * 100;
-  return (
-    <div className="mb-3">
-      <div className="d-flex justify-content-between mb-1">
-        <span>{label}</span>
-        <span>{score}</span>
-      </div>
-      <div
-        className="score-bar-container"
-        style={{
-          width: "100%",
-          height: "20px",
-          backgroundColor: "#e9ecef",
-          borderRadius: "10px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${percentage}%`,
-            height: "100%",
-            backgroundColor: label === "My Score" ? "#FF6B6B" : "#8B5F34",
-            transition: "width 0.3s ease-in-out",
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-const CardOptionsMenu = ({ title, cardType, onRefresh, onFilter }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleAction = (action) => {
-    handleClose();
-    switch (action) {
-      case "refresh":
-        onRefresh();
-        break;
-      case "filter":
-        onFilter();
-        break;
-      default:
-        break;
-    }
-  };
-
-  // Only show relevant menu options for assessment card
-  const showFilterOption = cardType === "assessment";
-
-  return (
-    <>
-      <Tooltip title="Options">
-        <IconButton
-          id={`${cardType}-menu-button`}
-          aria-controls={open ? `${cardType}-menu` : undefined}
-          aria-haspopup="true"
-          aria-expanded={open ? "true" : undefined}
-          onClick={handleClick}
-          sx={{ minWidth: "auto", p: 1, color: "black" }}
-        >
-          <SegmentIcon />
-        </IconButton>
-      </Tooltip>
-      <Menu
-        id={`${cardType}-menu`}
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          "aria-labelledby": `${cardType}-menu-button`,
-        }}
-      >
-        <MenuItem disabled sx={{ fontWeight: "bold" }}>
-          {title}
-        </MenuItem>
-        <Divider />
-        <MenuItem onClick={() => handleAction("refresh")}>
-          <RefreshIcon fontSize="small" sx={{ mr: 1 }} />
-          Refresh data
-        </MenuItem>
-        {showFilterOption && (
-          <MenuItem onClick={() => handleAction("filter")}>
-            <TuneIcon fontSize="small" sx={{ mr: 1 }} />
-            Filter by status
-          </MenuItem>
-        )}
-      </Menu>
-    </>
-  );
-};
-
 export default function CourseDetail() {
   const { id: sectionId } = useParams();
   const navigate = useNavigate();
   const [openModal, setOpenModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedAssessments, setSelectedAssessments] = useState([]);
-  const [displayedAssessments, setDisplayedAssessments] = useState([]);
+  const [filteredAssessments, setFilteredAssessments] = useState([]);
+  const [showAllAssessments, setShowAllAssessments] = useState(false);
   const [progressData, setProgressData] = useState({
     total_assessments: 0,
     completed_assessments: 0,
@@ -206,18 +107,19 @@ export default function CourseDetail() {
   }, [sectionId]);
 
   useEffect(() => {
-    let filteredAssessments =
+    // Apply filters to assessments
+    let filtered =
       selectedAssessments.length > 0 ? selectedAssessments : assessments;
 
     // Apply the status filter
     if (filterStatus !== "all") {
-      filteredAssessments = filteredAssessments.filter((assessment) => {
+      filtered = filtered.filter((assessment) => {
         const isSubmitted = !!submittedAssessments[assessment._id];
         return filterStatus === "submitted" ? isSubmitted : !isSubmitted;
       });
     }
 
-    setDisplayedAssessments(filteredAssessments.slice(0, 2));
+    setFilteredAssessments(filtered);
   }, [selectedAssessments, assessments, submittedAssessments, filterStatus]);
 
   const fetchProgressData = async () => {
@@ -260,6 +162,18 @@ export default function CourseDetail() {
     } catch (error) {
       console.error("Error fetching score data:", error);
     }
+  };
+
+  // Toggle between showing initial assessments (2) and all assessments
+  const toggleShowAllAssessments = () => {
+    setShowAllAssessments(!showAllAssessments);
+  };
+
+  // Get the assessments to display based on showAllAssessments state
+  const getDisplayedAssessments = () => {
+    return showAllAssessments
+      ? filteredAssessments
+      : filteredAssessments.slice(0, 2);
   };
 
   // Handle opening the group modal
@@ -368,6 +282,9 @@ export default function CourseDetail() {
   // Calculate the gauge value based on completed assessments
   const gaugeValue = progressData.completed_assessments;
   const gaugeMax = progressData.total_assessments;
+
+  // Get assessments to display (either first 2 or all)
+  const displayedAssessments = getDisplayedAssessments();
 
   return (
     <>
@@ -527,74 +444,112 @@ export default function CourseDetail() {
                     </span>
                   )}
                 </div>
-                {displayedAssessments.length > 0 ? (
-                  displayedAssessments.map((assessment) => (
-                    <div key={assessment._id} className="mt-3 ">
-                      <div className="mb-3 p-3 bg-white rounded">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <span className="small text-muted">
-                            {assessment.assessment_name}
-                          </span>
-                          {submittedAssessments[assessment._id] ? (
-                            <div>
+
+                {/* Assessment List Container with scrollable area */}
+                <div
+                  className="assessment-list-container"
+                  style={{
+                    maxHeight: showAllAssessments ? "400px" : "auto",
+                    overflowY: showAllAssessments ? "auto" : "visible",
+                    transition: "max-height 0.3s ease",
+                  }}
+                >
+                  {filteredAssessments.length > 0 ? (
+                    displayedAssessments.map((assessment) => (
+                      <div key={assessment._id} className="mt-3">
+                        <div className="mb-3 p-3 bg-white rounded">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span className="small text-muted">
+                              {assessment.assessment_name}
+                            </span>
+                            {submittedAssessments[assessment._id] ? (
+                              <div>
+                                <StyledButton
+                                  variant="contained"
+                                  isSubmitted={true}
+                                  onClick={() =>
+                                    onEditSubmission(assessment._id)
+                                  }
+                                  sx={{ mr: 1 }}
+                                >
+                                  Edit
+                                </StyledButton>
+                                <ViewButton
+                                  variant="contained"
+                                  onClick={() =>
+                                    handleViewSubmission(assessment._id)
+                                  }
+                                >
+                                  {loadingPreview === assessment._id ? (
+                                    <CircularProgress
+                                      size={16}
+                                      color="inherit"
+                                    />
+                                  ) : (
+                                    <VisibilityIcon fontSize="small" />
+                                  )}
+                                </ViewButton>
+                              </div>
+                            ) : assessment.assignment_type === "group" ? (
+                              <GroupButton
+                                variant="contained"
+                                disabled={uploading}
+                                onClick={() => onOpenGroupModal(assessment)}
+                              >
+                                <GroupIcon />
+                                Create Group
+                              </GroupButton>
+                            ) : (
                               <StyledButton
+                                component="label"
+                                role={undefined}
                                 variant="contained"
-                                isSubmitted={true}
-                                onClick={() => onEditSubmission(assessment._id)}
-                                sx={{ mr: 1 }}
+                                tabIndex={-1}
+                                isSubmitted={false}
+                                disabled={uploading}
                               >
-                                Edit
+                                {uploadingAssessmentId === assessment._id
+                                  ? "Uploading..."
+                                  : "Submission"}
+                                <VisuallyHiddenInput
+                                  type="file"
+                                  onChange={(e) =>
+                                    handleFileChange(e, assessment._id)
+                                  }
+                                  accept=".pdf"
+                                />
                               </StyledButton>
-                              <ViewButton
-                                variant="contained"
-                                onClick={() =>
-                                  handleViewSubmission(assessment._id)
-                                }
-                              >
-                                {loadingPreview === assessment._id ? (
-                                  <CircularProgress size={16} color="inherit" />
-                                ) : (
-                                  <VisibilityIcon fontSize="small" />
-                                )}
-                              </ViewButton>
-                            </div>
-                          ) : assessment.assignment_type === "group" ? (
-                            <GroupButton
-                              variant="contained"
-                              disabled={uploading}
-                              onClick={() => onOpenGroupModal(assessment)}
-                            >
-                              <GroupIcon />
-                              Create Group
-                            </GroupButton>
-                          ) : (
-                            <StyledButton
-                              component="label"
-                              role={undefined}
-                              variant="contained"
-                              tabIndex={-1}
-                              isSubmitted={false}
-                              disabled={uploading}
-                            >
-                              {uploadingAssessmentId === assessment._id
-                                ? "Uploading..."
-                                : "Submission"}
-                              <VisuallyHiddenInput
-                                type="file"
-                                onChange={(e) =>
-                                  handleFileChange(e, assessment._id)
-                                }
-                                accept=".pdf"
-                              />
-                            </StyledButton>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="d-flex justify-content-center align-items-center h-50">
+                      <span className="text-muted">
+                        No assessments available
+                      </span>
                     </div>
-                  ))
-                ) : (
-                  <div className="d-flex justify-content-center align-items-center h-50">
-                    <span className="text-muted">No assessments available</span>
+                  )}
+                </div>
+
+                {/* Show More/Less Button - only show if we have more than 2 assessments */}
+                {filteredAssessments.length > 2 && (
+                  <div className="text-center mt-3">
+                    <Button
+                      onClick={toggleShowAllAssessments}
+                      variant="text"
+                      endIcon={
+                        showAllAssessments ? (
+                          <KeyboardArrowUpIcon />
+                        ) : (
+                          <KeyboardArrowDownIcon />
+                        )
+                      }
+                      sx={{ color: "#8B5F34" }}
+                    >
+                      {showAllAssessments ? "Show Less" : "Show More"}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -725,7 +680,6 @@ export default function CourseDetail() {
             </Box>
           </Modal>
 
-          {/* Modal for Status Filter */}
           <Modal
             open={filterModalOpen}
             onClose={handleFilterModalClose}
@@ -772,37 +726,140 @@ export default function CourseDetail() {
               </div>
             </Box>
           </Modal>
+
+          {/* Group submission modal */}
+          {groupModalOpen && (
+            <GroupSubmitModal
+              open={groupModalOpen}
+              onClose={() => setGroupModalOpen(false)}
+              assessment={groupModalAssessment}
+              file={groupFile}
+              groupName={groupName}
+              setGroupName={setGroupName}
+              groupMembersData={groupModalAssessment}
+              uploading={uploading}
+              onSubmit={onGroupSubmit}
+              setGroupFile={setGroupFile}
+            />
+          )}
+
+          {/* Edit submission modal */}
+          {editModalOpen && currentSubmission && currentAssessment && (
+            <EditSubmissionModal
+              open={editModalOpen}
+              onClose={() => setEditModalOpen(false)}
+              submission={currentSubmission}
+              assessment={currentAssessment}
+              uploading={uploading}
+              onSubmit={onUpdateSubmission}
+              previewUrl={currentSubmission.previewUrl}
+            />
+          )}
         </Row>
       </Container>
-
-      {/* Group submission modal */}
-      {groupModalOpen && (
-        <GroupSubmitModal
-          open={groupModalOpen}
-          onClose={() => setGroupModalOpen(false)}
-          assessment={groupModalAssessment}
-          file={groupFile}
-          groupName={groupName}
-          setGroupName={setGroupName}
-          groupMembersData={groupModalAssessment}
-          uploading={uploading}
-          onSubmit={onGroupSubmit}
-          setGroupFile={setGroupFile}
-        />
-      )}
-
-      {/* Edit submission modal */}
-      {editModalOpen && currentSubmission && currentAssessment && (
-        <EditSubmissionModal
-          open={editModalOpen}
-          onClose={() => setEditModalOpen(false)}
-          submission={currentSubmission}
-          assessment={currentAssessment}
-          uploading={uploading}
-          onSubmit={onUpdateSubmission}
-          previewUrl={currentSubmission.previewUrl}
-        />
-      )}
     </>
   );
 }
+// CardOptionsMenu component remains the same
+const CardOptionsMenu = ({ title, cardType, onRefresh, onFilter }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleAction = (action) => {
+    handleClose();
+    switch (action) {
+      case "refresh":
+        onRefresh();
+        break;
+      case "filter":
+        onFilter();
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Only show relevant menu options for assessment card
+  const showFilterOption = cardType === "assessment";
+
+  return (
+    <>
+      <Tooltip title="Options">
+        <IconButton
+          id={`${cardType}-menu-button`}
+          aria-controls={open ? `${cardType}-menu` : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? "true" : undefined}
+          onClick={handleClick}
+          sx={{ minWidth: "auto", p: 1, color: "black" }}
+        >
+          <SegmentIcon />
+        </IconButton>
+      </Tooltip>
+      <Menu
+        id={`${cardType}-menu`}
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          "aria-labelledby": `${cardType}-menu-button`,
+        }}
+      >
+        <MenuItem disabled sx={{ fontWeight: "bold" }}>
+          {title}
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => handleAction("refresh")}>
+          <RefreshIcon fontSize="small" sx={{ mr: 1 }} />
+          Refresh data
+        </MenuItem>
+        {showFilterOption && (
+          <MenuItem onClick={() => handleAction("filter")}>
+            <TuneIcon fontSize="small" sx={{ mr: 1 }} />
+            Filter by status
+          </MenuItem>
+        )}
+      </Menu>
+    </>
+  );
+};
+
+// ScoreBar component remains the same
+const ScoreBar = ({ score, maxScore = 100, label }) => {
+  const percentage = (score / maxScore) * 100;
+  return (
+    <div className="mb-3">
+      <div className="d-flex justify-content-between mb-1">
+        <span>{label}</span>
+        <span>{score}</span>
+      </div>
+      <div
+        className="score-bar-container"
+        style={{
+          width: "100%",
+          height: "20px",
+          backgroundColor: "#e9ecef",
+          borderRadius: "10px",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${percentage}%`,
+            height: "100%",
+            backgroundColor: label === "My Score" ? "#FF6B6B" : "#8B5F34",
+            transition: "width 0.3s ease-in-out",
+          }}
+        />
+      </div>
+    </div>
+  );
+};
