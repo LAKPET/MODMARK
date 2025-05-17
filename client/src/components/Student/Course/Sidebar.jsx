@@ -1,17 +1,12 @@
 import React from "react";
+import { NavLink } from "react-router-dom"; // Use NavLink for active class
 import Nav from "react-bootstrap/Nav";
 import Logo from "../../../assets/Picture/Logo.png";
-import { useLocation } from "react-router-dom"; // Import useLocation hook
 import SchoolIcon from "@mui/icons-material/School";
 import HelpIcon from "@mui/icons-material/Help";
 import "../../../assets/Styles/Sidebar.css";
 
 function Sidebar() {
-  const location = useLocation(); // Get the current route
-
-  // Helper function to determine if a link is active
-  const isActive = (path) => location.pathname === path;
-
   return (
     <div
       className="d-flex flex-column text-black fw-normal p-3"
@@ -19,10 +14,10 @@ function Sidebar() {
         height: "100vh",
         width: "230px",
         position: "fixed",
-        top: 0, // Sidebar starts from the top
+        top: 0,
         left: 0,
-        zIndex: 10, // Sidebar is on top of Navbar
-        backgroundColor: "#8B5F34", // Updated background color
+        zIndex: 10,
+        backgroundColor: "#8B5F34",
       }}
     >
       {/* Logo */}
@@ -37,19 +32,19 @@ function Sidebar() {
       {/* Sidebar Links */}
       <Nav className="flex-column mt-4">
         <Nav.Link
-          href="/course"
-          className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/course") ? "active" : ""
-          }`}
+          as={NavLink}
+          to="/student/course"
+          className="text-white mb-3 sidebar-link d-flex align-items-center"
+          activeClassName="active" // Automatically adds 'active' class
         >
           <SchoolIcon className="me-2" />
           <span>Course</span>
         </Nav.Link>
         <Nav.Link
-          href="/support"
-          className={`text-white mb-3 sidebar-link d-flex align-items-center ${
-            isActive("/support") ? "active" : ""
-          }`}
+          as={NavLink}
+          to="/support"
+          className="text-white mb-3 sidebar-link d-flex align-items-center"
+          activeClassName="active" // Automatically adds 'active' class
         >
           <HelpIcon className="me-2" />
           <span>Support</span>

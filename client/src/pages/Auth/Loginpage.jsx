@@ -6,6 +6,7 @@ import {
   MDBRow,
   MDBCol,
   MDBInput,
+  MDBIcon, // Import MDBIcon for the eye icon
 } from "mdb-react-ui-kit";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "mdb-react-ui-kit/dist/css/mdb.min.css";
@@ -18,6 +19,7 @@ import { authAPI } from "../../services/authAPI";
 function Loginpage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -159,16 +161,27 @@ function Loginpage() {
                 )}
               </div>
 
-              <div className="mb-4">
+              <div className="mb-4 position-relative">
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Password"
                   id="form2"
-                  type="password"
+                  type={showPassword ? "text" : "password"} // Toggle between text and password
                   onChange={(e) => setPassword(e.target.value)}
                   value={password}
                   invalid={!!errors.password}
                   className={errors.password ? "border-danger" : ""}
+                />
+                <MDBIcon
+                  icon={showPassword ? "eye-slash" : "eye"} // Change icon based on state
+                  className="position-absolute"
+                  style={{
+                    top: "50%",
+                    right: "10px",
+                    transform: "translateY(-50%)",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setShowPassword(!showPassword)} // Toggle state on click
                 />
                 {errors.password && (
                   <div
