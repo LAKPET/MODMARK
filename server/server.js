@@ -20,39 +20,11 @@ const commentRoutes = require("./routes/comment"); // Import comment routes
 const scoreRoutes = require("./routes/score"); // Import score routes
 
 const app = express();
-
-// const corsOptions = {
-//   origin: 'http://localhost:5173', // URL ของ Frontend
-//   methods: ['GET', 'POST'],
-//   allowedHeaders: ['Content-Type'],
-// };
-// app.use(cors(corsOptions));
 app.use(cors());
-
 app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
   res.send("Welcome to the API!");
-});
-
-app.get("/pdf", async (req, res) => {
-  const fileUrl = req.query.url;
-
-  try {
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch PDF: ${response.statusText}`);
-    }
-
-    const buffer = await response.arrayBuffer();
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.send(Buffer.from(buffer));
-  } catch (error) {
-    console.error("Error fetching PDF:", error);
-    res.status(500).send("Error fetching PDF");
-  }
 });
 
 // ใช้ตัวแปร DB_link จาก .env
