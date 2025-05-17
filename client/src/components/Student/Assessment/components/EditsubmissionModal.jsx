@@ -153,9 +153,35 @@ export default function EditSubmissionModal({
     }
   };
 
-  const handleDeleteFile = () => {
-    setNewFile(null);
-    setLocalPreviewUrl("");
+  const handleDeleteFile = async () => {
+    if (!submission || !submission._id) return;
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this file?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+      const response = await axios.delete(
+        `${apiUrl}/submission/delete/${submission._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.status === 200) {
+        alert("File deleted successfully!");
+        setLocalPreviewUrl(""); // ลบ preview URL
+        setCurrentFileName(""); // ลบชื่อไฟล์
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert("Failed to delete the file. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -257,7 +283,17 @@ export default function EditSubmissionModal({
                     width: "100%",
                   }}
                 >
-                  {currentFileName}
+                  {currentFileName}{" "}
+                  <DeleteIcon
+                    variant="text"
+                    color="error"
+                    size="small"
+                    // startIcon={<DeleteIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFile();
+                    }}
+                  />
                 </div>
               ) : (
                 <div style={{ textAlign: "center", width: "100%" }}>
@@ -348,16 +384,6 @@ export default function EditSubmissionModal({
                     }}
                   >
                     <Typography>{newFile.name}</Typography>
-                    {/* <Button
-                      variant="text"
-                      color="error"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteFile();
-                      }}
-                    >
-                      <DeleteIcon />
-                    </Button> */}
                   </Box>
                 </div>
               )}
