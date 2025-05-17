@@ -309,6 +309,33 @@ export default function CourseDetail() {
     handleFilterModalClose();
   };
 
+  // Updates for Score Card
+  const [showAllScores, setShowAllScores] = useState(false);
+
+  // Toggle between showing initial scores (3) and all scores
+  const toggleShowAllScores = () => {
+    setShowAllScores(!showAllScores);
+  };
+
+  // Get the scores to display based on showAllScores state
+  const getDisplayedScores = () => {
+    return showAllScores ? filteredScoreData : filteredScoreData.slice(0, 3);
+  };
+
+  // Updates for Feedback Card
+  const [showAllFeedback, setShowAllFeedback] = useState(false);
+
+  // Toggle between showing initial feedback (3) and all feedback
+  const toggleShowAllFeedback = () => {
+    setShowAllFeedback(!showAllFeedback);
+  };
+
+  // Get the feedback to display based on showAllFeedback state
+  const getDisplayedFeedback = () => {
+    return showAllFeedback
+      ? filteredFeedbackData
+      : filteredFeedbackData.slice(0, 3);
+  };
   const modalStyle = {
     position: "absolute",
     top: "50%",
@@ -610,7 +637,6 @@ export default function CourseDetail() {
               </div>
             </div>
           </Col>
-          {/* Score Card */}
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
@@ -625,29 +651,58 @@ export default function CourseDetail() {
                 </div>
                 <div className="mt-3">
                   {filteredScoreData.length > 0 ? (
-                    filteredScoreData.slice(0, 3).map((score) => (
-                      <div
-                        key={score.assessment_id}
-                        className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
-                      >
-                        <span>{score.assessment_name}</span>
-                        <span className="badge bg-light text-dark">
-                          {score.student_score !== null
-                            ? `${score.student_score}/${score.max_score}`
-                            : "-/" + score.max_score}
-                        </span>
-                      </div>
-                    ))
+                    <div
+                      className="score-list-container"
+                      style={{
+                        maxHeight: showAllScores ? "400px" : "auto",
+                        overflowY: showAllScores ? "auto" : "visible",
+                        transition: "max-height 0.3s ease",
+                      }}
+                    >
+                      {getDisplayedScores().map((score) => (
+                        <div
+                          key={score.assessment_id}
+                          className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
+                        >
+                          <span>{score.assessment_name}</span>
+                          <span className="badge bg-light text-dark">
+                            {score.student_score !== null
+                              ? `${score.student_score}/${score.max_score}`
+                              : "-/" + score.max_score}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="d-flex justify-content-center align-items-center h-100">
                       <span className="text-muted">No scores available</span>
+                    </div>
+                  )}
+
+                  {/* Show More/Less Button - only show if we have more than 3 scores */}
+                  {filteredScoreData.length > 3 && (
+                    <div className="text-center mt-3">
+                      <Button
+                        onClick={toggleShowAllScores}
+                        variant="text"
+                        endIcon={
+                          showAllScores ? (
+                            <KeyboardArrowUpIcon />
+                          ) : (
+                            <KeyboardArrowDownIcon />
+                          )
+                        }
+                        sx={{ color: "#8B5F34" }}
+                      >
+                        {showAllScores ? "Show Less" : "Show More"}
+                      </Button>
                     </div>
                   )}
                 </div>
               </div>
             </div>
           </Col>
-          {/* Feedback Card */}
+
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
               <div className="card-body">
@@ -662,36 +717,65 @@ export default function CourseDetail() {
                 </div>
                 <div className="mt-3">
                   {filteredFeedbackData.length > 0 ? (
-                    filteredFeedbackData.slice(0, 3).map((score) => {
-                      // Find matching submission from submissionData
-                      const submission =
-                        submittedAssessments[score.assessment_id];
-                      return (
-                        <div
-                          key={score.assessment_id}
-                          className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
-                        >
-                          <span>{score.assessment_name}</span>
-                          {submission ? (
-                            <DescriptionIcon
-                              onClick={() =>
-                                navigate(
-                                  `/student/view-pdf/${sectionId}/${encodeURIComponent(
-                                    submission.file_url.split("/").pop()
-                                  )}/${score.assessment_id}`
-                                )
-                              }
-                              sx={{ cursor: "pointer" }}
-                            />
-                          ) : (
-                            <span className="text-muted">No file</span>
-                          )}
-                        </div>
-                      );
-                    })
+                    <div
+                      className="feedback-list-container"
+                      style={{
+                        maxHeight: showAllFeedback ? "400px" : "auto",
+                        overflowY: showAllFeedback ? "auto" : "visible",
+                        transition: "max-height 0.3s ease",
+                      }}
+                    >
+                      {getDisplayedFeedback().map((score) => {
+                        // Find matching submission from submissionData
+                        const submission =
+                          submittedAssessments[score.assessment_id];
+                        return (
+                          <div
+                            key={score.assessment_id}
+                            className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
+                          >
+                            <span>{score.assessment_name}</span>
+                            {submission ? (
+                              <DescriptionIcon
+                                onClick={() =>
+                                  navigate(
+                                    `/student/view-pdf/${sectionId}/${encodeURIComponent(
+                                      submission.file_url.split("/").pop()
+                                    )}/${score.assessment_id}`
+                                  )
+                                }
+                                sx={{ cursor: "pointer" }}
+                              />
+                            ) : (
+                              <span className="text-muted">No file</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <div className="d-flex justify-content-center align-items-center h-100">
                       <span className="text-muted">No feedback available</span>
+                    </div>
+                  )}
+
+                  {/* Show More/Less Button - only show if we have more than 3 feedback items */}
+                  {filteredFeedbackData.length > 3 && (
+                    <div className="text-center mt-3">
+                      <Button
+                        onClick={toggleShowAllFeedback}
+                        variant="text"
+                        endIcon={
+                          showAllFeedback ? (
+                            <KeyboardArrowUpIcon />
+                          ) : (
+                            <KeyboardArrowDownIcon />
+                          )
+                        }
+                        sx={{ color: "#8B5F34" }}
+                      >
+                        {showAllFeedback ? "Show Less" : "Show More"}
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -733,7 +817,6 @@ export default function CourseDetail() {
               </div>
             </Box>
           </Modal>
-
           <Modal
             open={scoreFilterModalOpen}
             onClose={handleScoreFilterModalClose}
