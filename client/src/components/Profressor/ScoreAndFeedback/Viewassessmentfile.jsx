@@ -89,7 +89,7 @@ export default function Viewassessmentfile() {
 
         // Send filename to the new API to get the file URL
         const fileResponse = await axios.post(
-          "http://localhost:5001/submission/pdf/file",
+          `${apiUrl}/submission/pdf/file`,
           { filename },
           {
             headers: { Authorization: `Bearer ${token}` },

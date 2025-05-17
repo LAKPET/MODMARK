@@ -127,7 +127,7 @@ const ScorePanel = ({
       if (userRole === "student") {
         try {
           const response = await axios.get(
-            `http://localhost:5001/score/assessment/finalscore`,
+            `${apiUrl}/score/assessment/finalscore`,
             {
               params: {
                 assessment_id: submissionInfo.assessment_id,

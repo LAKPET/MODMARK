@@ -36,7 +36,7 @@ const PDFViewer = ({
   const pageRefs = useRef({});
   const [visiblePageNumber, setVisiblePageNumber] = useState(1);
   const [pdfDimensions, setPdfDimensions] = useState({ width: 0, height: 0 });
-
+  const apiUrl = import.meta.env.VITE_API_URL;
   // Memoize the options object
   const pdfOptions = useMemo(
     () => ({
@@ -50,7 +50,7 @@ const PDFViewer = ({
   // Memoize the file object
   const file = useMemo(
     () => ({
-      url: `http://localhost:5001/pdf?url=${encodeURIComponent(fileUrl)}`,
+      url: `${apiUrl}/pdf?url=${encodeURIComponent(fileUrl)}`,
     }),
     [fileUrl]
   );

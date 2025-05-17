@@ -37,7 +37,7 @@ function Navber() {
           >
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="/course">My Course</a>
+                <a>My Course</a>
               </li>
             </ol>
           </nav>
