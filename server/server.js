@@ -20,22 +20,7 @@ const commentRoutes = require("./routes/comment"); // Import comment routes
 const scoreRoutes = require("./routes/score"); // Import score routes
 
 const app = express();
-
-// CORS setup: allow all origins (for dev), or specify allowed origins
-app.use(cors({
-  origin: [
-    "http://localhost:5173", // frontend dev
-    "https://modmark.vercel.app", // frontend prod (ถ้ามี)
-    "https://deploy-express-modmark-m61uvkfx5-modmarks-projects.vercel.app" // backend vercel
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-// Optional: handle preflight requests globally
-app.options("*", cors());
-
+app.use(cors());
 app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
@@ -66,9 +51,6 @@ mongoose
   .connect(mongoUri)
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("Database connection error:", err));
-
-console.log("Registering route:", "/api/user");
-app.use("/api/user", require("./routes/user"));
 
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
