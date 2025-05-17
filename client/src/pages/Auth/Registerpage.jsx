@@ -5,6 +5,7 @@ import {
   MDBCol,
   MDBBtn,
   MDBInput,
+  MDBIcon, // Import MDBIcon for the eye icon
 } from "mdb-react-ui-kit";
 import { useNavigate, Link } from "react-router-dom";
 import ModalComponent from "../../controls/Modal";
@@ -21,6 +22,7 @@ function Register() {
   const [showModal, setShowModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false); // Add state for toggling password visibility
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -221,17 +223,28 @@ function Register() {
                 )}
               </div>
 
-              <div className="mb-4">
+              <div className="mb-4 position-relative">
                 <MDBInput
                   wrapperClass="mb-2"
                   label="Password"
                   placeholder="Password must be at least 6 characters"
                   id="form6"
-                  type="password"
+                  type={showPassword ? "text" : "password"} // Toggle between text and password
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   invalid={!!errors.password}
                   className={errors.password ? "border-danger" : ""}
+                />
+                <MDBIcon
+                  icon={showPassword ? "eye-slash" : "eye"} // Change icon based on state
+                  className="position-absolute"
+                  style={{
+                    top: "50%",
+                    right: "10px",
+                    transform: "translateY(-50%)",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setShowPassword(!showPassword)} // Toggle state on click
                 />
                 {errors.password && (
                   <div
