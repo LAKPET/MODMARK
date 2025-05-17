@@ -6,14 +6,10 @@ require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRATION = 8 * 60 * 60; // 8 ชั่วโมง (วินาที)
 
-const redisClient = redis.createClient();
-// const redisClient = redis.createClient({
-//   socket: {
-//     host: process.env.REDIS_HOST || "127.0.0.1",
-//     port: process.env.REDIS_PORT || 6379
-//   }
-// });
-
+// ใช้ REDIS_URL จาก .env สำหรับ Redis ออนไลน์
+const redisClient = redis.createClient({
+  url: process.env.REDIS_URL
+});
 
 redisClient.connect()
   .then(() => console.log("Redis connected successfully"))
