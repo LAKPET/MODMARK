@@ -6,10 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
-package.json
-package-lock.json
-../client/package-lock.json
-../client/package.json
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
@@ -133,10 +129,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-client/package-lock.json
-client/package.json
-
 server/uploads/
-client/package.json
-client/package.json
 modmark-79380-firebase-adminsdk-fbsvc-01eddb138f.json
+.vercel
+

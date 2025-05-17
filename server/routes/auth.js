@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Register User
 router.post("/register", async (req, res) => {
-  const { personal_num, first_name, last_name, email, password, username, role } = req.body;
+  const { personal_num, first_name, last_name, email, password, username } = req.body;
 
   // Validate required fields
   if (!personal_num || !first_name || !last_name || !email || !password) {
@@ -22,7 +22,6 @@ router.post("/register", async (req, res) => {
     if (existingUser)
       return res.status(400).json({ message: "This Personal Number already exists." });
 
-    const userRole = role || "student";
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
@@ -32,7 +31,6 @@ router.post("/register", async (req, res) => {
       username,
       email,
       password_hash: hashedPassword,
-      role: userRole,
     });
 
     await newUser.save();
