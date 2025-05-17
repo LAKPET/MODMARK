@@ -56,6 +56,14 @@ export default function CourseDetail() {
   const [selectedAssessments, setSelectedAssessments] = useState([]);
   const [filteredAssessments, setFilteredAssessments] = useState([]);
   const [showAllAssessments, setShowAllAssessments] = useState(false);
+
+  const [filterScoreStatus, setFilterScoreStatus] = useState("all");
+  const [filterFeedbackStatus, setFilterFeedbackStatus] = useState("all");
+
+  const [scoreFilterModalOpen, setScoreFilterModalOpen] = useState(false);
+  const [feedbackFilterModalOpen, setFeedbackFilterModalOpen] = useState(false);
+  const [filteredScoreData, setFilteredScoreData] = useState([]);
+  const [filteredFeedbackData, setFilteredFeedbackData] = useState([]);
   const [progressData, setProgressData] = useState({
     total_assessments: 0,
     completed_assessments: 0,
@@ -121,6 +129,55 @@ export default function CourseDetail() {
 
     setFilteredAssessments(filtered);
   }, [selectedAssessments, assessments, submittedAssessments, filterStatus]);
+
+  // Add these useEffects for filtering score and feedback data
+  useEffect(() => {
+    // Apply the status filter to score data
+    if (filterScoreStatus === "all") {
+      setFilteredScoreData(scoreData);
+    } else if (filterScoreStatus === "graded") {
+      setFilteredScoreData(
+        scoreData.filter((score) => score.student_score !== null)
+      );
+    } else if (filterScoreStatus === "not-graded") {
+      setFilteredScoreData(
+        scoreData.filter((score) => score.student_score === null)
+      );
+    }
+  }, [scoreData, filterScoreStatus]);
+
+  useEffect(() => {
+    // Apply the status filter to feedback data
+    if (filterFeedbackStatus === "all") {
+      setFilteredFeedbackData(scoreData);
+    } else if (filterFeedbackStatus === "with-feedback") {
+      setFilteredFeedbackData(
+        scoreData.filter((score) => submittedAssessments[score.assessment_id])
+      );
+    } else if (filterFeedbackStatus === "without-feedback") {
+      setFilteredFeedbackData(
+        scoreData.filter((score) => !submittedAssessments[score.assessment_id])
+      );
+    }
+  }, [scoreData, filterFeedbackStatus, submittedAssessments]);
+
+  // Add these functions for handling filter modals
+  const handleScoreFilterModalOpen = () => setScoreFilterModalOpen(true);
+  const handleScoreFilterModalClose = () => setScoreFilterModalOpen(false);
+
+  const handleFeedbackFilterModalOpen = () => setFeedbackFilterModalOpen(true);
+  const handleFeedbackFilterModalClose = () =>
+    setFeedbackFilterModalOpen(false);
+
+  const handleScoreFilterChange = (event) => {
+    setFilterScoreStatus(event.target.value);
+    handleScoreFilterModalClose();
+  };
+
+  const handleFeedbackFilterChange = (event) => {
+    setFilterFeedbackStatus(event.target.value);
+    handleFeedbackFilterModalClose();
+  };
 
   const fetchProgressData = async () => {
     try {
@@ -346,7 +403,6 @@ export default function CourseDetail() {
               </div>
             </div>
           </Col>
-
           {/* Overall Score Card */}
           <Col md={3}>
             <div className="card border-secondary h-100 background-card">
@@ -417,7 +473,6 @@ export default function CourseDetail() {
               </div>
             </div>
           </Col>
-
           {/* Assessment Card */}
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
@@ -555,7 +610,6 @@ export default function CourseDetail() {
               </div>
             </div>
           </Col>
-
           {/* Score Card */}
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
@@ -566,11 +620,12 @@ export default function CourseDetail() {
                     title="Score Options"
                     cardType="score"
                     onRefresh={() => fetchScoreData()}
+                    onFilter={() => handleScoreFilterModalOpen()}
                   />
                 </div>
                 <div className="mt-3">
-                  {scoreData.length > 0 ? (
-                    scoreData.slice(0, 3).map((score) => (
+                  {filteredScoreData.length > 0 ? (
+                    filteredScoreData.slice(0, 3).map((score) => (
                       <div
                         key={score.assessment_id}
                         className="d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded"
@@ -592,7 +647,6 @@ export default function CourseDetail() {
               </div>
             </div>
           </Col>
-
           {/* Feedback Card */}
           <Col md={6}>
             <div className="card border-secondary h-100 background-card">
@@ -603,11 +657,12 @@ export default function CourseDetail() {
                     title="Feedback Options"
                     cardType="feedback"
                     onRefresh={() => refreshAssessments(false)}
+                    onFilter={() => handleFeedbackFilterModalOpen()}
                   />
                 </div>
                 <div className="mt-3">
-                  {scoreData.length > 0 ? (
-                    scoreData.slice(0, 3).map((score) => {
+                  {filteredFeedbackData.length > 0 ? (
+                    filteredFeedbackData.slice(0, 3).map((score) => {
                       // Find matching submission from submissionData
                       const submission =
                         submittedAssessments[score.assessment_id];
@@ -643,7 +698,6 @@ export default function CourseDetail() {
               </div>
             </div>
           </Col>
-
           {/* Modal for Assessment Selection */}
           <Modal
             open={openModal}
@@ -680,6 +734,98 @@ export default function CourseDetail() {
             </Box>
           </Modal>
 
+          <Modal
+            open={scoreFilterModalOpen}
+            onClose={handleScoreFilterModalClose}
+            aria-labelledby="score-filter-modal"
+          >
+            <Box sx={modalStyle}>
+              <h4 className="mb-3">Filter Scores</h4>
+              <FormControl component="fieldset">
+                <FormLabel component="legend">Score Status</FormLabel>
+                <RadioGroup
+                  aria-label="score-status"
+                  name="score-status"
+                  value={filterScoreStatus}
+                  onChange={handleScoreFilterChange}
+                >
+                  <FormControlLabel
+                    value="all"
+                    control={<Radio />}
+                    label="All Scores"
+                  />
+                  <FormControlLabel
+                    value="graded"
+                    control={<Radio />}
+                    label="Graded"
+                  />
+                  <FormControlLabel
+                    value="not-graded"
+                    control={<Radio />}
+                    label="Not Graded"
+                  />
+                </RadioGroup>
+              </FormControl>
+              <div className="d-flex justify-content-end mt-3">
+                <MDBBtn
+                  outline
+                  onClick={handleScoreFilterModalClose}
+                  style={{
+                    color: "#CDC9C9",
+                    borderColor: "#CDC9C9",
+                  }}
+                >
+                  Cancel
+                </MDBBtn>
+              </div>
+            </Box>
+          </Modal>
+          <Modal
+            open={feedbackFilterModalOpen}
+            onClose={handleFeedbackFilterModalClose}
+            aria-labelledby="feedback-filter-modal"
+          >
+            <Box sx={modalStyle}>
+              <h4 className="mb-3">Filter Feedback</h4>
+              <FormControl component="fieldset">
+                <FormLabel component="legend">Feedback Status</FormLabel>
+                <RadioGroup
+                  aria-label="feedback-status"
+                  name="feedback-status"
+                  value={filterFeedbackStatus}
+                  onChange={handleFeedbackFilterChange}
+                >
+                  <FormControlLabel
+                    value="all"
+                    control={<Radio />}
+                    label="All Feedback"
+                  />
+                  <FormControlLabel
+                    value="with-feedback"
+                    control={<Radio />}
+                    label="With Feedback"
+                  />
+                  <FormControlLabel
+                    value="without-feedback"
+                    control={<Radio />}
+                    label="Without Feedback"
+                  />
+                </RadioGroup>
+              </FormControl>
+              <div className="d-flex justify-content-end mt-3">
+                <MDBBtn
+                  outline
+                  onClick={handleFeedbackFilterModalClose}
+                  style={{
+                    color: "#CDC9C9",
+                    borderColor: "#CDC9C9",
+                  }}
+                >
+                  Cancel
+                </MDBBtn>
+              </div>
+            </Box>
+          </Modal>
           <Modal
             open={filterModalOpen}
             onClose={handleFilterModalClose}
@@ -726,7 +872,6 @@ export default function CourseDetail() {
               </div>
             </Box>
           </Modal>
-
           {/* Group submission modal */}
           {groupModalOpen && (
             <GroupSubmitModal
@@ -742,7 +887,6 @@ export default function CourseDetail() {
               setGroupFile={setGroupFile}
             />
           )}
-
           {/* Edit submission modal */}
           {editModalOpen && currentSubmission && currentAssessment && (
             <EditSubmissionModal
@@ -760,7 +904,8 @@ export default function CourseDetail() {
     </>
   );
 }
-// CardOptionsMenu component remains the same
+
+// Modified CardOptionsMenu component
 const CardOptionsMenu = ({ title, cardType, onRefresh, onFilter }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -787,8 +932,10 @@ const CardOptionsMenu = ({ title, cardType, onRefresh, onFilter }) => {
     }
   };
 
-  // Only show relevant menu options for assessment card
-  const showFilterOption = cardType === "assessment";
+  // Show filter option for all three card types
+  const showFilterOption = ["assessment", "score", "feedback"].includes(
+    cardType
+  );
 
   return (
     <>
