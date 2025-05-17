@@ -140,3 +140,5 @@ server/uploads/
 client/package.json
 client/package.json
 modmark-79380-firebase-adminsdk-fbsvc-01eddb138f.json
+.vercel
+
