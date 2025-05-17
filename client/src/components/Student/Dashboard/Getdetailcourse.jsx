@@ -84,6 +84,8 @@ export default function CourseDetail() {
   const [currentSubmission, setCurrentSubmission] = useState(null);
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [groupMembersData, setGroupMembersData] = useState([]); // Add this state
+  const [groupLoading, setGroupLoading] = useState(false); // Add loading state for group members
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -233,23 +235,25 @@ export default function CourseDetail() {
       : filteredAssessments.slice(0, 2);
   };
 
-  // Handle opening the group modal
+  // Handle opening the group modal and fetching members
   const onOpenGroupModal = async (assessment) => {
     setGroupModalAssessment(assessment);
     setGroupFile(null);
     setGroupModalOpen(true);
 
     try {
+      setGroupLoading(true); // Start loading
+      const apiUrl = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem("authToken");
-      const membersRes = await axios.get(
-        `${apiUrl}/section/students/${sectionId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setGroupModalAssessment(membersRes.data);
+      const response = await fetch(`${apiUrl}/section/students/${sectionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      setGroupMembersData(data); // Store group members data
     } catch (error) {
       console.error("Error fetching group members:", error);
+    } finally {
+      setGroupLoading(false); // Stop loading
     }
   };
 
@@ -274,7 +278,7 @@ export default function CourseDetail() {
 
     if (success) {
       setGroupModalOpen(false);
-      fetchProgressData();
+      fetchProgressData(); // Refresh progress data after submission
     }
   };
 
@@ -578,7 +582,6 @@ export default function CourseDetail() {
                                 disabled={uploading}
                                 onClick={() => onOpenGroupModal(assessment)}
                               >
-                                <GroupIcon />
                                 Create Group
                               </GroupButton>
                             ) : (
@@ -964,8 +967,8 @@ export default function CourseDetail() {
               file={groupFile}
               groupName={groupName}
               setGroupName={setGroupName}
-              groupMembersData={groupModalAssessment}
-              uploading={uploading}
+              groupMembersData={groupMembersData} // Pass group members data
+              uploading={uploading || groupLoading} // Show loading state
               onSubmit={onGroupSubmit}
               setGroupFile={setGroupFile}
             />
