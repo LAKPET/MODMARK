@@ -67,6 +67,9 @@ mongoose
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("Database connection error:", err));
 
+console.log("Registering route:", "/api/user");
+app.use("/api/user", require("./routes/user"));
+
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/course", courseRoutes);

@@ -12,7 +12,7 @@ const {
 
 const router = express.Router();
 
-// ฟังก์ชันสำหรับสร้างผู้ใช้ใหม่ (เฉพาะแอดมิน)
+// POST /create
 router.post("/create", verifyToken, checkAdmin, async (req, res) => {
   const {
     personal_num,
@@ -86,7 +86,7 @@ router.post("/create", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
-// ฟังก์ชันสำหรับดึงข้อมูลผู้ใช้ทั้งหมด (สำหรับแอดมิน)
+// POST /all
 router.post("/all", verifyToken, checkAdmin, async (req, res) => {
   const { course_number, section_number, semester_term, semester_year } =
     req.body;
@@ -134,7 +134,7 @@ router.post("/all", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
-// ฟังก์ชันสำหรับดึงข้อมูลโปรไฟล์ (เฉพาะแอดมินและเจ้าของข้อมูล)
+// GET /profile/:id
 router.get("/profile/:id", verifyToken, async (req, res) => {
   const { id } = req.params; // รับ id จาก URL params
 
@@ -161,7 +161,7 @@ router.get("/profile/:id", verifyToken, async (req, res) => {
   }
 });
 
-// ฟังก์ชันสำหรับลบผู้ใช้ (เฉพาะแอดมิน)
+// DELETE /delete/:id
 router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -189,7 +189,7 @@ router.delete("/delete/:id", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
-// ฟังก์ชันสำหรับแก้ไขข้อมูลผู้ใช้ (เจ้าของข้อมูลและแอดมิน)
+// PUT /update/:id
 router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
   const { id } = req.params;
   const {
@@ -281,7 +281,7 @@ router.put("/update/:id", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
-// ฟังก์ชันสำหรับดึงรายชื่อของ professor ทั้งหมดในระบบ
+// GET /all-professors
 router.get("/all-professors", verifyToken, checkAdmin, async (req, res) => {
   try {
     const professors = await User.find({ role: { $in: ["professor", "ta"] } }); // Include both professor and TA
