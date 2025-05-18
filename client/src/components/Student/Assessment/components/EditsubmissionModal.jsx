@@ -20,9 +20,37 @@ import {
 import { styled } from "@mui/material/styles";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import axios from "axios";
 import DeleteIcon from "@mui/icons-material/Delete";
 import "../../../../assets/Styles/Assessment/Getassessment.css";
+
+// CircularProgressWithLabel component
+function CircularProgressWithLabel(props) {
+  return (
+    <Box sx={{ position: "relative", display: "inline-flex" }}>
+      <CircularProgress variant="determinate" {...props} />
+      <Box
+        sx={{
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          position: "absolute",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography
+          variant="caption"
+          component="div"
+          sx={{ color: "text.secondary" }}
+        >
+          {`${Math.round(props.value)}%`}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 
 const SubmitButton = styled(Button)(({ theme }) => ({
   color: "white",
@@ -61,6 +89,8 @@ export default function EditSubmissionModal({
 }) {
   const [newFile, setNewFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // Add state for loading
+  const [uploadProgress, setUploadProgress] = useState(0); // State for upload progress
   const [currentFileName, setCurrentFileName] = useState("");
   const [groupName, setGroupName] = useState("");
   const [localPreviewUrl, setLocalPreviewUrl] = useState("");
@@ -139,6 +169,7 @@ export default function EditSubmissionModal({
         return;
       }
       setNewFile(droppedFile);
+      simulateUpload(); // Start simulated upload
     }
   };
 
@@ -150,6 +181,7 @@ export default function EditSubmissionModal({
         return;
       }
       setNewFile(selectedFile);
+      simulateUpload(); // Start simulated upload
     }
   };
 
@@ -197,6 +229,21 @@ export default function EditSubmissionModal({
     ) {
       alert("Please provide a new file or update the group name");
     }
+  };
+
+  const simulateUpload = () => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsUploading(false);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 300); // Simulate upload progress
   };
 
   return (
@@ -257,11 +304,9 @@ export default function EditSubmissionModal({
                 </div>
               )}
 
-              <span style={{ fontSize: 80, marginBottom: 16 }}>
-                <FileUploadIcon sx={{ fontSize: 100 }} />
-              </span>
-
-              {newFile ? (
+              {isUploading ? (
+                <CircularProgressWithLabel value={uploadProgress} /> // Show progress with percentage
+              ) : newFile ? (
                 <div
                   style={{
                     color: "#5c90d2",
@@ -404,7 +449,7 @@ export default function EditSubmissionModal({
         <Button
           variant="outlined"
           onClick={onClose}
-          disabled={uploading}
+          disabled={isUploading}
           sx={{
             color: "#CDC9C9",
             borderColor: "#CDC9C9",
@@ -415,12 +460,12 @@ export default function EditSubmissionModal({
         <SubmitButton
           onClick={handleSubmit}
           disabled={
-            uploading ||
+            isUploading ||
             (!newFile &&
               (!groupName || groupName === submission?.group_id?.group_name))
           }
         >
-          {uploading ? "Updating..." : "Update Submission"}
+          {isUploading ? "Uploading..." : "Update Submission"}
         </SubmitButton>
       </DialogActions>
     </Dialog>

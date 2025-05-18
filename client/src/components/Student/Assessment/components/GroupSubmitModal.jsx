@@ -15,6 +15,39 @@ import Checkbox from "@mui/material/Checkbox";
 import { styled } from "@mui/material/styles";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { MDBBtn } from "mdb-react-ui-kit";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
+
+// CircularProgressWithLabel component
+function CircularProgressWithLabel(props) {
+  return (
+    <Box sx={{ position: "relative", display: "inline-flex" }}>
+      <CircularProgress variant="determinate" {...props} />
+      <Box
+        sx={{
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          position: "absolute",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography
+          variant="caption"
+          component="div"
+          sx={{ color: "text.secondary" }}
+        >
+          {`${Math.round(props.value)}%`}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 const SubmitButton = styled(Button)(({ theme }) => ({
   color: "white",
   backgroundColor: "#754D25",
@@ -46,6 +79,8 @@ const GroupSubmitModal = ({
   const [localFile, setLocalFile] = useState(file || null);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState(""); // State for search query
+  const [isUploading, setIsUploading] = useState(false); // Add state for loading
+  const [uploadProgress, setUploadProgress] = useState(0); // State for upload progress
   const inputRef = useRef();
 
   useEffect(() => {
@@ -55,6 +90,21 @@ const GroupSubmitModal = ({
       setSearchQuery("");
     }
   }, [open]);
+
+  const simulateUpload = () => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsUploading(false);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 300); // Simulate upload progress
+  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -78,9 +128,10 @@ const GroupSubmitModal = ({
       }
       setLocalFile(droppedFile);
       setGroupFile && setGroupFile(droppedFile);
+      simulateUpload(); // Start simulated upload
     }
   };
-  const handleBrowse = (e) => {
+  const handleBrowse = async (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       if (selectedFile.type !== "application/pdf") {
@@ -89,6 +140,7 @@ const GroupSubmitModal = ({
       }
       setLocalFile(selectedFile);
       setGroupFile && setGroupFile(selectedFile);
+      simulateUpload(); // Start simulated upload
     }
   };
 
@@ -144,8 +196,12 @@ const GroupSubmitModal = ({
               cursor: "pointer",
               transition: "border 0.2s, background 0.2s",
               padding: "20px",
+              position: "relative",
             }}
           >
+            <span style={{ fontSize: 80, marginBottom: 16 }}>
+              <FileUploadIcon sx={{ fontSize: 100 }} />
+            </span>
             <input
               ref={inputRef}
               type="file"
@@ -153,10 +209,9 @@ const GroupSubmitModal = ({
               style={{ display: "none" }}
               onChange={handleBrowse}
             />
-            <span style={{ fontSize: 80, marginBottom: 16 }}>
-              <FileUploadIcon sx={{ fontSize: 100 }} />
-            </span>
-            {localFile ? (
+            {isUploading ? (
+              <CircularProgressWithLabel value={uploadProgress} /> // Show progress with percentage
+            ) : localFile ? (
               <div
                 style={{
                   color: "#8B5F34",
@@ -288,7 +343,8 @@ const GroupSubmitModal = ({
                     >
                       Email
                     </TableCell>
-                  </TableRow>
+                  </TableRow>{" "}
+                  {/* เปลี่ยนจาก <Row> เป็น <TableRow> */}
                 </TableHead>
                 <TableBody>
                   {filteredMembers.map((m, idx) => (
@@ -316,7 +372,7 @@ const GroupSubmitModal = ({
         <MDBBtn
           outline
           onClick={onClose}
-          disabled={uploading}
+          disabled={uploading || isUploading}
           style={{
             color: "#CDC9C9",
             borderColor: "#CDC9C9",
@@ -324,7 +380,10 @@ const GroupSubmitModal = ({
         >
           Cancel
         </MDBBtn>
-        <SubmitButton onClick={handleSubmit} disabled={uploading || !localFile}>
+        <SubmitButton
+          onClick={handleSubmit}
+          disabled={uploading || !localFile || isUploading}
+        >
           Submit
         </SubmitButton>
       </DialogActions>

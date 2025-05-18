@@ -51,7 +51,7 @@ export default function GetStudentScoreAndFeedback() {
             return submissionResponse.data;
           })
         );
-
+        console.log("submissionsData", submissionsData);
         setScoreData(scoresResponse.data);
         setStatisticsData(statisticsResponse.data.assessments_statistics);
         setSubmissionData(submissionsData.flat()); // Flatten the array of submissions
@@ -103,11 +103,30 @@ export default function GetStudentScoreAndFeedback() {
     const stats = statisticsData.find(
       (stat) => stat.assessment_id === score.assessment_id
     );
-    const submission = submissionData.find(
-      (sub) =>
-        sub.assessment_id._id === score.assessment_id &&
-        sub.student_id._id === localStorage.getItem("UserId") // ตรวจสอบ student_id._id
+
+    // Find all submissions for the same assessment_id
+    const submissionsForAssessment = submissionData.filter(
+      (sub) => sub.assessment_id._id === score.assessment_id
     );
+
+    // Get the current user's ID
+    const currentUserId = localStorage.getItem("UserId");
+
+    // Check if the current user is part of a group submission
+    const groupSubmission = submissionsForAssessment.find((sub) =>
+      sub.group_members.some((member) => member.user_id._id === currentUserId)
+    );
+
+    // Use the group's PDF link if the user is part of the group
+    const pdfLink = groupSubmission
+      ? `${apiUrl}/files/${groupSubmission.file_url}`
+      : null;
+
+    // Find the specific submission for the current user
+    const submission = submissionsForAssessment.find(
+      (sub) => sub.student_id._id === currentUserId
+    );
+
     return {
       ...score,
       max_score: stats?.max_score || 0,
@@ -116,12 +135,14 @@ export default function GetStudentScoreAndFeedback() {
       submission_date: submission?.submitted_at
         ? formatDateTime(submission.submitted_at)
         : "N/A",
-      pdf_link: submission?.file_url
-        ? `${apiUrl}/files/${submission.file_url}`
-        : null,
+      pdf_link:
+        pdfLink ||
+        (submission?.file_url
+          ? `${apiUrl}/files/${submission.file_url}`
+          : null),
     };
   });
-
+  console.log("com", combinedData);
   const handleViewPDF = (submission) => {
     setSelectedSubmission(submission); // Set the selected submission
   };
