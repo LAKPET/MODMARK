@@ -39,6 +39,7 @@ const CommentsPanel = ({
   const apiUrl = import.meta.env.VITE_API_URL;
   const currentUserId = localStorage.getItem("UserId");
   const userRole = localStorage.getItem("UserRole"); // Get user role
+  const currentUsername = localStorage.getItem("Username"); // Get the logged-in user's username
 
   const handleEditReply = (reply) => {
     setEditingReply(reply._id);
@@ -124,29 +125,31 @@ const CommentsPanel = ({
                     borderBottomLeftRadius: "4px",
                   }}
                 />
-                {userRole !== "student" && (
-                  // Show delete icon for non-students
-                  <Box
+                <Box
+                  sx={{
+                    position: "absolute",
+                    right: 8,
+                    top: 8,
+                    display: "flex",
+                    gap: 1, // Add spacing between icons
+                  }}
+                >
+                  {/* Reply icon - always visible */}
+                  <IconButton
+                    size="small"
+                    onClick={() => onToggleReplyInput(highlight.id)}
                     sx={{
-                      position: "absolute",
-                      right: 8,
-                      top: 8,
-                      display: "flex",
-                      gap: 1, // Add spacing between icons
+                      color: "#666",
+                      "&:hover": {
+                        color: "#1976d2",
+                      },
                     }}
                   >
-                    <IconButton
-                      size="small"
-                      onClick={() => onToggleReplyInput(highlight.id)}
-                      sx={{
-                        color: "#666",
-                        "&:hover": {
-                          color: "#1976d2",
-                        },
-                      }}
-                    >
-                      <ReplyIcon fontSize="small" />
-                    </IconButton>
+                    <ReplyIcon fontSize="small" />
+                  </IconButton>
+
+                  {/* Delete icon - visible only if the logged-in user is the creator */}
+                  {highlight.professor?.username === currentUsername && (
                     <IconButton
                       size="small"
                       onClick={() => onDeleteHighlight(highlight)}
@@ -159,26 +162,8 @@ const CommentsPanel = ({
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
-                  </Box>
-                )}
-                {userRole === "student" && (
-                  // Show reply icon for students
-                  <IconButton
-                    size="small"
-                    onClick={() => onToggleReplyInput(highlight.id)}
-                    sx={{
-                      position: "absolute",
-                      right: 8,
-                      top: 8,
-                      color: "#666",
-                      "&:hover": {
-                        color: "#1976d2",
-                      },
-                    }}
-                  >
-                    <ReplyIcon fontSize="small" />
-                  </IconButton>
-                )}
+                  )}
+                </Box>
                 <Box
                   sx={{
                     display: "flex",

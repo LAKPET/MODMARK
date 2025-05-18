@@ -387,7 +387,7 @@ const PDFViewer = ({
             onClick={handleNextPage}
             disabled={!numPages || currentPage >= numPages}
             sx={{
-              backgroundColor: "rgba(255, 255, 255, 0.7)",
+              backgroundColor: "rgba(255, 255, 255, 0.12)",
               boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -436,7 +436,7 @@ const PDFViewer = ({
         <Document
           file={file}
           onLoadSuccess={onDocumentLoadSuccess}
-          loading={<CircularProgress />}
+          // loading={<CircularProgress />}
           error={<div>Error loading PDF. Please try again.</div>}
           options={pdfOptions}
         >
@@ -495,6 +495,7 @@ const PDFViewer = ({
                             top: `${posY}px`,
                             backgroundColor: "#fff",
                             boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+
                             zIndex: 1000,
                           }}
                           onClick={() =>
